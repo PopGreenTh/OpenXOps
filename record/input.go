@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sort"
 	"strings"
 )
 
@@ -72,14 +71,7 @@ func Assemble(stdin io.Reader, froms []From) ([]Record, error) {
 		if stdin == nil || !isNonTTY(stdin) {
 			return nil, nil
 		}
-		recs, err := Read(stdin, "stdin", checkKinds)
-		if err != nil {
-			return nil, err
-		}
-		sort.SliceStable(recs, func(i, j int) bool {
-			return recs[i].Kind() < recs[j].Kind()
-		})
-		return recs, nil
+		return Read(stdin, "stdin", checkKinds)
 	}
 
 	stdinViaFlag := false
@@ -99,9 +91,6 @@ func Assemble(stdin io.Reader, froms []From) ([]Record, error) {
 		if err != nil {
 			return nil, err
 		}
-		sort.SliceStable(recs, func(i, j int) bool {
-			return recs[i].Kind() < recs[j].Kind()
-		})
 		stdinRecs = recs
 	}
 

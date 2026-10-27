@@ -71,10 +71,12 @@ func TestMixingPipelineMatchesFileSteps(t *testing.T) {
 		t.Fatalf("share mixed pipe: %v", err)
 	}
 
-	fileCounts := kindCounts(readJSONL(t, shareFileOut))
-	pipeCounts := kindCounts(readJSONLBytes(t, sharePipeOut.Bytes()))
-	if !countsEqual(fileCounts, pipeCounts) {
-		t.Fatalf("pipe vs file kind counts differ\nfile: %v\npipe: %v", fileCounts, pipeCounts)
+	fileBytes, err := os.ReadFile(shareFileOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(fileBytes, sharePipeOut.Bytes()) {
+		t.Fatalf("pipe pipeline output differs from file steps (%d vs %d bytes)", len(fileBytes), sharePipeOut.Len())
 	}
 }
 
