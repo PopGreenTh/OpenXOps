@@ -42,3 +42,5 @@ WO-0104-A merged 2026-10-27 (#15, `f07c7c5`) after two review rounds and a full 
 WO-0101-B (D-030 pipe rule and the review follow-ups) specified 2026-10-27, to be dispatched after WO-0103-A, WO-0105-A and WO-0107-A merge (D-031). Release 2 grilling started: Q-005.
 
 D-037 (schema check on every input) added to WO-0101-B 2026-10-27. Release 2's second round answered (D-038 to D-041); `DD-02` can now be written.
+
+WI-0107 Contracts clarified 2026-10-27 during PR #24's review: `environment` and `lz` changes are account changes, and an allocation's `cost_moved` counts only cost records with its own `app`.
