@@ -28,6 +28,7 @@ xops   report excel --from-cost shared.jsonl --from-change changes.jsonl --out f
 | [WI-0105](WI-0105-Enrich-Share.md) | `finops enrich share` (D-016, D-021), 6 reference cases | A |
 | [WI-0106](WI-0106-Report.md) | `xops report table\|csv\|excel`, appending (D-011) | A |
 | [WI-0107](WI-0107-Analyze-Changes.md) | `finops analyze changes` (D-021) | A |
+| [WI-0108](WI-0108-Docs.md) | User and developer docs, doc check (D-044) | A, B |
 
 ## Order
 
@@ -52,7 +53,9 @@ packages.
    total, and no `cost` record is left without an App.
 5. A second `aws-cost` run over closed months makes zero Cost Explorer calls.
 6. Against the repo owner's real AWS Organization, the pipeline completes with the read-only
-   permissions listed in the README.
+   permissions listed in `docs/user/aws-setup.md`.
+7. The docs (D-044): `scripts/check` prints `docs PASS`, and `docs/user/getting-started.md`'s
+   `--mock` walkthrough runs as written on a clean clone.
 
 **Checked 2026-10-27** on a clean clone of `main` at `9da24f3` with no AWS credentials:
 
@@ -64,6 +67,7 @@ packages.
 | 4 | After `share`, totals equal Cost Explorer's; no `cost` without an App | ✅ largest difference 5e-13; 0 without an App |
 | 5 | A second `aws-cost` run over closed months makes zero calls | ✅ 10 calls, then 0 |
 | 6 | The pipeline completes against the real Organization, read-only | ⏳ for the repo owner to run |
+| 7 | Docs: `docs PASS`; the getting-started walkthrough runs on a clean clone | ⏳ after WI-0108 (added 2026-10-27, D-044) |
 
 **Release 2:** FOCUS (`aws-focus`, `focus-cost`), `analyze trend` and `impact`, Enforce, the
 history store and `--as-reported`.
