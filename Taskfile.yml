@@ -44,6 +44,11 @@ tasks:
     cmds:
       - go run ./finops enrich map --taxonomy finops/enrich/testdata/demo-taxonomy.yaml --from-accounts finops/enrich/testdata/demo-accounts.jsonl
 
+  run:finops:enrich-share:
+    desc: Share demo map output by App tag
+    cmds:
+      - go run ./finops enrich map --taxonomy finops/enrich/testdata/demo-taxonomy.yaml --from-accounts finops/enrich/testdata/demo-accounts.jsonl | go run ./finops enrich share --taxonomy finops/enrich/testdata/demo-taxonomy.yaml --from-cost -
+
   run:xops:sense-aws-accounts:
     desc: Run xops sense aws-accounts on the demo organization
     cmds:

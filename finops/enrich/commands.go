@@ -17,7 +17,7 @@ func Commands() []*cobra.Command {
 		Use:   "enrich",
 		Short: "Validate taxonomy and map accounts to apps",
 	}
-	enrich.AddCommand(validateCommand(), mapCommand())
+	enrich.AddCommand(validateCommand(), mapCommand(), shareCommand())
 	return []*cobra.Command{enrich}
 }
 
@@ -80,6 +80,40 @@ func mapCommand() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&taxonomy, "taxonomy", "", "taxonomy YAML file")
 	record.AddFromFlags(cmd, []*record.From{accountsFrom, costFrom})
+	_ = cmd.MarkFlagRequired("taxonomy")
+	return cmd
+}
+
+var mapCostFrom = &record.From{Name: "cost", Kinds: []string{"allocation", "cost"}}
+
+func shareCommand() *cobra.Command {
+	var taxonomy string
+	cmd := &cobra.Command{
+		Use:   "share",
+		Short: "Split shared-account cost by App tag",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			record.LogStart("finops enrich share", map[string]string{
+				"taxonomy": taxonomy,
+				"cost":     mapCostFrom.File,
+			}, nil)
+			tax, err := LoadTaxonomy(taxonomy)
+			if err != nil {
+				return err
+			}
+			recs, err := record.Assemble(os.Stdin, record.IsPipe(os.Stdin), []record.From{*mapCostFrom})
+			if err != nil {
+				return err
+			}
+			out, err := Share(tax, recs)
+			if err != nil {
+				return err
+			}
+			return record.Write(cmd.OutOrStdout(), out)
+		},
+	}
+	cmd.Flags().StringVar(&taxonomy, "taxonomy", "", "taxonomy YAML file")
+	record.AddFromFlags(cmd, []*record.From{mapCostFrom})
 	_ = cmd.MarkFlagRequired("taxonomy")
 	return cmd
 }

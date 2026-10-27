@@ -86,6 +86,16 @@ and `account` records, adds `allocation` rows, enriches optional `cost` records,
 mapping `finding` records. Pipe inventory from `xops sense aws-accounts --mock` instead of
 `--from-accounts` when the org fixture is available.
 
+### `finops enrich share`
+
+Splits shared-account `cost` rows by App tag using `allocation` records from `map` output.
+
+```bash
+go run ./finops enrich map --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
+  --from-accounts finops/enrich/testdata/demo-accounts.jsonl \
+  | go run ./finops enrich share --taxonomy finops/enrich/testdata/demo-taxonomy.yaml --from-cost -
+```
+
 ### `xops report table|csv|excel`
 
 Turns JSON Lines records into human-readable tables. One table per `kind`, in first-seen order;
