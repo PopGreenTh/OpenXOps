@@ -24,4 +24,9 @@ RUN arch="$(uname -m)" \
     && /tmp/aws/install \
     && rm -rf /tmp/aws /tmp/aws.zip
 
+# Login shells (bash -l) drop the image PATH; keep Go on PATH.
+# VS Code mounts the host clone as another uid; git 2.35+ then refuses VCS status.
+RUN echo 'export PATH="/usr/local/go/bin:/go/bin:/usr/local/bin:$PATH"' > /etc/profile.d/go.sh \
+    && git config --system --add safe.directory '*'
+
 WORKDIR /workspaces/OpenXOps
