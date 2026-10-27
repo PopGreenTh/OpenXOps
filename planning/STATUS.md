@@ -21,7 +21,7 @@ Written by Claude only. Status values: see [README.md](README.md#status-values).
 |---|---|---|---|---|---|---|---|
 | [WO-0101-A](DD-01-r1-finops-aws/WI-0101-Skeleton.md#wo-0101-a--binaries-record-check-ci-and-developer-setup) | Cursor (claimed in PR) | — | merged | [#1](https://github.com/PopGreenTh/OpenXOps/issues/1) | [#3](https://github.com/PopGreenTh/OpenXOps/pull/3), landed through [#2](https://github.com/PopGreenTh/OpenXOps/pull/2) | `cursor/wo-0101-a-skeleton-7589` | 1 |
 | [WO-0101-B](DD-01-r1-finops-aws/WI-0101-Skeleton.md#wo-0101-b--pipe-rule-and-review-follow-ups) | Cursor (claimed in PR) | WO-0103-A, WO-0105-A, WO-0107-A | merged | [#31](https://github.com/PopGreenTh/OpenXOps/issues/31) | [#33](https://github.com/PopGreenTh/OpenXOps/pull/33) | `cursor/wo-0101-b-pipe-7589` | 2 |
-| [WO-0101-C](DD-01-r1-finops-aws/WI-0101-Skeleton.md#wo-0101-c--keep-stdin-order-d-043) | open | WO-0101-B | not started | — | — | — | 0 |
+| [WO-0101-C](DD-01-r1-finops-aws/WI-0101-Skeleton.md#wo-0101-c--keep-stdin-order-d-043) | Cursor (PR without a dispatch issue) | WO-0101-B | merged | — | [#41](https://github.com/PopGreenTh/OpenXOps/pull/41) | `cursor/wo-0101-c-stdin-order-7589` | 0 |
 | [WO-0102-A](DD-01-r1-finops-aws/WI-0102-Aws-Accounts.md#wo-0102-a--organizations-discovery-and-mock) | Cursor (claimed in PR) | WO-0101-A | merged | [#6](https://github.com/PopGreenTh/OpenXOps/issues/6) | [#10](https://github.com/PopGreenTh/OpenXOps/pull/10) | `cursor/wo-0102-a-aws-accounts-7589` | 3 |
 | [WO-0103-A](DD-01-r1-finops-aws/WI-0103-Aws-Cost.md#wo-0103-a--two-level-cost-explorer-cache-mock-cost) | Cursor (claimed in PR) | WO-0102-A | merged | [#12](https://github.com/PopGreenTh/OpenXOps/issues/12) | [#22](https://github.com/PopGreenTh/OpenXOps/pull/22) | `cursor/wo-0103-aws-cost-7589` | 3 |
 | [WO-0104-A](DD-01-r1-finops-aws/WI-0104-Enrich-Map.md#wo-0104-a--taxonomy-validate-and-map) | Cursor (claimed in PR) | WO-0101-A | merged | [#7](https://github.com/PopGreenTh/OpenXOps/issues/7) | [#15](https://github.com/PopGreenTh/OpenXOps/pull/15) | `cursor/wo-0104-enrich-7589` | 2 |
@@ -57,6 +57,8 @@ WO-0105-B merged 2026-10-27 (#36, `ebcb461`), approved in the first round. On th
 WO-0101-B merged 2026-10-27 (#33, `9da24f3`) after two review rounds. Every DD-01 Work Order through WO-0105-B is merged, and each Work Item has its `Delivered (as built)` section. Release criteria 1 to 5 were checked on a clean clone of `main` at `9da24f3` (`DELIVERABLE.md`). Criterion 6, a run against the real Organization, is for the repo owner, and so is the release tag. Open question: Q-008 (mock cache after `scripts/check`).
 
 Q-007 closed 2026-10-27 by [D-043](DECISIONS.md#d-043): records from stdin keep their input order. WO-0101-C specified in [#40](https://github.com/PopGreenTh/OpenXOps/pull/40); the Release 1 tag waits for it to merge.
+
+WO-0101-C merged 2026-10-27 (#41, `0dbec3d`), approved in the first round. Cursor opened it before a dispatch issue existed, and it was reviewed at the repo owner's request. On the mock data, the piped pipeline and the file steps now print identical bytes. Every DD-01 Work Order is merged. The Release 1 tag waits only on criterion 6, a run against the real Organization by the repo owner.
 
 WI-0107 Contracts clarified 2026-10-27 during PR #24's review: `environment` and `lz` changes are account changes, and an allocation's `cost_moved` counts only cost records with its own `app`.
 
