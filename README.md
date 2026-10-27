@@ -118,6 +118,39 @@ and `account` records, adds `allocation` rows, enriches optional `cost` records,
 mapping `finding` records. Pipe inventory from `xops sense aws-accounts --mock` instead of
 `--from-accounts` when the org fixture is available.
 
+### `finops enrich share`
+
+Splits shared-account `cost` rows by App tag using `allocation` records from `map` output.
+
+```bash
+go run ./finops enrich share --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
+  --from-cost finops/enrich/testdata/demo-map.jsonl
+task run:finops:enrich-share
+```
+
+Shared cost is split by the App tag on each row (`APP-CHK`, comma-separated multi-App tags,
+case-insensitive match, wrong or unknown App → `APP-INVALID`, empty tag → equal split). Output
+rows fill `app`, `project`, and related fields from `allocation` records.
+
+### `finops analyze changes`
+
+Compares two `map` (or `share`) outputs and emits `change` records for accounts and
+allocations that were added, removed, moved between OUs, or remapped, then passes through
+the current input unchanged.
+
+```bash
+go run ./finops enrich map --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
+  --from-accounts finops/enrich/testdata/demo-accounts.jsonl \
+  --from-cost finops/analyze/testdata/cost.jsonl > /tmp/map-before.jsonl
+go run ./finops enrich map --taxonomy finops/analyze/testdata/demo-taxonomy-env-changed.yaml \
+  --from-accounts finops/enrich/testdata/demo-accounts.jsonl \
+  --from-cost finops/analyze/testdata/cost.jsonl > /tmp/map-now.jsonl
+go run ./finops analyze changes --before /tmp/map-before.jsonl --from-map /tmp/map-now.jsonl
+task run:finops:analyze-changes
+```
+
+Flags: `--before FILE` (required), `--from-map FILE` or pipe for the current map output.
+
 ### `xops report table|csv|excel`
 
 Turns JSON Lines records into human-readable tables. One table per `kind`, in first-seen order;
