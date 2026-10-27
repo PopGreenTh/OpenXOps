@@ -15,8 +15,9 @@ Release 1 builds with plain `go build` (no CGO, no DuckDB).
    winget install Task.Task
    ```
 
-   Or `go install github.com/go-task/task/v3/cmd/task@latest` and add `%USERPROFILE%\go\bin` to
-   your user `PATH`. Confirm with `task --version` in a new window.
+   Or `go install github.com/go-task/task/v3/cmd/task@v3.40.1` (a version that builds with Go
+   1.22) and add `%USERPROFILE%\go\bin` to your user `PATH`. Confirm with `task --version` in a
+   new window.
 4. **VS Code.** https://code.visualstudio.com/download
 5. **Go extension.** Open VS Code → Extensions → install **Go** (`golang.go`). When it offers to
    install `gopls` and Delve (`dlv`), accept. That is the only debugger setup; nothing else is
@@ -37,7 +38,8 @@ task check
 - **Go:** https://go.dev/dl/ or your package manager (`brew install go`).
 - **Git:** already present on macOS; `sudo apt install git` on Debian/Ubuntu.
 - **Task:** https://taskfile.dev/installation/ — `brew install go-task` on macOS, or the
-  install script. `go install github.com/go-task/task/v3/cmd/task@latest` also works.
+  install script. `go install github.com/go-task/task/v3/cmd/task@v3.40.1` also works (pin; newer
+  Task releases may need a newer Go than 1.22).
 - **VS Code + Go extension + Delve:** same as Windows.
 
 Then `git clone` and `task check` as above.
