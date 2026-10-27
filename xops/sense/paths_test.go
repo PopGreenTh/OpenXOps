@@ -22,6 +22,24 @@ func TestPathsAmbiguousSiblingNames(t *testing.T) {
 	}
 }
 
+func TestPathsAmbiguousTwoDuplicateNames(t *testing.T) {
+	ous := []aws.OU{
+		{ID: "r-1", Name: "Root", ParentID: ""},
+		{ID: "ou-1", Name: "Workloads", ParentID: "r-1"},
+		{ID: "ou-a", Name: "Prod", ParentID: "ou-1"},
+		{ID: "ou-b", Name: "Prod", ParentID: "ou-1"},
+		{ID: "ou-c", Name: "Dev", ParentID: "ou-1"},
+		{ID: "ou-d", Name: "Dev", ParentID: "ou-1"},
+	}
+	_, findings := Paths(ous)
+	if len(findings) != 2 {
+		t.Fatalf("findings = %d", len(findings))
+	}
+	if findings[0]["subject"] != "/Workloads/Dev" || findings[1]["subject"] != "/Workloads/Prod" {
+		t.Fatalf("finding order = %v, %v", findings[0]["subject"], findings[1]["subject"])
+	}
+}
+
 func TestPathsIDPath(t *testing.T) {
 	ous := []aws.OU{
 		{ID: "r-1", Name: "Root", ParentID: ""},

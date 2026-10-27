@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"time"
 
@@ -27,6 +28,7 @@ func Retry(ctx context.Context, fn func() error) error {
 		if !retryable(err) {
 			return err
 		}
+		slog.Debug("aws call retry", slog.Int("attempt", attempt+1), slog.String("error", err.Error()))
 		jitter := time.Duration(rand.Int63n(int64(backoff / 2)))
 		timer := time.NewTimer(backoff + jitter)
 		select {

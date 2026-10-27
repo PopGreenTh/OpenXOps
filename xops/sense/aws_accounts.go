@@ -27,6 +27,12 @@ func awsAccountsCommand() *cobra.Command {
 			if ctx == nil {
 				ctx = context.Background()
 			}
+			record.LogStart("xops sense aws-accounts", map[string]string{"taxonomy": taxonomy}, map[string]string{
+				"mock":    fmt.Sprintf("%t", mock),
+				"profile": profile,
+				"region":  region,
+				"lz":      lz,
+			})
 			lzCode, err := resolveLZ(lz, taxonomy)
 			if err != nil {
 				return err

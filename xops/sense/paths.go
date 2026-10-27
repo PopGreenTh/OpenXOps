@@ -45,20 +45,26 @@ func Paths(ous []aws.OU) (map[string]ouView, []record.Record) {
 		for _, k := range kids {
 			names[k.Name]++
 		}
+		var dupNames []string
 		for name, n := range names {
 			if n > 1 {
-				subject := path
-				if path == "/" {
-					subject = "/" + name
-				} else {
-					subject = path + "/" + name
-				}
-				findings = append(findings, record.Finding(
-					"warning", "ou-path-ambiguous", subject,
-					fmt.Sprintf("%d organizational units named %q share parent %s", n, name, path),
-					"xops sense aws-accounts",
-				))
+				dupNames = append(dupNames, name)
 			}
+		}
+		sort.Strings(dupNames)
+		for _, name := range dupNames {
+			n := names[name]
+			subject := path
+			if path == "/" {
+				subject = "/" + name
+			} else {
+				subject = path + "/" + name
+			}
+			findings = append(findings, record.Finding(
+				"warning", "ou-path-ambiguous", subject,
+				fmt.Sprintf("%d organizational units named %q share parent %s", n, name, path),
+				"xops sense aws-accounts",
+			))
 		}
 		for _, k := range kids {
 			walk(k.ID)

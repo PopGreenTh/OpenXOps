@@ -1,6 +1,9 @@
 package aws
 
-import "context"
+import (
+	"context"
+	"log/slog"
+)
 
 // Snapshot is a flattened AWS Organization tree for record building.
 type Snapshot struct {
@@ -41,6 +44,7 @@ func DiscoverSnapshot(ctx context.Context, api OrgAPI, maxConcurrent int) (Snaps
 		maxConcurrent = 1
 	}
 	var orgID, mgmt string
+	slog.Debug("organizations call", slog.String("operation", "DescribeOrganization"))
 	if err := Retry(ctx, func() error {
 		var err error
 		orgID, mgmt, err = api.DescribeOrganization(ctx)
@@ -49,6 +53,7 @@ func DiscoverSnapshot(ctx context.Context, api OrgAPI, maxConcurrent int) (Snaps
 		return Snapshot{}, err
 	}
 	var roots []string
+	slog.Debug("organizations call", slog.String("operation", "ListRoots"))
 	if err := Retry(ctx, func() error {
 		var err error
 		roots, err = api.ListRoots(ctx)
@@ -68,6 +73,7 @@ func DiscoverSnapshot(ctx context.Context, api OrgAPI, maxConcurrent int) (Snaps
 			parentID := queue[0]
 			queue = queue[1:]
 			var ous []OU
+			slog.Debug("organizations call", slog.String("operation", "ListOrganizationalUnitsForParent"), slog.String("parent_id", parentID))
 			if err := Retry(ctx, func() error {
 				var err error
 				ous, err = api.ListOrganizationalUnitsForParent(ctx, parentID)
@@ -76,6 +82,7 @@ func DiscoverSnapshot(ctx context.Context, api OrgAPI, maxConcurrent int) (Snaps
 				return Snapshot{}, err
 			}
 			var accs []Account
+			slog.Debug("organizations call", slog.String("operation", "ListAccountsForParent"), slog.String("parent_id", parentID))
 			if err := Retry(ctx, func() error {
 				var err error
 				accs, err = api.ListAccountsForParent(ctx, parentID)
