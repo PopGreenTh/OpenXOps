@@ -24,7 +24,7 @@ Written by Claude only. Status values: see [README.md](README.md#status-values).
 | [WO-0104-A](DD-01-r1-finops-aws/WI-0104-Enrich-Map.md#wo-0104-a--taxonomy-validate-and-map) | Cursor (claimed in PR) | WO-0101-A | merged | [#7](https://github.com/PopGreenTh/OpenXOps/issues/7) | [#15](https://github.com/PopGreenTh/OpenXOps/pull/15) | `cursor/wo-0104-enrich-7589` | 2 |
 | [WO-0105-A](DD-01-r1-finops-aws/WI-0105-Enrich-Share.md#wo-0105-a--share-by-app-tag) | Cursor (claimed in PR) | WO-0104-A | merged | [#18](https://github.com/PopGreenTh/OpenXOps/issues/18) | [#23](https://github.com/PopGreenTh/OpenXOps/pull/23) | `cursor/wo-0105-share-7589` | 2 |
 | [WO-0106-A](DD-01-r1-finops-aws/WI-0106-Report.md#wo-0106-a--table-csv-excel-with-appending) | Cursor (claimed in PR) | WO-0101-A | merged | [#8](https://github.com/PopGreenTh/OpenXOps/issues/8) | [#14](https://github.com/PopGreenTh/OpenXOps/pull/14) | `cursor/wo-0106-report-7589` | 2 |
-| [WO-0107-A](DD-01-r1-finops-aws/WI-0107-Analyze-Changes.md#wo-0107-a--changes-between-two-map-outputs) | Cursor (claimed in PR) | WO-0104-A | approved | [#19](https://github.com/PopGreenTh/OpenXOps/issues/19) | [#24](https://github.com/PopGreenTh/OpenXOps/pull/24) | `cursor/wo-0107-changes-7589` | 2 |
+| [WO-0107-A](DD-01-r1-finops-aws/WI-0107-Analyze-Changes.md#wo-0107-a--changes-between-two-map-outputs) | Cursor (claimed in PR) | WO-0104-A | merged | [#19](https://github.com/PopGreenTh/OpenXOps/issues/19) | [#24](https://github.com/PopGreenTh/OpenXOps/pull/24) | `cursor/wo-0107-changes-7589` | 2 |
 
 WO-0101-A dispatched 2026-10-27 (#1); PR #3 reviewed 2026-10-27: changes requested, then approved once D-025 dropped the Windows and dev container checks; one CI change asked for D-026 (Windows job optional), done in `104d92c` and approved. `main` created from the plan branch on 2026-10-27. WO-0101-A merged 2026-10-27 through #2 (`c27018d`), whose branch carried #3; #3 closed. WO-0102-A (#6), WO-0104-A (#7) and WO-0106-A (#8) dispatched 2026-10-27 on the repo owner's go-ahead, to run in parallel. Before dispatch, `go.mod`/`go.sum` were added to WO-0102-A's and WO-0104-A's packages, WO-0104-A's *Done when* now reads the demo organization from its own fixture instead of waiting on WO-0102-A, and WO-0106-A's *Done when* follows D-026. PR #10 (WO-0102-A, Cursor) reviewed 2026-10-27: changes requested (live errors swallowed by a shadowed `err`, paging test missing, `aws/` over the 5-file limit, breakpoint not confirmed).
 
@@ -45,6 +45,8 @@ WO-0101-B (D-030 pipe rule and the review follow-ups) specified 2026-10-27, to b
 D-037 (schema check on every input) added to WO-0101-B 2026-10-27. Release 2's second round answered (D-038 to D-041); `DD-02` can now be written.
 
 WO-0105-A merged 2026-10-27 (#23, `c62476b`) after two review rounds and an addendum, with all 6 share reference cases passing. WO-0107-A (#24) approved on `77bd734`; it conflicts with `main` in the shared wiring files, and Cursor was asked to merge `main` in. WO-0103-A (#22) is at changes requested: one item left, the `cost-history-short` subject. Q-006 closed by D-042.
+
+WO-0107-A merged 2026-10-27 (#24, `6478dd5`) after two review rounds, once Cursor had merged `main` in (additions only in the wiring files). Release 1 now waits only on WO-0103-A (#22).
 
 WI-0107 Contracts clarified 2026-10-27 during PR #24's review: `environment` and `lz` changes are account changes, and an allocation's `cost_moved` counts only cost records with its own `app`.
 
