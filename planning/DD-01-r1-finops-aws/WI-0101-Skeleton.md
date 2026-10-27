@@ -167,7 +167,7 @@ notes left from the WO-0102-A, WO-0104-A and WO-0106-A reviews.
 
 ## Delivered (as built)
 
-Built by WO-0101-A (#3, landed through #2, `c27018d`) and WO-0101-B (#33, `9da24f3`, two review rounds).
+Built by WO-0101-A (#3, landed through #2, `c27018d`) and WO-0101-B (#33, `9da24f3`).
 
 - `xops/` and `finops/` binaries, each with `version`. `record/` holds the reader, writer,
   `PassThrough`, `LogStart`, the `--from-<kind>` flags and `Assemble`. `record/schema/` holds
