@@ -72,7 +72,7 @@ func appendSheet(f *excelize.File, kind string, recs []record.Record) error {
 	}
 	startRow := 1
 	if exists {
-		last, err := lastNonEmptyRow(f, sheet)
+		last, err := sheetLastRow(f, sheet)
 		if err != nil {
 			return err
 		}
@@ -98,27 +98,20 @@ func appendSheet(f *excelize.File, kind string, recs []record.Record) error {
 	return nil
 }
 
-func lastNonEmptyRow(f *excelize.File, sheet string) (int, error) {
-	rows, err := f.GetRows(sheet)
+func sheetLastRow(f *excelize.File, sheet string) (int, error) {
+	rows, err := f.Rows(sheet)
 	if err != nil {
 		return 0, err
 	}
+	defer func() { _ = rows.Close() }()
 	last := 0
-	for i, row := range rows {
-		if rowHasContent(row) {
-			last = i + 1
-		}
+	for rows.Next() {
+		last++
+	}
+	if err := rows.Error(); err != nil {
+		return 0, err
 	}
 	return last, nil
-}
-
-func rowHasContent(row []string) bool {
-	for _, c := range row {
-		if strings.TrimSpace(c) != "" {
-			return true
-		}
-	}
-	return false
 }
 
 func readExcelHeader(f *excelize.File, sheet string) ([]string, error) {

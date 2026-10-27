@@ -57,12 +57,47 @@ func TestTwoFlagsSameKindError(t *testing.T) {
 	_, err := Assemble(nil, []From{
 		{Name: "a", Kinds: []string{"cost"}, File: "testdata/from-cost.jsonl"},
 		{Name: "b", Kinds: []string{"cost"}, File: "testdata/from-cost.jsonl"},
-	}, []string{})
+	})
 	if err == nil {
 		t.Fatal("expected conflict between flags")
 	}
 	if !strings.Contains(err.Error(), `"cost"`) {
 		t.Fatalf("error should name the kind: %v", err)
+	}
+}
+
+func TestPipePlusFlagSameKindError(t *testing.T) {
+	stdin := strings.NewReader(`{"kind":"cost","id":"pipe","csp":"aws","management_account":"111111111111","granularity":"monthly","period":"2026-09","metric":"UnblendedCost","amount":1,"currency":"USD","estimated":false,"account_id":"200000000001","service":"AmazonEC2","app_tag":""}` + "\n")
+	_, err := Assemble(stdin, []From{
+		{Name: "pipe", Kinds: []string{"cost"}, File: "-"},
+		{Name: "file", Kinds: []string{"cost"}, File: "testdata/from-cost.jsonl"},
+	})
+	if err == nil {
+		t.Fatal("expected conflict between stdin and file")
+	}
+	if !strings.Contains(err.Error(), `"cost"`) {
+		t.Fatalf("error should name the kind: %v", err)
+	}
+	if !strings.Contains(err.Error(), "stdin") && !strings.Contains(err.Error(), "--from-") {
+		t.Fatalf("error should name both inputs: %v", err)
+	}
+}
+
+func TestAssembleFileKeepsUndeclaredKinds(t *testing.T) {
+	recs, err := Assemble(nil, []From{
+		{Name: "accounts", Kinds: []string{"ou", "account"}, File: "testdata/mixed.jsonl"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var costCount int
+	for _, r := range recs {
+		if r.Kind() == "cost" {
+			costCount++
+		}
+	}
+	if costCount != 2 {
+		t.Fatalf("want 2 cost records pass-through from file, got %d in %v", costCount, kindsOf(recs))
 	}
 }
 
@@ -79,7 +114,7 @@ func TestAssembleIgnoresOpenPipeWhenOnlyFileFlags(t *testing.T) {
 			Name:  "cost",
 			Kinds: []string{"cost"},
 			File:  "testdata/from-cost.jsonl",
-		}}, []string{})
+		}})
 		done <- err
 	}()
 	select {
@@ -93,24 +128,30 @@ func TestAssembleIgnoresOpenPipeWhenOnlyFileFlags(t *testing.T) {
 }
 
 func TestAssembleMixFileAndStdinFlag(t *testing.T) {
-	stdin := strings.NewReader("{\"kind\":\"cost\",\"id\":\"pipe-cost\",\"amount\":1}\n")
+	stdin := strings.NewReader(`{"kind":"cost","id":"pipe-cost","csp":"aws","management_account":"111111111111","granularity":"monthly","period":"2026-09","metric":"UnblendedCost","amount":1,"currency":"USD","estimated":false,"account_id":"200000000001","service":"AmazonEC2","app_tag":""}` + "\n")
 	recs, err := Assemble(stdin, []From{
 		{Name: "accounts", Kinds: []string{"ou", "account"}, File: "testdata/mixed.jsonl"},
 		{Name: "cost", Kinds: []string{"cost"}, File: "-"},
-	}, []string{})
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	var hasAccount, hasPipeCost bool
+	var fileCosts int
 	for _, r := range recs {
 		if r.Kind() == "account" {
 			hasAccount = true
 		}
-		if r.Kind() == "cost" && r["id"] == "pipe-cost" {
-			hasPipeCost = true
+		if r.Kind() == "cost" {
+			if r["id"] == "pipe-cost" {
+				hasPipeCost = true
+			}
+			if r["id"] == "c1" || r["id"] == "c2" {
+				fileCosts++
+			}
 		}
 	}
-	if !hasAccount || !hasPipeCost {
+	if !hasAccount || !hasPipeCost || fileCosts != 2 {
 		t.Fatalf("got %v", recs)
 	}
 }
@@ -121,7 +162,7 @@ func TestMixedPipeSortedByKind(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer f.Close()
-	recs, err := Assemble(f, nil, []string{})
+	recs, err := Assemble(f, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,7 +210,7 @@ func TestAssembleFlagOnly(t *testing.T) {
 		Name:  "cost",
 		Kinds: []string{"cost"},
 		File:  "testdata/from-cost.jsonl",
-	}}, []string{})
+	}})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -116,50 +116,39 @@ func TestAppendTwiceExcel(t *testing.T) {
 	}
 }
 
-func TestExcelAppendAfterEmptyDataRow(t *testing.T) {
+func TestExcelAppendAfterAllEmptyRecord(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "out.xlsx")
-	f := excelize.NewFile()
-	const sheet = "alpha"
-	if _, err := f.NewSheet(sheet); err != nil {
-		t.Fatal(err)
+	first := []record.Record{
+		{"kind": "alpha", "name": "first", "score": 1.0},
+		{"kind": "alpha", "name": "", "score": nil},
 	}
-	if def, _ := f.GetSheetIndex("Sheet1"); def != -1 {
-		_ = f.DeleteSheet("Sheet1")
-	}
-	if err := f.SetCellValue(sheet, "A1", "name"); err != nil {
-		t.Fatal(err)
-	}
-	if err := f.SetCellValue(sheet, "B1", "score"); err != nil {
-		t.Fatal(err)
-	}
-	if err := f.SetCellValue(sheet, "A2", "first"); err != nil {
-		t.Fatal(err)
-	}
-	if err := f.SetCellValue(sheet, "A3", " "); err != nil {
-		t.Fatal(err)
-	}
-	if err := f.SaveAs(path); err != nil {
-		t.Fatal(err)
-	}
-	recs := []record.Record{{"kind": "alpha", "name": "appended", "score": 9.0}}
-	tables, err := report.Group(recs, nil, false)
+	tables, err := report.Group(first, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := report.WriteExcel(path, tables, recs); err != nil {
+	if err := report.WriteExcel(path, tables, first); err != nil {
 		t.Fatal(err)
 	}
-	f2, err := excelize.OpenFile(path)
+	second := []record.Record{{"kind": "alpha", "name": "second", "score": 2.0}}
+	tables, err = report.Group(second, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f2.Close()
-	val, err := f2.GetCellValue(sheet, "A3")
+	if err := report.WriteExcel(path, tables, second); err != nil {
+		t.Fatal(err)
+	}
+	f, err := excelize.OpenFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if val != "appended" {
-		t.Fatalf("row 3 name = %q, want appended (skipped blank row above)", val)
+	defer f.Close()
+	row2Name, _ := f.GetCellValue("alpha", "A3")
+	if row2Name != "" {
+		t.Fatalf("row 3 name = %q, want empty (blank append row preserved)", row2Name)
+	}
+	row3Name, _ := f.GetCellValue("alpha", "A4")
+	if row3Name != "second" {
+		t.Fatalf("row 4 name = %q, want second", row3Name)
 	}
 }
 

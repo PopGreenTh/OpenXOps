@@ -10,7 +10,7 @@ import (
 
 // From is one --from-<name> input: the kinds it supplies and the file path.
 type From struct {
-	// Name is the flag suffix, e.g. "cost" for --from-cost.
+	// Name is the flag suffix, e.g. "cost" for --from-cost".
 	Name string
 	// Kinds are the record kinds this flag is declared to read.
 	Kinds []string
@@ -41,37 +41,26 @@ func IsPipe(f *os.File) bool {
 	return fi.Mode()&os.ModeCharDevice == 0
 }
 
-// CheckKindsFrom returns the set of kinds to validate from explicit kinds or from --from-* declarations.
-// A non-nil empty validateKinds skips schema checks (used in assembly tests with minimal fixtures).
-func CheckKindsFrom(froms []From, validateKinds []string) map[string]struct{} {
-	if validateKinds != nil && len(validateKinds) == 0 {
-		return nil
-	}
-	if len(validateKinds) > 0 {
-		return kindSet(validateKinds)
-	}
+// CheckKindsFrom returns the set of kinds to validate from --from-* declarations.
+func CheckKindsFrom(froms []From) map[string]struct{} {
 	out := map[string]struct{}{}
 	for _, f := range froms {
 		for _, k := range f.Kinds {
 			out[k] = struct{}{}
 		}
 	}
-	return out
-}
-
-func kindSet(kinds []string) map[string]struct{} {
-	out := map[string]struct{}{}
-	for _, k := range kinds {
-		out[k] = struct{}{}
+	if len(out) == 0 {
+		return nil
 	}
 	return out
 }
 
 // Assemble reads inputs per D-030: stdin only when no --from-* flag is set, or when a flag's
 // FILE is "-". Commands that pass only file paths never read stdin, even if it is an open pipe.
-// validateKinds limits schema checks; when nil, every kind declared on froms is checked.
-func Assemble(stdin io.Reader, froms []From, validateKinds []string) ([]Record, error) {
-	checkKinds := CheckKindsFrom(froms, validateKinds)
+// Every record from each file or stdin is kept; schema checks and kind conflicts apply only to
+// kinds declared on the flags. The same path is read once when two flags share it.
+func Assemble(stdin io.Reader, froms []From) ([]Record, error) {
+	checkKinds := CheckKindsFrom(froms)
 	var active []From
 	for _, f := range froms {
 		if strings.TrimSpace(f.File) != "" {
@@ -117,42 +106,57 @@ func Assemble(stdin io.Reader, froms []From, validateKinds []string) ([]Record, 
 	}
 
 	kindFrom := map[string]string{}
+	fileCache := map[string][]Record{}
+	appendedFile := map[string]struct{}{}
+	stdinAppended := false
 	var out []Record
 
 	for _, f := range active {
 		flagName := "--from-" + f.Name
 		var recs []Record
-		if f.File == "-" {
-			for _, r := range stdinRecs {
-				if kindDeclared(r.Kind(), f.Kinds) {
-					recs = append(recs, r)
+		var err error
+		switch f.File {
+		case "-":
+			recs = stdinRecs
+		default:
+			if cached, ok := fileCache[f.File]; ok {
+				recs = cached
+			} else {
+				recs, err = ReadFile(f.File, checkKinds)
+				if err != nil {
+					return nil, err
 				}
-			}
-		} else {
-			var err error
-			allRecs, err := ReadFile(f.File, checkKinds)
-			if err != nil {
-				return nil, err
-			}
-			for _, r := range allRecs {
-				if kindDeclared(r.Kind(), f.Kinds) {
-					recs = append(recs, r)
-				}
+				fileCache[f.File] = recs
 			}
 		}
-		seen := map[string]struct{}{}
+
 		for _, r := range recs {
 			k := r.Kind()
-			if _, ok := seen[k]; ok {
+			if !kindDeclared(k, f.Kinds) {
 				continue
 			}
-			seen[k] = struct{}{}
 			if prev, ok := kindFrom[k]; ok {
+				if prev == flagName {
+					continue
+				}
 				return nil, &ConflictError{Kind: k, Pipe: prev, Flag: flagName}
 			}
 			kindFrom[k] = flagName
 		}
-		out = append(out, recs...)
+
+		switch f.File {
+		case "-":
+			if !stdinAppended {
+				out = append(out, recs...)
+				stdinAppended = true
+			}
+		default:
+			if _, ok := appendedFile[f.File]; ok {
+				continue
+			}
+			appendedFile[f.File] = struct{}{}
+			out = append(out, recs...)
+		}
 	}
 	return out, nil
 }
