@@ -118,7 +118,7 @@ included. No `cmd/` or `internal/`.
 
 ## Q-001
 
-**Open: what the first release needs** (planner, 2026-10-27).
+**Open: what the first release needs** (planner, 2026-10-27). See also [Q-002](#q-002).
 
 1. FOCUS: is D-008's reading right — `aws-focus` reads the export from S3, `focus-cost` turns any
    FOCUS file into `cost` records? Is `focus-cost` shared (`xops`), since FOCUS is the same for
@@ -132,3 +132,33 @@ included. No `cmd/` or `internal/`.
    file overriding floor and factor per node?
 5. First release scope: all of Sense, Enrich, Analyze, Enforce and Report for FinOps on AWS, or a
    smaller first slice (for example Sense and Enrich only)?
+
+## D-013
+
+**Developers can run, debug and change any command on its own** (repo owner, 2026-10-27; the
+details are the planner's, Q-002 confirms them).
+
+- **Every command runs alone from files.** With `--from-<kind> FILE` and `--mock`, any command
+  can be started in a debugger with no pipe and no cloud access.
+- **Stage logic is plain functions**: records in, records out, no I/O, no globals. The command
+  code only reads flags and files and calls them. A breakpoint in the logic needs no AWS and no
+  CLI setup.
+- **Ready-made debug setups**: `.vscode/launch.json` has one entry per command, fed by the
+  package's `testdata/` fixtures, with the right build tags, so Delve works on Windows, macOS and
+  Linux.
+- **Logs go to stderr, data to stdout.** `--log-level debug|info|warn|error` (default `warn`,
+  Go `log/slog`) on every command; at `debug` each command logs its inputs, its major parameters
+  and every cloud or cache call. Errors name the file and line number of the record that failed.
+- **One task runner** for the common steps (build, test, run a command on the mock, debug), and
+  `docs/develop.md`: how to build, run, debug, add a command, and add a reference case.
+- **Plain Go**: no code generation, no reflection-driven frameworks, no hidden init order. Small
+  files; a package has at most 5 non-test `.go` files.
+
+## Q-002
+
+**Open: developer setup** (planner, 2026-10-27). Blocks WI-0101.
+
+1. Editor: VS Code (with `launch.json`), GoLand, or both?
+2. Your OS for development: Windows, macOS or Linux? (Decides how the DuckDB/CGO build is set up.)
+3. Task runner: `Taskfile.yml` (Task, as OpenLZ v1 used), a `Makefile`, or plain `go run ./scripts/...`?
+4. A dev container (Docker, with Go, DuckDB and the AWS CLI ready), or local installs only?

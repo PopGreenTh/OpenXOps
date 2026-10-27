@@ -25,7 +25,7 @@ finops enforce unmapped untagged impact --from-cost shared.jsonl --from-impact i
 
 | Work Item | Capability |
 |---|---|
-| WI-0101 | Skeleton: `xops` and `finops` binaries, `record/`, `scripts/check`, CI, mock data |
+| WI-0101 | Skeleton: `xops` and `finops` binaries, `record/`, `scripts/check`, CI, mock data; developer setup (D-013): debug configs, logging, task runner, `docs/develop.md` |
 | WI-0102 | `xops sense aws-accounts` |
 | WI-0103 | `finops sense aws-cost` (two-level Cost Explorer, cache) |
 | WI-0104 | `finops sense aws-focus` and `focus-cost` |

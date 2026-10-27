@@ -98,6 +98,11 @@ something; it writes or amends the Work Order instead. It also:
 - **Every cloud call** goes through its provider folder's retry wrapper; **every Cost Explorer
   call** goes through the cache, because each call costs $0.01.
 - **Offline first.** Every command that calls a cloud has `--mock`, fed by deterministic fixtures.
+- **Debuggable** (D-013). Stage logic is plain functions (records in, records out, no I/O);
+  commands only wire flags and files to them. Every command runs alone from `--from-<kind>`
+  files and `--mock`, has a `.vscode/launch.json` entry, and logs to stderr with
+  `--log-level`, never to stdout. Errors name the file and record line. No code generation or
+  reflection-driven frameworks; at most 5 non-test `.go` files per package.
 - Wrap errors with `%w`. Bound concurrency (5 workers by default), never unbounded goroutines.
 - `gofmt` clean. Tests table-driven where it fits. Exported identifiers documented.
 - A source change updates the README or the command help in the same PR.
