@@ -80,8 +80,8 @@ kinds, so every stage after Sense works for any cloud.
   `UnblendedCost`, daily to `AmortizedCost`; `--metric` overrides.
 - **FOCUS** for everything Cost Explorer can't give in those two calls (region, `Feature` and
   other tags): `finops sense aws-focus` reads AWS's FOCUS export, and `finops sense focus-cost`
-  turns FOCUS rows into the same `cost` records that `map` and later stages read. *Planner's
-  reading* of "aws-focus and focus-cost"; Q-001 item 1 confirms it.
+  turns FOCUS rows into the same `cost` records that `map` and later stages read. Confirmed by
+  D-014.
 - `Feature` comes from a resource tag, like `App` and `Project`.
 
 ## D-009
@@ -118,7 +118,7 @@ included. No `cmd/` or `internal/`.
 
 ## Q-001
 
-**Open: what the first release needs** (planner, 2026-10-27). See also [Q-002](#q-002).
+**Closed** by [D-014](#d-014) to [D-018](#d-018). What the first release needs.
 
 1. FOCUS: is D-008's reading right — `aws-focus` reads the export from S3, `focus-cost` turns any
    FOCUS file into `cost` records? Is `focus-cost` shared (`xops`), since FOCUS is the same for
@@ -162,3 +162,79 @@ details are the planner's, Q-002 confirms them).
 2. Your OS for development: Windows, macOS or Linux? (Decides how the DuckDB/CGO build is set up.)
 3. Task runner: `Taskfile.yml` (Task, as OpenLZ v1 used), a `Makefile`, or plain `go run ./scripts/...`?
 4. A dev container (Docker, with Go, DuckDB and the AWS CLI ready), or local installs only?
+
+## D-014
+
+**`focus-cost` is shared** (repo owner, 2026-10-27; Q-001 item 1). `finops sense aws-focus` reads
+AWS's FOCUS export from S3; `xops sense focus-cost` turns any FOCUS file, from any cloud, into
+`cost` records. FOCUS is the same for every cloud, so the command sits in `xops`.
+
+## D-015
+
+**Account mapping rules** (repo owner, 2026-10-27; Q-001 item 2: keep the rules worked out
+before). Stated here in full; nothing refers back to OpenLZ.
+
+- **Landing zone.** An organization's LZ is the taxonomy LZ whose management account matches.
+  None → `LZ-UNALLOC`, and all its accounts are `UNALLOC`.
+- **OU links.** An OU is named by ID (`ou-…`) or by name path (`/Workloads/Checkout`; a value
+  starting with `/` is a path). A link may set an App (only on an OU that has child OUs) and an
+  Environment (any OU). Links are inherited down the tree; the deepest OU that says something
+  wins. The OU tree is never flattened.
+- **App**, first answer wins: the account's own entry › the deepest OU with an App link › the
+  LZ default › the global default › `APP-UNALLOC` (Project `PRJ-UNALLOC`).
+- **Environment**, resolved separately in the same order; nothing found → `ENV-UNSPEC` if the
+  App resolved, `ENV-UNALLOC` if not. An Environment must be defined under the App it is used
+  with, else `ENV-UNSPEC`.
+- **One Environment per account; an account may serve several Apps** (only through its own
+  entry). Such an account is **shared**: its cost is split by `share` (D-016).
+- Project = the App's Project; BusinessUnit = the Project's; CostCenter = the App's.
+- Every decision records the rule that made it (`account`, `ou:<path>`, `lz-default`,
+  `default`, `unalloc`), and every miss raises a finding saying why.
+
+## D-016
+
+**Share rules** (repo owner, 2026-10-27; Q-001 item 3).
+
+- Only a **shared** account's cost is split; a single-App account's cost goes whole to its App,
+  whatever its tags.
+- The `App` tag value is matched to the account's App codes ignoring case and surrounding
+  spaces (`app-chk` = `APP-CHK`).
+- **Several Apps in one tag:** a value may list Apps separated by `,` or `__`
+  (`APP-A,APP-B`, `APP-A__APP-B`). The row is split equally between the listed values, and each
+  value is then judged on its own as below. *Planner's reading* of the equal split; Q-003 item 1
+  confirms it.
+- A value matching one of the account's Apps → that App. **Untagged** → split equally between
+  all the account's Apps, with finding `shared-untagged`. A value naming a real App the account
+  doesn't serve → `APP-INVALID` (finding `shared-tag-wrong-app`); naming no App at all →
+  `APP-INVALID` (finding `shared-tag-unknown`).
+- In every equal split the Apps are ordered by code and the last takes the remainder, so the
+  parts add back up exactly. Total cost in equals total cost out for every period, metric and
+  currency, or the command fails.
+
+## D-017
+
+**Impact levels** (repo owner, 2026-10-27; Q-001 item 4). Baseline = average of the 3 periods
+before; factor = amount ÷ baseline. A movement counts only when it is at least the **floor**
+above the baseline (default 30). Four levels: factor ≥ 2, ≥ 4, ≥ 8, ≥ 16. The floor-factor file
+overrides floor and factor per hierarchy node, the most specific node winning.
+
+## D-018
+
+**Release 1 is a smaller first slice** (repo owner, 2026-10-27; Q-001 item 5). *Planner's
+proposal*, Q-003 item 2 confirms it:
+
+- **Release 1:** the skeleton and developer setup, `xops sense aws-accounts`,
+  `finops sense aws-cost`, `finops enrich map`, `finops enrich share`, `xops report`.
+  Result: AWS cost owned by Project › App › Environment, in Excel.
+- **Release 2:** FOCUS (`aws-focus`, `focus-cost`), Analyze (`trend`, `changes`, `impact`),
+  Enforce, history and `--as-reported`.
+
+## Q-003
+
+**Open: confirm the split and the slice** (planner, 2026-10-27). Blocks WI-0105 (item 1) and
+the Release 1 Work Items (item 2).
+
+1. A tag `APP-A,APP-B` splits the row equally (half each), each half then judged alone, so
+   `APP-A,APP-WRONG` gives half to APP-A and half to `APP-INVALID`. Right?
+2. Release 1 = skeleton, `aws-accounts`, `aws-cost`, `map`, `share`, `report`; Release 2 =
+   FOCUS, Analyze, Enforce, history. Right?
