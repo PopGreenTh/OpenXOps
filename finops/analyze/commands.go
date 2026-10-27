@@ -8,8 +8,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var mapFrom = &record.From{Name: "map", Kinds: []string{"account", "allocation", "cost"}}
-
 // Commands returns Analyze-stage commands for finops.
 func Commands() []*cobra.Command {
 	analyze := &cobra.Command{
@@ -22,6 +20,7 @@ func Commands() []*cobra.Command {
 
 func changesCommand() *cobra.Command {
 	var before string
+	mapFrom := &record.From{Name: "map", Kinds: []string{"account", "allocation", "cost"}}
 	cmd := &cobra.Command{
 		Use:   "changes",
 		Short: "Compare two map outputs",

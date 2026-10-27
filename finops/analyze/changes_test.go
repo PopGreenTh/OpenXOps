@@ -92,6 +92,23 @@ func TestChangesTwoCurrencies(t *testing.T) {
 	}
 }
 
+func TestChangesWithoutCost(t *testing.T) {
+	before := []record.Record{
+		{"kind": "allocation", "account_id": "1", "app": "A", "environment": "E1", "project": "P"},
+	}
+	now := []record.Record{
+		{"kind": "allocation", "account_id": "1", "app": "A", "environment": "E2", "project": "P"},
+	}
+	ch := CompareChanges(before, now)
+	if len(ch) != 1 {
+		t.Fatalf("changes = %v", ch)
+	}
+	c := ch[0]
+	if c["cost_moved"] != nil || c["currency"] != "" || c["period_from"] != "" || c["period_to"] != "" {
+		t.Fatalf("expected empty cost fields, got %v", c)
+	}
+}
+
 func TestChangesDemoEnvironmentRemapped(t *testing.T) {
 	accounts, err := record.ReadFile(filepath.Join("..", "enrich", "testdata", "demo-accounts.jsonl"))
 	if err != nil {
@@ -123,8 +140,8 @@ func TestChangesDemoEnvironmentRemapped(t *testing.T) {
 		t.Fatalf("remapped environment changes = %d, all changes: %v", len(remapped), ch)
 	}
 	c := remapped[0]
-	if c["subject"] != "200000000001/APP-CHK" {
-		t.Fatalf("subject = %v", c["subject"])
+	if c["subject_type"] != "account" || c["subject"] != "200000000001" {
+		t.Fatalf("subject = %v / %v", c["subject_type"], c["subject"])
 	}
 	if c["old"] != "ENV-PROD" || c["new"] != "ENV-NONPROD" {
 		t.Fatalf("old/new = %v / %v", c["old"], c["new"])

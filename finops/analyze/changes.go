@@ -91,30 +91,43 @@ func CompareChanges(before, now []record.Record) []record.Record {
 		for _, app := range bList {
 			if !nA[app] {
 				subject := acct + "/" + app
-				pf, pt := periodRange(b.costs, acct)
-				appendChanges(&changes, "allocation", subject, "removed", "", app, "", costMoved(b.costs, acct), pf, pt)
+				pf, pt := periodRangeForApp(b.costs, acct, app)
+				appendChanges(&changes, "allocation", subject, "removed", "", app, "", costMovedForApp(b.costs, acct, app), pf, pt)
 			}
 		}
 		for _, app := range nList {
 			if !bA[app] {
 				subject := acct + "/" + app
-				pf, pt := periodRange(n.costs, acct)
-				appendChanges(&changes, "allocation", subject, "added", "", "", app, costMoved(n.costs, acct), pf, pt)
+				pf, pt := periodRangeForApp(n.costs, acct, app)
+				appendChanges(&changes, "allocation", subject, "added", "", "", app, costMovedForApp(n.costs, acct, app), pf, pt)
 			}
 		}
 	}
 
-	remapFields := []string{"app", "environment", "project", "business_unit", "cost_center", "lz"}
+	for _, id := range accountsWithAllocations(b, n) {
+		ba, bOK := repAllocation(b, id)
+		na, nOK := repAllocation(n, id)
+		if !bOK || !nOK {
+			continue
+		}
+		for _, f := range []string{"environment", "lz"} {
+			if strID(ba[f]) != strID(na[f]) {
+				pf, pt := periodRange(n.costs, id)
+				appendChanges(&changes, "account", id, "remapped", f, strID(ba[f]), strID(na[f]), costMoved(n.costs, id), pf, pt)
+			}
+		}
+	}
+
 	for k, na := range n.allocations {
 		ba, ok := b.allocations[k]
 		if !ok {
 			continue
 		}
-		for _, f := range remapFields {
+		for _, f := range []string{"project", "business_unit", "cost_center"} {
 			if strID(ba[f]) != strID(na[f]) {
 				subject := k.account + "/" + k.app
-				pf, pt := periodRange(n.costs, k.account)
-				appendChanges(&changes, "allocation", subject, "remapped", f, strID(ba[f]), strID(na[f]), costMoved(n.costs, k.account), pf, pt)
+				pf, pt := periodRangeForApp(n.costs, k.account, k.app)
+				appendChanges(&changes, "allocation", subject, "remapped", f, strID(ba[f]), strID(na[f]), costMovedForApp(n.costs, k.account, k.app), pf, pt)
 			}
 		}
 	}
@@ -182,10 +195,47 @@ func sortedCurrencyKeys(moved map[string]float64) []string {
 	return out
 }
 
+func accountsWithAllocations(b, n snap) []string {
+	set := map[string]struct{}{}
+	for k := range n.allocations {
+		if _, ok := b.allocations[k]; !ok {
+			continue
+		}
+		set[k.account] = struct{}{}
+	}
+	out := make([]string, 0, len(set))
+	for id := range set {
+		out = append(out, id)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func repAllocation(s snap, accountID string) (record.Record, bool) {
+	var apps []string
+	for k := range s.allocations {
+		if k.account == accountID {
+			apps = append(apps, k.app)
+		}
+	}
+	if len(apps) == 0 {
+		return nil, false
+	}
+	sort.Strings(apps)
+	return s.allocations[allocKey{accountID, apps[0]}], true
+}
+
 func costMoved(costs []record.Record, accountID string) map[string]float64 {
+	return costMovedForApp(costs, accountID, "")
+}
+
+func costMovedForApp(costs []record.Record, accountID, app string) map[string]float64 {
 	out := map[string]float64{}
 	for _, c := range costs {
 		if strID(c["account_id"]) != accountID {
+			continue
+		}
+		if app != "" && strID(c["app"]) != app {
 			continue
 		}
 		cur := strID(c["currency"])
@@ -195,18 +245,26 @@ func costMoved(costs []record.Record, accountID string) map[string]float64 {
 	return out
 }
 
-func periodRange(costs []record.Record, accountID string) (string, string) {
+func periodRangeForApp(costs []record.Record, accountID, app string) (string, string) {
 	var periods []string
 	for _, c := range costs {
-		if strID(c["account_id"]) == accountID {
-			periods = append(periods, strID(c["period"]))
+		if strID(c["account_id"]) != accountID {
+			continue
 		}
+		if app != "" && strID(c["app"]) != app {
+			continue
+		}
+		periods = append(periods, strID(c["period"]))
 	}
 	if len(periods) == 0 {
 		return "", ""
 	}
 	sort.Strings(periods)
 	return periods[0], periods[len(periods)-1]
+}
+
+func periodRange(costs []record.Record, accountID string) (string, string) {
+	return periodRangeForApp(costs, accountID, "")
 }
 
 func sortedKeys(m map[string]record.Record) []string {
