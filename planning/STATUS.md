@@ -7,6 +7,7 @@ Written by Claude only. Status values: see [README.md](README.md#status-values).
 | Question | Blocks | State |
 |---|---|---|
 | [Q-001](DECISIONS.md#q-001): FOCUS, mapping rules, share rules, impact levels, first release scope | — | closed by D-014 to D-018 |
+| [Q-004](DECISIONS.md#q-004): licence (BSL 1.1 parameters), CLA timing | public release | open |
 | [Q-003](DECISIONS.md#q-003): multi-App tag split, Release 1 slice | — | closed by D-021 |
 | [Q-002](DECISIONS.md#q-002): editor, OS, task runner, dev container | — | closed by D-019, D-020 |
 
@@ -22,4 +23,4 @@ Written by Claude only. Status values: see [README.md](README.md#status-values).
 | [WO-0106-A](DD-01-r1-finops-aws/WI-0106-Report.md#wo-0106-a--table-csv-excel-with-appending) | open | WO-0101-A | not started | — | — | — | 0 |
 | [WO-0107-A](DD-01-r1-finops-aws/WI-0107-Analyze-Changes.md#wo-0107-a--changes-between-two-map-outputs) | open | WO-0104-A | not started | — | — | — | 0 |
 
-WO-0101-A dispatched 2026-10-27 (#1). The plan branch is being renamed to `main` by the repo owner.
+WO-0101-A dispatched 2026-10-27 (#1). `main` created from the plan branch on 2026-10-27.

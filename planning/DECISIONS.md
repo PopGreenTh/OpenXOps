@@ -7,7 +7,8 @@ agreed by the repo owner on 2026-10-27, in the session that closed OpenLZ.
 
 **OpenXOps is a fresh start.**
 
-- A standalone, single-tenant tool for cloud operations, open source.
+- A standalone, single-tenant tool for cloud operations, open source (changed to
+  source-available by D-023).
 - Nothing is carried over from OpenLZ: no code, no plans, no reference cases. OpenLZ is archived
   and read for intent only.
 - Go, embedded storage only (DuckDB allowed), no database servers.
@@ -274,3 +275,25 @@ Q-003).
 the Cost Explorer cache is JSON files under `data/cache/`. DuckDB, its CGO toolchain and the
 `no_duckdb_arrow` tag arrive with FOCUS in Release 2, so Release 1 builds with plain `go build`
 on Windows.
+
+## D-023
+
+**Free to use for every organization, closed to resale; the repo owner keeps the right to sell**
+(repo owner, 2026-10-27).
+
+- Anyone may contribute. Any person or company may use OpenXOps free of charge for their own
+  organization's clouds.
+- Nobody may sell OpenXOps, or offer it or a product built from it as a paid product or hosted
+  service, without the repo owner's permission.
+- The repo owner keeps the right to sell it in future (a hosted version, commercial licences),
+  so outside contributions will need a contributor licence agreement (CLA) before the first
+  one is merged.
+- This makes OpenXOps **source-available**, not open source in the OSI sense; it supersedes
+  D-001's "open source". The licence text (proposed: Business Source License 1.1 with an
+  Additional Use Grant) is Q-004.
+
+## Q-004
+
+**Open: the licence** (planner, 2026-10-27). BSL 1.1 parameters: Licensor, Additional Use Grant
+wording, Change Date (years until each version becomes open source), Change License (Apache 2.0
+or another); and when the CLA is set up.
