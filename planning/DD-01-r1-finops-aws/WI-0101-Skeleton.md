@@ -68,8 +68,9 @@ calls plain functions that take and return records (D-013).
 - **`.devcontainer/`**: Go, Task, AWS CLI v2, Delve; `task check` passes inside it.
 - **`docs/develop.md`**: install on Windows (first), Linux, macOS; build; run a command alone
   from files; debug in VS Code; add a command; add a reference case; the log levels.
-- **CI** (`.github/workflows/check.yml`): `go run ./scripts/check` on `windows-latest` and
-  `ubuntu-latest`, for every push and PR.
+- **CI** (`.github/workflows/check.yml`): `go run ./scripts/check` on `ubuntu-latest`
+  (required) and on `windows-latest` (optional: `continue-on-error: true`, job name ending
+  `optional`), for every push and PR (D-026).
 - **`scripts/check`**: build, `go vet`, `gofmt -l` (fails on any file listed), `go test ./...`;
   one PASS/FAIL line per step; non-zero exit on any failure.
 
@@ -97,7 +98,8 @@ calls plain functions that take and return records (D-013).
 (the repo owner adds it).
 
 **Done when.**
-- `task check` and `go run ./scripts/check` pass on Windows and Linux (CI green on both).
+- `task check` and `go run ./scripts/check` pass on Linux (CI's Linux job green); the Windows
+  job is marked optional (D-026).
 - `task build` produces `xops` and `finops`; each prints its version.
 - The `record/` tests above pass.
 - `docs/develop.md` lets a new developer go from a clean Linux machine to a breakpoint in a

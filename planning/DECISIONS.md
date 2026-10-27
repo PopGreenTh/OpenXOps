@@ -325,3 +325,12 @@ or another); and when the CLA is set up.
   files may stay as an unverified extra.
 - VS Code debug entries, Task and `docs/develop.md` stay (D-013, D-019); `docs/develop.md`
   covers Linux first.
+
+## D-026
+
+**The Windows CI job is optional** (repo owner, 2026-10-27; makes D-025 explicit in CI).
+
+- CI runs `scripts/check` on `ubuntu-latest` (required) and on `windows-latest` (optional): the
+  Windows job is marked `continue-on-error: true` and named `check (windows-latest, optional)`,
+  so a Windows failure shows as a warning and never blocks a PR.
+- If branch protection lists required checks, only the Linux job is required.
