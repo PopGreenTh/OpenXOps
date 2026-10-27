@@ -395,3 +395,31 @@ repo owner's text was adjusted to fit the existing rules:
 - **Confirmed by the repo owner (2026-10-27):** the stand-in never reviews its own PR.
   *Planner's defaults, still to confirm:* a stand-in starts on the owner's word in any channel,
   and Cursor implements what the stand-in specified.
+
+## D-030
+
+**When a command reads stdin** (repo owner, 2026-10-27; amends D-006 and WI-0101's *Inputs*). A
+command reads stdin only when it is given no `--from-<kind>` flag, or when a flag's `FILE` is
+`-`. A command whose inputs all come from files never touches stdin, so an open, empty stdin
+(cron, CI) can't make it hang. Mixing a pipe with files is explicit:
+`… | finops enrich map --from-accounts a.jsonl --from-cost -`. Found while testing WO-0104-A.
+Built by WO-0101-B.
+
+## D-031
+
+**One follow-up Work Order for the review notes** (repo owner, 2026-10-27). WO-0101-B carries
+D-030 and the non-blocking notes from the WO-0102-A, WO-0104-A and WO-0106-A reviews. It is
+dispatched after WO-0103-A, WO-0105-A and WO-0107-A merge, because it touches `record/`, which
+they all use.
+
+## Q-005
+
+**Release 2 scope** (planner, 2026-10-27). Open; blocks writing `DD-02`.
+
+1. Enforce: which rules come first, and what is each rule's action and owner?
+2. History store: record files per run, DuckDB tables, or both? How long is history kept?
+3. FOCUS: where does the export live? Does `aws-cost` stay alongside FOCUS, or does FOCUS
+   replace it for detailed views?
+4. Trend: monthly only, or daily too? Which baseline when fewer than 3 periods exist?
+5. Release 2 slice: all of it in one release, or split?
+

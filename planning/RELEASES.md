@@ -81,7 +81,7 @@ permissions.
 | History | the history store, `--as-reported` | Local under `data/`; restated by default; Enrich saves each taxonomy it uses ([D-007](DECISIONS.md#d-007)) |
 | Embedded SQL | DuckDB, CGO, build tag `no_duckdb_arrow` | Arrives with FOCUS ([D-022](DECISIONS.md#d-022)) |
 
-**To grill before `DD-02` is written.** These are open, and none is a decision yet:
+**To grill before `DD-02` is written** ([Q-005](DECISIONS.md#q-005), grilling started 2026-10-27). These are open, and none is a decision yet:
 
 1. Which Enforce rules come first: untagged cost, `UNALLOC` cost above a threshold, Project tag
    mismatch, or others? What is each rule's action and owner?
