@@ -28,6 +28,15 @@ with the cost that moved (D-021).
 - An account whose single App changed is one `remapped` change on the account (`field` `app`),
   not a removed plus an added allocation. An account that gained or lost an App (shared) gives
   `added` or `removed` allocations.
+- **Account properties are reported on the account.** An account has one Environment and one LZ
+  (D-015), so a change of `environment` or `lz` is one `remapped` change with `subject_type`
+  `account`, whatever the number of its allocations. `project`, `business_unit` and
+  `cost_center` belong to an App, so they are `allocation` changes; for a single-App account
+  whose App changed they are not reported separately (the `app` change covers them).
+- **Whose cost counts.** For an `account` subject: all its `cost` records. For an `allocation`
+  subject: only the `cost` records with that account **and** that `app`. Before `share`, a
+  shared account's cost has `app` `""`, so its allocations count no cost (`cost_moved` `0`), and
+  the account's cost is never counted twice.
 - Sorted by `subject_type`, `subject`, `change`, `field`.
 
 ## WO-0107-A — Changes between two map outputs
