@@ -84,8 +84,10 @@ yet specified: there is no `DD-02` folder and no Work Item.
 
 `aws-cost` stays the default source of cost; FOCUS adds detail when asked for.
 
-**Still to grill before `DD-02` is written:** the FOCUS file format and how it is fetched, which
-commands save history and how, `--as-reported` details, and how deep each trend hierarchy goes.
+Also decided: FOCUS files cached once per closed month ([D-038](DECISIONS.md#d-038)), history
+saved with `--save` on `map`, `share`, `trend` and `impact` ([D-039](DECISIONS.md#d-039)),
+`--as-reported` in Release 2 ([D-040](DECISIONS.md#d-040)), and trend depth
+([D-041](DECISIONS.md#d-041)). Release 2 is ready to be specified as `DD-02`.
 
 ## Release 3 — Enforce
 

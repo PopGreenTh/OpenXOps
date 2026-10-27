@@ -470,3 +470,40 @@ aws-focus`, `xops sense focus-cost`, DuckDB with `no_duckdb_arrow`, the history 
 `--as-reported`, `finops analyze trend` (monthly, average daily cost) and `finops analyze impact`.
 Not in Release 2: Enforce (Release 3), daily trend, other clouds.
 
+## D-037
+
+**Every input record is checked against its kind's schema** (repo owner, 2026-10-27).
+
+- One schema per record kind, a plain Go table in `record/` (field, type, required). Each Work
+  Item's Contracts table stays the readable source; a test asserts every kind there has a schema.
+- A missing required field or a value of the wrong type stops the command, naming the file (or
+  `stdin`), the line and the field. **Extra fields are allowed**, because records gain fields
+  down the pipeline.
+- Only the kinds a command reads are checked; other kinds pass through unchecked.
+- The check is the same for the pipe and for `--from-<kind>` files.
+- Built in WO-0101-B with the D-030 pipe rule, after WO-0103-A, WO-0105-A and WO-0107-A merge.
+
+## D-038
+
+**FOCUS files are cached locally** (repo owner, 2026-10-27; Release 2). `aws-focus` downloads
+each closed month's FOCUS Parquet files once into `data/cache/aws/focus/`; DuckDB reads them
+from there. The open month is fetched again on each run, as for the Cost Explorer cache (D-007).
+
+## D-039
+
+**History is saved with `--save`** (repo owner, 2026-10-27; Release 2; with D-034). `map`,
+`share`, `trend` and `impact` take `--save`, which writes the run's output to
+`data/history/<command>/<run timestamp>.jsonl` as well as stdout. Reading history stays
+`--from-history FILE`.
+
+## D-040
+
+**`--as-reported` is in Release 2** (repo owner, 2026-10-27; D-007). It uses the taxonomy and
+organization saved for each period instead of today's.
+
+## D-041
+
+**How deep trend goes** (repo owner, 2026-10-27; Release 2; D-010). Cost hierarchy: OU ›
+account › region › service, with region only when FOCUS is the input. Project hierarchy:
+Project › App › Environment from `aws-cost`, and › Feature only when FOCUS is the input.
+
