@@ -12,6 +12,9 @@ changes.
 
 Reads `allocation` and `cost` records (pipe or `--from-cost`; `map`'s output holds both).
 Every record other than a shared account's `cost` passes through unchanged.
+Output order: the `cost` records (sorted as below), then `share`'s findings, then **every other
+input record exactly once, unchanged, in input order**: `allocation`, `ou`, `account` and
+earlier commands' findings included.
 
 For each `cost` record with `shared` true, given the account's Apps from its `allocation`
 records:
@@ -84,5 +87,41 @@ command, its flags and taxonomy loading go in `finops/enrich/commands.go`, which
   `app`. If WO-0103-A is on `main`, the PR also shows the same for the full mock pipeline
   (`aws-accounts | map | share`, with `aws-cost --mock`).
 - The conservation-failure test passes.
+
+**Verify.** `go run ./scripts/check`
+
+## WO-0105-B — Pass-through fix
+
+**Assignee:** open
+**Depends on:** WO-0105-A
+**Packages:** `finops/enrich/share/` only (`share.go`, and a new `share_test.go` inside it)
+
+Found while reviewing WO-0101-B (#33). On `main`, `share.Split` writes every record it doesn't
+handle twice: once from its own `other` slice and again from `record.PassThrough`. It also never
+writes `allocation` records, because it lists `allocation` as handled. Measured with the mock
+data: `map` gives `{ou: 10, account: 9, allocation: 10, cost: 1300, finding: 154}`. `share` on
+that output gives `{ou: 20, account: 18, allocation: 0, cost: 1500, finding: 508}`, where
+508 = 2 × 154 + 200 of `share`'s own.
+
+**Goal.** `share`'s output order as the Contracts now state: every input record that isn't a
+`cost` comes out exactly once, unchanged.
+
+**In scope.**
+- `share.Split`: its own output is the `cost` records and its findings; every other record
+  passes through once (`record.PassThrough` with only `cost` handled), in input order.
+  `allocation` records are still read for the split.
+- `finops/enrich/share/share_test.go` (new, package `share`, table-driven): for an input holding
+  `ou`, `account`, `allocation`, shared and non-shared `cost`, and a `finding` from an earlier
+  command, each non-`cost` record appears in the output exactly once, unchanged, in input order,
+  after `share`'s own records.
+
+**Out of scope.** Anything in `finops/enrich/` outside `share/` (WO-0101-B is open there), and
+any change to the split itself.
+
+**Done when.**
+- The new test passes, and every `cases/share/` case still passes unchanged.
+- On the mock data, `share` over `map`'s output has exactly as many `ou`, `account` and
+  `allocation` records as its input, and as many findings as the input plus `share`'s own
+  (shown in the PR).
 
 **Verify.** `go run ./scripts/check`
