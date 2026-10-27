@@ -545,10 +545,18 @@ go-ahead.
 **Drop the stdin sort by kind?** (raised by Cursor, kept by the repo owner, 2026-10-27; blocks the
 Release 1 tag). WI-0101 *Inputs* says "Records from stdin are sorted by `kind`". As a result, a
 piped run passes records through in kind order and a file run in file order: the same records,
-in a different order. Dropping the sort would make piped and file runs byte-identical. Open.
+in a different order. Dropping the sort would make piped and file runs byte-identical. **Closed** by [D-043](#d-043).
 
 ## Q-008
 
 **`scripts/check` leaves a mock cache in `data/mock/`** (raised by Cursor, kept by the repo owner,
 2026-10-27). The cache is gitignored and harmless, but a check run is not side-effect free.
 Options: point the check's mock runs at a temporary cache, or accept it. Open.
+
+## D-043
+
+**Records from stdin keep their input order** (repo owner, 2026-10-27; closes Q-007; amends
+D-030 and WI-0101 *Inputs*). The sort of stdin records by `kind` is dropped, so a piped run and
+the same steps run through files print the same bytes. Built by WO-0101-C. Q-007 blocked the
+Release 1 tag, so the tag waits for WO-0101-C.
+

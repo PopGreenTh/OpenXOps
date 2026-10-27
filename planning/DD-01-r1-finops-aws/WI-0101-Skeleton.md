@@ -47,7 +47,8 @@ calls plain functions that take and return records (D-013).
   `--from-cost` reads `cost`; each Work Item names its own).
 - **The pipe** (D-030, replaces "when stdin is not a terminal"). A command reads stdin only when
   it is given **no** `--from-<kind>` flag, or when a flag's `FILE` is `-`. Records from stdin
-  are sorted by `kind`. A command whose inputs all come from files never touches stdin, so it
+  keep their input order, as records from a file do (D-043), so a piped run and a run through
+  files print the same bytes. A command whose inputs all come from files never touches stdin, so it
   can't hang under cron or CI. To mix, say so: `aws-cost | map --from-accounts a.jsonl --from-cost -`.
   A command that reads no records (Sense) never reads stdin.
 - The same kind from both the pipe and a flag is an error that names both.
@@ -162,6 +163,35 @@ notes left from the WO-0102-A, WO-0104-A and WO-0106-A reviews.
   finops/enrich/testdata/demo-taxonomy.yaml --from-accounts finops/enrich/testdata/demo-accounts.jsonl
   --from-cost - | finops enrich share --taxonomy finops/enrich/testdata/demo-taxonomy.yaml`
   prints the same records as the same three steps run through files (shown in the PR).
+
+**Verify.** `go run ./scripts/check`
+
+## WO-0101-C — Keep stdin order (D-043)
+
+**Assignee:** open
+**Depends on:** WO-0101-B
+**Packages:** `record/input.go`, `record/record_test.go`, `finops/enrich/pipeline_test.go`,
+`docs/develop.md`
+
+**Goal.** Records from stdin keep their input order (D-043), so a piped run prints the same bytes
+as the same steps run through files.
+
+**In scope.**
+- `record/input.go`: remove the two sorts by kind on stdin records, in the no-flag path and the
+  `-` path.
+- `record/record_test.go`: replace `TestMixedPipeSortedByKind` with a test asserting that stdin
+  records come out in input order (the spec changed, so this test changes with it).
+- `finops/enrich/pipeline_test.go`: `TestMixingPipelineMatchesFileSteps` compares the full
+  output byte for byte, not kind counts.
+- `docs/develop.md`: drop "Stdin records are sorted by `kind`".
+
+**Out of scope.** Any other change to input assembly or the schema check.
+
+**Done when.**
+- The tests above pass, and every reference case still passes unchanged.
+- On the mock data, the mixing pipeline (`aws-cost --mock | map --from-accounts … --from-cost - |
+  share`) and the same three steps run through files give identical output under `cmp` (shown
+  in the PR).
 
 **Verify.** `go run ./scripts/check`
 
