@@ -34,6 +34,16 @@ tasks:
     cmds:
       - go run ./finops version
 
+  run:finops:enrich-validate:
+    desc: Validate the demo taxonomy
+    cmds:
+      - go run ./finops enrich validate --taxonomy finops/enrich/testdata/demo-taxonomy.yaml
+
+  run:finops:enrich-map:
+    desc: Map demo accounts with the demo taxonomy
+    cmds:
+      - go run ./finops enrich map --taxonomy finops/enrich/testdata/demo-taxonomy.yaml --from-accounts finops/enrich/testdata/demo-accounts.jsonl
+
   run:xops:sense-aws-accounts:
     desc: Run xops sense aws-accounts on the demo organization
     cmds:

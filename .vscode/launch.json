@@ -20,6 +20,24 @@
       "console": "integratedTerminal"
     },
     {
+      "name": "finops enrich validate (demo taxonomy)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/finops",
+      "args": ["enrich", "validate", "--taxonomy", "finops/enrich/testdata/demo-taxonomy.yaml"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "finops enrich map (demo)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/finops",
+      "args": ["enrich", "map", "--taxonomy", "finops/enrich/testdata/demo-taxonomy.yaml", "--from-accounts", "finops/enrich/testdata/demo-accounts.jsonl"],
+      "console": "integratedTerminal"
+    },
+    {
       "name": "xops sense aws-accounts (--mock)",
       "type": "go",
       "request": "launch",
