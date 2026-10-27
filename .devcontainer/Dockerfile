@@ -7,8 +7,9 @@ RUN apt-get update \
 # Task
 RUN curl -sSfL https://taskfile.dev/install.sh | sh -s -- -d -b /usr/local/bin v3.40.1
 
-# Delve
-RUN go install github.com/go-delve/delve/cmd/dlv@latest \
+# Delve — pin: @latest now needs Go 1.25+ (v1.27.2). v1.25.2 is the last release
+# whose go.mod is 1.22, so `go install` works on this image.
+RUN go install github.com/go-delve/delve/cmd/dlv@v1.25.2 \
     && mv /go/bin/dlv /usr/local/bin/dlv
 
 # AWS CLI v2

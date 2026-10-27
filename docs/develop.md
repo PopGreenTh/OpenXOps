@@ -136,8 +136,9 @@ error. Errors name the file (or `stdin`) and the line number.
 
 ## Dev container (optional)
 
-Native Windows stays the main path. `.devcontainer/` is a ready Linux environment (Go, Task,
-AWS CLI v2, Delve) for VS Code **Reopen in Container** and GitHub Codespaces.
+Native Windows stays the main path. `.devcontainer/` is a ready Linux environment (Go 1.22,
+Task v3.40.1, AWS CLI v2, Delve v1.25.2) for VS Code **Reopen in Container** and GitHub
+Codespaces. Delve is pinned: newer releases need a newer Go than 1.22.
 
 1. Install Docker Desktop and the VS Code Dev Containers extension.
 2. Open the folder → Command Palette → **Dev Containers: Reopen in Container**.
