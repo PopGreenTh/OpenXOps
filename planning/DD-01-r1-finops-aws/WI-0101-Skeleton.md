@@ -100,8 +100,7 @@ calls plain functions that take and return records (D-013).
 - `task check` and `go run ./scripts/check` pass on Windows and Linux (CI green on both).
 - `task build` produces `xops` and `finops`; each prints its version.
 - The `record/` tests above pass.
-- `docs/develop.md` lets a new developer go from a clean Windows machine to a breakpoint in a
-  `record/` test in VS Code, and the PR description says it was followed on Windows.
-- The dev container opens in VS Code and `task check` passes inside it (shown in the PR).
+- `docs/develop.md` lets a new developer go from a clean Linux machine to a breakpoint in a
+  `record/` test in VS Code or Cursor (D-025).
 
 **Verify.** `go run ./scripts/check`

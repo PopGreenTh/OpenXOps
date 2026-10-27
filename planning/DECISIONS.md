@@ -312,3 +312,16 @@ or another); and when the CLA is set up.
   licensor for commercial use.
 - A contributor licence agreement is set up before the first outside contribution is merged
   (D-023).
+
+## D-025
+
+**Linux first, developed with Cursor; Windows and the dev container are not required for now**
+(repo owner, 2026-10-27). Supersedes D-019's "Windows first" and D-020.
+
+- Development and debugging happen on Linux, with Cursor. A Work Order's `Verify` must pass on
+  Linux; CI keeps its Windows job as a free early warning, but nothing waits on a person
+  checking Windows.
+- No Done-when asks for a Windows walkthrough or a dev container run. Existing `.devcontainer/`
+  files may stay as an unverified extra.
+- VS Code debug entries, Task and `docs/develop.md` stay (D-013, D-019); `docs/develop.md`
+  covers Linux first.

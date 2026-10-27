@@ -15,7 +15,7 @@ Written by Claude only. Status values: see [README.md](README.md#status-values).
 
 | Work Order | Assignee | Depends on | Status | Issue | PR | Branch | Revisions |
 |---|---|---|---|---|---|---|---|
-| [WO-0101-A](DD-01-r1-finops-aws/WI-0101-Skeleton.md#wo-0101-a--binaries-record-check-ci-and-developer-setup) | Cursor (claimed in PR) | — | changes | [#1](https://github.com/PopGreenTh/OpenXOps/issues/1) | [#3](https://github.com/PopGreenTh/OpenXOps/pull/3) | `cursor/wo-0101-a-skeleton-7589` | 1 |
+| [WO-0101-A](DD-01-r1-finops-aws/WI-0101-Skeleton.md#wo-0101-a--binaries-record-check-ci-and-developer-setup) | Cursor (claimed in PR) | — | in review (approved, awaiting merge) | [#1](https://github.com/PopGreenTh/OpenXOps/issues/1) | [#3](https://github.com/PopGreenTh/OpenXOps/pull/3) | `cursor/wo-0101-a-skeleton-7589` | 1 |
 | [WO-0102-A](DD-01-r1-finops-aws/WI-0102-Aws-Accounts.md#wo-0102-a--organizations-discovery-and-mock) | open | WO-0101-A | not started | — | — | — | 0 |
 | [WO-0103-A](DD-01-r1-finops-aws/WI-0103-Aws-Cost.md#wo-0103-a--two-level-cost-explorer-cache-mock-cost) | open | WO-0102-A | not started | — | — | — | 0 |
 | [WO-0104-A](DD-01-r1-finops-aws/WI-0104-Enrich-Map.md#wo-0104-a--taxonomy-validate-and-map) | open | WO-0101-A | not started | — | — | — | 0 |
@@ -23,4 +23,4 @@ Written by Claude only. Status values: see [README.md](README.md#status-values).
 | [WO-0106-A](DD-01-r1-finops-aws/WI-0106-Report.md#wo-0106-a--table-csv-excel-with-appending) | open | WO-0101-A | not started | — | — | — | 0 |
 | [WO-0107-A](DD-01-r1-finops-aws/WI-0107-Analyze-Changes.md#wo-0107-a--changes-between-two-map-outputs) | open | WO-0104-A | not started | — | — | — | 0 |
 
-WO-0101-A dispatched 2026-10-27 (#1); PR #3 reviewed 2026-10-27: changes requested (Windows walkthrough and dev container run not yet done; pin Delve). `main` created from the plan branch on 2026-10-27.
+WO-0101-A dispatched 2026-10-27 (#1); PR #3 reviewed 2026-10-27: changes requested, then approved once D-025 dropped the Windows and dev container checks. `main` created from the plan branch on 2026-10-27.
