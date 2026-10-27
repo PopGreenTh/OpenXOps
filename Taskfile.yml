@@ -34,6 +34,11 @@ tasks:
     cmds:
       - go run ./finops version
 
+  run:finops:sense-aws-cost:
+    desc: Run finops sense aws-cost with mock Cost Explorer data
+    cmds:
+      - go run ./finops sense aws-cost --mock
+
   run:finops:enrich-validate:
     desc: Validate the demo taxonomy
     cmds:

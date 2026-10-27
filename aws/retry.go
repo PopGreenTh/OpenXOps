@@ -53,8 +53,8 @@ func retryable(err error) bool {
 	var apiErr smithy.APIError
 	if errors.As(err, &apiErr) {
 		switch apiErr.ErrorCode() {
-		case "ThrottlingException", "TooManyRequestsException", "ServiceUnavailable",
-			"InternalServerError", "ServiceException":
+		case "ThrottlingException", "TooManyRequestsException", "LimitExceededException",
+			"ServiceUnavailable", "InternalServerError", "ServiceException":
 			return true
 		}
 	}

@@ -68,6 +68,38 @@ Read-only IAM (management or delegated admin): `organizations:DescribeOrganizati
 `organizations:ListRoots`, `organizations:ListOrganizationalUnitsForParent`,
 `organizations:ListAccountsForParent`.
 
+### `finops sense aws-cost`
+
+Reads AWS Cost Explorer in two levels and writes `project_tag_cost` and `cost` JSON Lines
+records (`project_tag_cost` first, then sorted by account, period, service or tag).
+
+```bash
+go run ./finops sense aws-cost --mock
+task run:finops:sense-aws-cost
+go run ./finops sense aws-cost --mock --granularity daily
+```
+
+Flags: `--mock` (embedded fixtures under `aws/ce/testdata/`, cache under
+`data/mock/cache/…`), `--profile`, `--region`, `--granularity monthly|daily`, `--metric`,
+`--from` / `--to`, `--app-tag`, `--project-tag`, `--lz` with `--taxonomy`, `--refresh`.
+
+Closed periods are cached under `data/cache/aws/ce/…` and fetched from Cost Explorer only once;
+open periods refresh when older than 12 hours. Stderr reports Cost Explorer call count and cost
+($0.01 per call).
+
+Record kinds:
+
+| `kind` | Fields |
+|---|---|
+| `project_tag_cost` | `account_id`, `project_tag`, plus `csp`, `management_account`, `granularity`, `period`, `metric`, `amount`, `currency`, `estimated`, optional `lz` |
+| `cost` | `account_id`, `service`, `app_tag`, plus the same common fields |
+
+IAM on the management (or delegated) account: `ce:GetCostAndUsage`. With `--lz`:
+`organizations:DescribeOrganization`.
+
+In the AWS Billing console, activate `--app-tag` and `--project-tag` as **cost allocation
+tags**, and enable **Cost Explorer** multi-year data (at least 24 months) for monthly history.
+
 ### `finops enrich validate` and `finops enrich map`
 
 The taxonomy is a YAML file (see `finops/enrich/testdata/demo-taxonomy.yaml`) with business units,
