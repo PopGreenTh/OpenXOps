@@ -43,7 +43,8 @@ packages.
 
 ## Release criteria
 
-1. CI is green on Windows and Linux, and every command has a Task and a VS Code debug entry.
+1. CI's Linux job is green (the Windows job is optional, D-026), and every command has a Task
+   and a VS Code debug entry.
 2. The pipeline above runs on `--mock` from a clean clone with no AWS credentials and writes an
    Excel workbook.
 3. Every reference case in `finops/enrich/testdata/cases/` passes, unchanged.
