@@ -1,0 +1,15 @@
+{
+  "name": "OpenXOps",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["golang.go"],
+      "settings": {
+        "go.useLanguageServer": true
+      }
+    }
+  },
+  "postCreateCommand": "go mod download"
+}
