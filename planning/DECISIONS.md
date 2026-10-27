@@ -539,3 +539,16 @@ Project › App › Environment from `aws-cost`, and › Feature only when FOCUS
 
 DD-02 Work Orders are dispatched once Release 1 and WO-0101-B have merged, on the repo owner's
 go-ahead.
+
+## Q-007
+
+**Drop the stdin sort by kind?** (raised by Cursor, kept by the repo owner, 2026-10-27; blocks the
+Release 1 tag). WI-0101 *Inputs* says "Records from stdin are sorted by `kind`". As a result, a
+piped run passes records through in kind order and a file run in file order: the same records,
+in a different order. Dropping the sort would make piped and file runs byte-identical. Open.
+
+## Q-008
+
+**`scripts/check` leaves a mock cache in `data/mock/`** (raised by Cursor, kept by the repo owner,
+2026-10-27). The cache is gitignored and harmless, but a check run is not side-effect free.
+Options: point the check's mock runs at a temporary cache, or accept it. Open.
