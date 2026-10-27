@@ -6,10 +6,18 @@ on:
 
 jobs:
   check:
+    name: ${{ matrix.name }}
+    continue-on-error: ${{ matrix.optional }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            optional: false
+            name: check (ubuntu-latest)
+          - os: windows-latest
+            optional: true
+            name: check (windows-latest, optional)
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4

@@ -151,5 +151,6 @@ task check
 go run ./scripts/check
 ```
 
-CI runs the same command on `windows-latest` and `ubuntu-latest` for every push and pull
-request (`.github/workflows/check.yml`).
+CI runs the same command on `ubuntu-latest` for every push and pull request
+(`.github/workflows/check.yml`). A `windows-latest` job also runs, marked optional
+(`continue-on-error`): a Windows failure is a warning and does not block the PR (D-026).
