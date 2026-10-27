@@ -45,7 +45,11 @@ calls plain functions that take and return records (D-013).
 - `--from-<kind> FILE` reads a record file; `FILE` may be `-` for stdin. Each command lists the
   kinds it reads, and has one such flag per kind (`--from-accounts` reads `ou` and `account`,
   `--from-cost` reads `cost`; each Work Item names its own).
-- **The pipe.** When stdin is not a terminal, its records are read too and sorted by `kind`.
+- **The pipe** (D-030, replaces "when stdin is not a terminal"). A command reads stdin only when
+  it is given **no** `--from-<kind>` flag, or when a flag's `FILE` is `-`. Records from stdin
+  are sorted by `kind`. A command whose inputs all come from files never touches stdin, so it
+  can't hang under cron or CI. To mix, say so: `aws-cost | map --from-accounts a.jsonl --from-cost -`.
+  A command that reads no records (Sense) never reads stdin.
 - The same kind from both the pipe and a flag is an error that names both.
 - `--from-history FILE` is the command's own earlier output, for commands that use it.
 - A bad line stops the command with an error naming the file (or `stdin`) and the line number.
@@ -106,3 +110,37 @@ calls plain functions that take and return records (D-013).
   `record/` test in VS Code or Cursor (D-025).
 
 **Verify.** `go run ./scripts/check`
+
+## WO-0101-B — Pipe rule and review follow-ups
+
+**Assignee:** open
+**Depends on:** WO-0103-A, WO-0105-A, WO-0107-A (dispatched after they merge, D-031)
+**Packages:** `record/`, `aws/orgapi.go`, `xops/sense/`, `xops/report/`, `finops/enrich/resolve.go`,
+`docs/develop.md`, `README.md`, and any command package whose tests rely on the old pipe rule
+
+**Goal.** The D-030 pipe rule in `record/`, plus the non-blocking notes left from the WO-0102-A,
+WO-0104-A and WO-0106-A reviews.
+
+**In scope.**
+- `record/`: input assembly follows D-030 (*Inputs* above). Tests: no flag reads stdin; a
+  `--from-<kind>` file and no `-` never reads stdin, even when stdin is an open pipe that never
+  closes; `--from-<kind> -` reads stdin; the same kind from stdin and a file is still an error.
+- `xops/sense`: `aws-accounts` writes through `cmd.OutOrStdout()`; the discovery-error test
+  checks it gets the injected error (`errors.Is`). `aws/orgapi.go`: drop the unused
+  `maxConcurrent` parameter (or use it, bounded at 5).
+- `xops/report`: no trailing spaces on table rows; Excel append finds the next row from the
+  sheet's real last row, not `len(GetRows)`, with a test whose last appended record is all
+  empty.
+- `finops/enrich/resolve.go`: one `lz-unknown` finding per organization; the
+  `project-tag-mismatch` message names the tag and the account's Project or Projects.
+- `docs/develop.md` and `README.md`: the pipe rule, with the mixing example.
+
+**Out of scope.** Any new command or record field.
+
+**Done when.**
+- With stdin an open pipe that never closes (`sleep 60 | finops enrich map --taxonomy … --from-accounts …`),
+  the command finishes as fast as with stdin closed; a `record/` test proves it.
+- Every bullet above has a test, and every reference case still passes unchanged.
+
+**Verify.** `go run ./scripts/check`
+
