@@ -274,3 +274,18 @@ Q-003).
 the Cost Explorer cache is JSON files under `data/cache/`. DuckDB, its CGO toolchain and the
 `no_duckdb_arrow` tag arrive with FOCUS in Release 2, so Release 1 builds with plain `go build`
 on Windows.
+
+## D-027
+
+**An execution protocol for implementers** (repo owner, 2026-10-27). `AGENTS.md` §7 is the rule.
+The repo owner's text was adjusted to fit the existing rules:
+
+- It binds the implementers (Antigravity and Cursor), not Claude Code, which never writes
+  implementation code (D-002). The owner's text named Claude Code and Antigravity.
+- Targeted tests are for iterating; the full `Verify` command still runs before every PR (§4).
+- The working set always includes `AGENTS.md`, the Work Order, its Work Item's Contracts and its
+  reference cases.
+- `.state/tasks.jsonl` is local and never committed (`.git/info/exclude`), so no Work Order has
+  to change `.gitignore`. It does not survive a fresh clone or cloud container; across sessions,
+  the issue, the branch and the PR remain the record.
+- Output truncation never applies to the `Verify` output pasted in a PR.

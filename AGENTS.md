@@ -114,3 +114,36 @@ go run -tags=no_duckdb_arrow ./scripts/check   # build, vet, gofmt -l, tests —
 ```
 
 (`scripts/check` arrives with the first Work Order; until then the repository holds only plans.)
+
+## 7. Implementer execution protocol
+
+For Antigravity and Cursor while they build a claimed Work Order ([D-027](planning/DECISIONS.md#d-027)).
+It adds to §4 and §5 and never overrides them. Claude plans and reviews and is not bound by it.
+
+**Stance.** Execution first: deliver diffs and command output, not summaries or speculation
+about the design. A spec that looks wrong is still reported and not guessed around (§2, §4.4).
+
+**State log: `.state/tasks.jsonl`.** Execution state lives in this file, not in chat memory or a
+compacted context.
+- Local only, never committed: add `.state/` to `.git/info/exclude` in your clone.
+- **Before a step:** read the log, check that the step's prerequisites are `COMPLETED`, then
+  append `{"task_id":"…","status":"RUNNING"}`.
+- **After a step:** append one line:
+  `{"task_id":"…","status":"COMPLETED","files":["path/to/file"],"exit_code":0,"timestamp":1793088000}`
+  (`timestamp` in Unix seconds).
+- **On failure:** append `"status":"FAILED"` with the exact exit code and error, then stop. Never
+  re-run steps that are already `COMPLETED`, and never restart the whole plan.
+
+**Working set.**
+- Read `AGENTS.md`, the claimed Work Order, its Work Item's **Contracts**, the reference cases
+  it names, and the files in its **Packages**. Anything else only when one of these points to
+  it.
+- No repository-wide sweeps or AST dumps unless the Work Order asks for them.
+- Change files with targeted edits; don't rewrite parts of a file you aren't changing.
+
+**Running commands.**
+- Non-interactive: `export CI=true DEBIAN_FRONTEND=noninteractive GIT_TERMINAL_PROMPT=0`.
+- While iterating, run only the tests for the code you changed (`go test ./<pkg> -run <Test>`).
+  **Before opening the PR, run the full `Verify` command** (§4.4); its output goes in the PR.
+- Captured output: strip ANSI escapes and keep the first 50 and last 100 lines. The `Verify`
+  output in the PR is pasted in full.
