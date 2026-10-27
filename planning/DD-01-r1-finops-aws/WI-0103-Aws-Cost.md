@@ -73,13 +73,24 @@ monthly data, 60 days of daily data.
 
 **Assignee:** open
 **Depends on:** WO-0102-A (uses `aws/`)
-**Packages:** `aws/` (Cost Explorer client and mock cost only), `finops/sense/`, `finops/main.go`,
-`Taskfile.yml`, `.vscode/launch.json`, `README.md`
+**Packages:** `aws/ce/` (new: the Cost Explorer client and the mock cost), `aws/retry.go` (retry
+codes only), `finops/sense/`, `finops/main.go`, `Taskfile.yml`, `.vscode/launch.json`,
+`README.md`, `go.mod`, `go.sum`
+
+`aws/` already has the 5 non-test `.go` files `AGENTS.md` §5 allows, so Cost Explorer gets its
+own package, `aws/ce/`. It uses `aws/`'s config, retry wrapper and demo organization, and keeps
+its fixtures in `aws/ce/testdata/`. The cache lives in `finops/sense/`.
 
 **Goal.** `finops sense aws-cost` as specified.
 
 **In scope.**
 - The Cost Explorer client behind an interface, the two levels, the cache, the mock, `--lz`.
+- `aws/retry.go`: retry Cost Explorer's throttling error, `LimitExceededException`.
+- The current time comes from a clock the tests can set (a function value or parameter, not
+  `time.Now()` deep in the logic). Open and closed periods, the default range and the mock's
+  periods are all relative to it, so the tests and the golden output don't change with the date.
+- Debug logging as WI-0101 requires: `record.LogStart`, and one `slog.Debug` per Cost Explorer
+  call and per cache hit or miss.
 - Task `run:finops:sense-aws-cost` and a launch entry on `--mock`.
 - Tests with a counting fake client: a second run over closed periods makes **zero** calls; an
   open period is reused under 12 hours and fetched after; `--refresh` never overwrites a closed
