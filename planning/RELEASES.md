@@ -26,7 +26,8 @@ release is direction, not a commitment.
 | Release | Deliverable | Theme | State |
 |---|---|---|---|
 | 1 | [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md) | AWS cost owned by Project › App › Environment, in Excel | Specified; building |
-| 2 | not written yet | FOCUS, trend and impact, Enforce, history | Scope decided; not specified |
+| 2 | [DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md) | FOCUS, history, trend and impact | Specified; waiting for Release 1 and Q-006 |
+| 3 | not written yet | Enforce | First rules decided (D-033) |
 | Later | — | More clouds, SecOps, CloudOps | Direction only |
 
 ## Release 1 — AWS cost owned by Project › App › Environment
@@ -66,31 +67,33 @@ permissions.
 **Not in Release 1:** DuckDB, FOCUS, trend, impact, Enforce, the history store,
 `--as-reported`, and any cloud but AWS.
 
-## Release 2 — FOCUS, Analyze, Enforce, history
+## Release 2 — FOCUS, history, trend and impact
 
-**Scope decided by** [D-018](DECISIONS.md#d-018), [D-021](DECISIONS.md#d-021) and
-[D-022](DECISIONS.md#d-022). Not yet specified: there is no `DD-02` folder and no Work Item.
+**Scope decided by** [D-032](DECISIONS.md#d-032) to [D-036](DECISIONS.md#d-036), with
+[D-014](DECISIONS.md#d-014), [D-017](DECISIONS.md#d-017) and [D-022](DECISIONS.md#d-022). **Specified in** [DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md).
 
 | Capability | Command | Already decided |
 |---|---|---|
-| FOCUS export | `finops sense aws-focus` | Reads AWS's FOCUS export from S3 ([D-008](DECISIONS.md#d-008), [D-014](DECISIONS.md#d-014)) |
+| FOCUS export | `finops sense aws-focus` | Opt-in; reads the FOCUS export from the bucket and prefix in the LZ's `focus` entry ([D-014](DECISIONS.md#d-014), [D-035](DECISIONS.md#d-035)) |
 | FOCUS to cost | `xops sense focus-cost` | Any cloud's FOCUS rows become `cost` records, adding region, `Feature` and other tags ([D-014](DECISIONS.md#d-014)) |
-| Trend | `finops analyze trend` | Cost against its baseline; `--hierarchy cost\|project` ([D-010](DECISIONS.md#d-010)) |
-| Impact | `finops analyze impact` | Reads trend and changes; floor 30 by default; levels at factor ≥ 2, 4, 8, 16; new, ongoing or resolved against `--from-history` ([D-010](DECISIONS.md#d-010), [D-017](DECISIONS.md#d-017)) |
-| Enforce | `finops enforce <rule>` | One command per rule; flags only, never changes the cloud ([D-010](DECISIONS.md#d-010)) |
-| History | the history store, `--as-reported` | Local under `data/`; restated by default; Enrich saves each taxonomy it uses ([D-007](DECISIONS.md#d-007)) |
+| History | `data/history/<command>/<run>.jsonl`, `--as-reported` | Record files, written once, kept forever; DuckDB reads them ([D-034](DECISIONS.md#d-034), [D-007](DECISIONS.md#d-007)) |
+| Trend | `finops analyze trend` | Monthly, on **average daily cost**; 3-month baseline, or fewer; `trend-no-baseline` with none ([D-035](DECISIONS.md#d-035)) |
+| Impact | `finops analyze impact` | Floor 30; levels at factor ≥ 2, 4, 8, 16, on average daily cost; new, ongoing or resolved against history ([D-017](DECISIONS.md#d-017), [D-035](DECISIONS.md#d-035)) |
 | Embedded SQL | DuckDB, CGO, build tag `no_duckdb_arrow` | Arrives with FOCUS ([D-022](DECISIONS.md#d-022)) |
 
-**To grill before `DD-02` is written** ([Q-005](DECISIONS.md#q-005), grilling started 2026-10-27). These are open, and none is a decision yet:
+`aws-cost` stays the default source of cost; FOCUS adds detail when asked for.
 
-1. Which Enforce rules come first: untagged cost, `UNALLOC` cost above a threshold, Project tag
-   mismatch, or others? What is each rule's action and owner?
-2. The history store: record files per run, DuckDB tables, or both? How long is history kept?
-3. FOCUS: where does the export live (bucket and prefix per LZ)? Does `aws-cost` stay alongside
-   it, or does FOCUS replace it for detailed views?
-4. Trend: monthly only, or daily too? Which baseline when fewer than 3 periods exist?
-5. Release 2 slice: all of the above in one release, or FOCUS + trend/impact first and Enforce
-   + history after?
+Also decided: FOCUS files cached once per closed month ([D-038](DECISIONS.md#d-038)), history
+saved with `--save` on `map`, `share`, `trend` and `impact` ([D-039](DECISIONS.md#d-039)),
+`--as-reported` in Release 2 ([D-040](DECISIONS.md#d-040)), and trend depth
+([D-041](DECISIONS.md#d-041)).
+
+## Release 3 — Enforce
+
+**Decided by** [D-032](DECISIONS.md#d-032) and [D-033](DECISIONS.md#d-033). One command per rule,
+flags only, never changes the cloud ([D-010](DECISIONS.md#d-010)). First rules: untagged shared
+cost, unallocated cost above a threshold, and Project tag mismatch, each with its action and
+owner. Thresholds and record format are grilled when Release 3 starts.
 
 ## Later — direction only
 

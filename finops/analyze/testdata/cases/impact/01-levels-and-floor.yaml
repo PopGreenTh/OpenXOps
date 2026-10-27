@@ -1,0 +1,21 @@
+name: levels-and-floor
+why: >
+  Defaults: floor 30, base factor 2. A rise is graded by factor (2, 4, 8, 16 → levels 1 to 4) when
+  its monthly equivalent (daily rise × 30 days of September) reaches the floor. D rises by factor
+  3 but only 6 a month, under the floor. E fell, F has no baseline: neither is graded.
+args: { period: 2026-09 }
+records:
+  - { kind: trend, hierarchy: project, level: app, node: PRJ-A > APP-A, project: PRJ-A, app: APP-A, environment: "", feature_tag: "", period: 2026-09, metric: UnblendedCost, currency: USD, amount: 750, days: 30, open: false, daily_avg: 25, baseline_periods: 3, baseline_daily_avg: 10, factor: 2.5 }
+  - { kind: trend, hierarchy: project, level: app, node: PRJ-A > APP-B, project: PRJ-A, app: APP-B, environment: "", feature_tag: "", period: 2026-09, metric: UnblendedCost, currency: USD, amount: 1200, days: 30, open: false, daily_avg: 40, baseline_periods: 3, baseline_daily_avg: 10, factor: 4 }
+  - { kind: trend, hierarchy: project, level: app, node: PRJ-A > APP-C, project: PRJ-A, app: APP-C, environment: "", feature_tag: "", period: 2026-09, metric: UnblendedCost, currency: USD, amount: 480, days: 30, open: false, daily_avg: 16, baseline_periods: 3, baseline_daily_avg: 1, factor: 16 }
+  - { kind: trend, hierarchy: project, level: app, node: PRJ-A > APP-D, project: PRJ-A, app: APP-D, environment: "", feature_tag: "", period: 2026-09, metric: UnblendedCost, currency: USD, amount: 9, days: 30, open: false, daily_avg: 0.3, baseline_periods: 3, baseline_daily_avg: 0.1, factor: 3 }
+  - { kind: trend, hierarchy: project, level: app, node: PRJ-A > APP-E, project: PRJ-A, app: APP-E, environment: "", feature_tag: "", period: 2026-09, metric: UnblendedCost, currency: USD, amount: 270, days: 30, open: false, daily_avg: 9, baseline_periods: 3, baseline_daily_avg: 10, factor: 0.9 }
+  - { kind: trend, hierarchy: project, level: app, node: PRJ-A > APP-F, project: PRJ-A, app: APP-F, environment: "", feature_tag: "", period: 2026-09, metric: UnblendedCost, currency: USD, amount: 300, days: 30, open: false, daily_avg: 10, baseline_periods: 0, baseline_daily_avg: null, factor: null }
+expect:
+  impacts:
+    - { hierarchy: project, node: PRJ-A > APP-C, metric: UnblendedCost, currency: USD, impact_level: 4, status: new,
+        delta_monthly: 450, floor: 30, base_factor: 2, explained_by_change: false }
+    - { hierarchy: project, node: PRJ-A > APP-B, metric: UnblendedCost, currency: USD, impact_level: 2, status: new,
+        delta_monthly: 900, floor: 30, base_factor: 2 }
+    - { hierarchy: project, node: PRJ-A > APP-A, metric: UnblendedCost, currency: USD, impact_level: 1, status: new,
+        delta_monthly: 450, floor: 30, base_factor: 2 }

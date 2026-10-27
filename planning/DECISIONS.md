@@ -414,7 +414,7 @@ they all use.
 
 ## Q-005
 
-**Release 2 scope** (planner, 2026-10-27). Open; blocks writing `DD-02`.
+**Release 2 scope** (planner, 2026-10-27). **Closed** by [D-032](#d-032) to [D-036](#d-036).
 
 1. Enforce: which rules come first, and what is each rule's action and owner?
 2. History store: record files per run, DuckDB tables, or both? How long is history kept?
@@ -422,4 +422,104 @@ they all use.
    replace it for detailed views?
 4. Trend: monthly only, or daily too? Which baseline when fewer than 3 periods exist?
 5. Release 2 slice: all of it in one release, or split?
+
+## D-032
+
+**Release 2 is FOCUS, history, trend and impact; Release 3 is Enforce** (repo owner, 2026-10-27;
+Q-005 item 5; amends D-018 and D-021). Enforce moves to Release 3 because it grades better once
+impact exists.
+
+## D-033
+
+**The first Enforce rules, for Release 3** (repo owner, 2026-10-27; Q-005 item 1). Each rule is
+its own command and flags only (D-010):
+
+| Rule | Flags | Action | Owner |
+|---|---|---|---|
+| untagged shared cost | a shared account's cost with no App tag | tag the resources | the account's Apps |
+| unallocated cost | `UNALLOC` cost above a threshold | map the account in the taxonomy | FinOps |
+| Project tag mismatch | a `Project` tag that disagrees with the taxonomy | fix the tag or the taxonomy | the Project |
+
+Thresholds and the record format are decided when Release 3 is grilled.
+
+## D-034
+
+**History is record files; DuckDB reads them** (repo owner, 2026-10-27; Q-005 item 2; amends
+D-007). Each saved run is a JSON Lines file, `data/history/<command>/<run timestamp>.jsonl`,
+written once and never edited. DuckDB (Release 2, D-022) reads them on demand; no table is kept
+in step. History is kept forever.
+
+## D-035
+
+**FOCUS is opt-in; trend is monthly on average daily cost** (repo owner, 2026-10-27; Q-005
+items 3 and 4).
+
+- **FOCUS:** `finops sense aws-cost` stays the default. `aws-focus` and `focus-cost` are opt-in,
+  for region and `Feature` detail. Each LZ in the taxonomy gets an optional `focus` entry
+  naming the export's bucket and prefix.
+- **Trend is monthly only** in Release 2, and compares **average daily cost**: a month's amount
+  divided by its number of days, so months of different lengths compare fairly. The open
+  (current) month divides by the days that have cost so far. The baseline is the average of the
+  3 months before, as daily averages (D-017); with fewer, the months there are; with none,
+  finding `trend-no-baseline` and no grade. `impact` grades the same daily averages.
+
+## D-036
+
+**Release 2 scope, in sum** (planner, 2026-10-27; from D-032 to D-035). `finops sense
+aws-focus`, `xops sense focus-cost`, DuckDB with `no_duckdb_arrow`, the history files and
+`--as-reported`, `finops analyze trend` (monthly, average daily cost) and `finops analyze impact`.
+Not in Release 2: Enforce (Release 3), daily trend, other clouds.
+
+## D-037
+
+**Every input record is checked against its kind's schema** (repo owner, 2026-10-27).
+
+- One schema per record kind, a plain Go table in `record/` (field, type, required). Each Work
+  Item's Contracts table stays the readable source; a test asserts every kind there has a schema.
+- A missing required field or a value of the wrong type stops the command, naming the file (or
+  `stdin`), the line and the field. **Extra fields are allowed**, because records gain fields
+  down the pipeline.
+- Only the kinds a command reads are checked; other kinds pass through unchecked.
+- The check is the same for the pipe and for `--from-<kind>` files.
+- Built in WO-0101-B with the D-030 pipe rule, after WO-0103-A, WO-0105-A and WO-0107-A merge.
+
+## D-038
+
+**FOCUS files are cached locally** (repo owner, 2026-10-27; Release 2). `aws-focus` downloads
+each closed month's FOCUS Parquet files once into `data/cache/aws/focus/`; DuckDB reads them
+from there. The open month is fetched again on each run, as for the Cost Explorer cache (D-007).
+
+## D-039
+
+**History is saved with `--save`** (repo owner, 2026-10-27; Release 2; with D-034). `map`,
+`share`, `trend` and `impact` take `--save`, which writes the run's output to
+`data/history/<command>/<run timestamp>.jsonl` as well as stdout. Reading history stays
+`--from-history FILE`.
+
+## D-040
+
+**`--as-reported` is in Release 2** (repo owner, 2026-10-27; D-007). It uses the taxonomy and
+organization saved for each period instead of today's.
+
+## D-041
+
+**How deep trend goes** (repo owner, 2026-10-27; Release 2; D-010). Cost hierarchy: OU ›
+account › region › service, with region only when FOCUS is the input. Project hierarchy:
+Project › App › Environment from `aws-cost`, and › Feature only when FOCUS is the input.
+
+## Q-006
+
+**Planner defaults in DD-02, to confirm** (planner, 2026-10-27). Open; blocks dispatching any
+DD-02 Work Order.
+
+1. **Impact floor unit:** the floor (default 30) applies to the monthly equivalent of the rise:
+   (`daily_avg` − baseline) × the calendar days of the month (WI-0204).
+2. **Trend baseline:** a node's baseline uses only earlier periods in which the node has cost; a
+   node whose latest period has none gets `trend-no-baseline` (WI-0203).
+3. **FOCUS hand-off:** `aws-focus` emits `focus_file` records (local cached paths), not FOCUS rows;
+   `focus-cost` reads the files with DuckDB; the mock FOCUS data is CSV (WI-0202).
+4. **Change explains impact:** a change touches a cost node through its account, and a project node
+   when its `old` or `new` value equals the node's value for the changed field (WI-0204).
+5. **As reported:** a period uses the newest snapshot saved before its end; `allocation` records are
+   written per snapshot used, and `share` matches on `snapshot` (WI-0205).
 

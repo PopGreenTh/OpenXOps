@@ -1,0 +1,26 @@
+name: cost-hierarchy-without-region
+why: >
+  The cost hierarchy takes ou_path from the account's account record. No cost record has a
+  region (Cost Explorer input), so the region level is skipped: the levels are ou, account and
+  service. Two currencies stay apart.
+args: { hierarchy: cost, as_of: "2026-10-15" }
+records:
+  - { kind: account, csp: aws, org_id: o-main, management_account: "111111111111", id: "200000000001", name: chk-prod, email: chk-prod@example.com, status: ACTIVE, parent_id: ou-3, ou_path: /Workloads/Checkout/Prod, ou_id_path: r-1/ou-1/ou-2/ou-3 }
+  - { kind: cost, account_id: "200000000001", service: AmazonEC2, period: 2026-08, metric: UnblendedCost, currency: USD, amount: 310 }
+  - { kind: cost, account_id: "200000000001", service: AmazonEC2, period: 2026-09, metric: UnblendedCost, currency: USD, amount: 450 }
+  - { kind: cost, account_id: "200000000001", service: AmazonS3, period: 2026-09, metric: UnblendedCost, currency: EUR, amount: 30 }
+expect:
+  trends:
+    - { level: ou, node: /Workloads/Checkout/Prod, ou_path: /Workloads/Checkout/Prod, account_id: "", service: "",
+        metric: UnblendedCost, currency: USD, period: 2026-09, amount: 450, days: 30, daily_avg: 15,
+        baseline_periods: 1, baseline_daily_avg: 10, factor: 1.5 }
+    - { level: account, node: "/Workloads/Checkout/Prod > 200000000001", metric: UnblendedCost, currency: USD, period: 2026-09,
+        amount: 450, daily_avg: 15, factor: 1.5 }
+    - { level: service, node: "/Workloads/Checkout/Prod > 200000000001 > AmazonEC2", metric: UnblendedCost, currency: USD,
+        period: 2026-09, amount: 450, daily_avg: 15, factor: 1.5 }
+    - { level: service, node: "/Workloads/Checkout/Prod > 200000000001 > AmazonS3", metric: UnblendedCost, currency: EUR,
+        period: 2026-09, amount: 30, daily_avg: 1, baseline_periods: 0, factor: null }
+  findings:
+    - { code: trend-no-baseline, subject: "cost:/Workloads/Checkout/Prod" }
+    - { code: trend-no-baseline, subject: "cost:/Workloads/Checkout/Prod > 200000000001" }
+    - { code: trend-no-baseline, subject: "cost:/Workloads/Checkout/Prod > 200000000001 > AmazonS3" }

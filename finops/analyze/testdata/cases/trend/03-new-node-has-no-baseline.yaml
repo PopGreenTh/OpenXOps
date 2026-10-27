@@ -1,0 +1,22 @@
+name: new-node-has-no-baseline
+why: >
+  A node's baseline uses only earlier periods in which it has cost. APP-PAY first has cost in
+  September, so it has no baseline and gets trend-no-baseline at each of its levels; its project
+  PRJ-SHOP has a baseline from APP-CHK's August. Fewer than 3 earlier periods still make a
+  baseline (APP-CHK: 1). The open month (October) has 0 days before --as-of, so no record.
+args: { hierarchy: project, as_of: "2026-10-01" }
+records:
+  - { kind: cost, account_id: "200000000001", service: AmazonEC2, project: PRJ-SHOP, app: APP-CHK, environment: ENV-PROD, period: 2026-08, metric: UnblendedCost, currency: USD, amount: 310 }
+  - { kind: cost, account_id: "200000000001", service: AmazonEC2, project: PRJ-SHOP, app: APP-CHK, environment: ENV-PROD, period: 2026-09, metric: UnblendedCost, currency: USD, amount: 600 }
+  - { kind: cost, account_id: "200000000004", service: AmazonRDS, project: PRJ-SHOP, app: APP-PAY, environment: ENV-PROD, period: 2026-09, metric: UnblendedCost, currency: USD, amount: 90 }
+expect:
+  trends:
+    - { level: app, node: PRJ-SHOP > APP-CHK, metric: UnblendedCost, currency: USD, period: 2026-09,
+        amount: 600, days: 30, daily_avg: 20, baseline_periods: 1, baseline_daily_avg: 10, factor: 2 }
+    - { level: app, node: PRJ-SHOP > APP-PAY, metric: UnblendedCost, currency: USD, period: 2026-09,
+        amount: 90, days: 30, daily_avg: 3, baseline_periods: 0, baseline_daily_avg: null, factor: null }
+    - { level: project, node: PRJ-SHOP, metric: UnblendedCost, currency: USD, period: 2026-09,
+        amount: 690, days: 30, daily_avg: 23, baseline_periods: 1, baseline_daily_avg: 10, factor: 2.3 }
+  findings:
+    - { code: trend-no-baseline, subject: "project:PRJ-SHOP > APP-PAY" }
+    - { code: trend-no-baseline, subject: "project:PRJ-SHOP > APP-PAY > ENV-PROD" }
