@@ -1,0 +1,13 @@
+{
+  "accounts": [
+    {"id": "200000000001", "app_tags": ["APP-CHK"], "project_tags": ["PRJ-SHOP"]},
+    {"id": "200000000002", "app_tags": ["APP-CHK", "APP-CHK,APP-PAY", "app-chk", "APP-WRONG", ""], "project_tags": ["PRJ-SHOP", "PRJ-PAY", "PRJ-OTHER"]},
+    {"id": "200000000003", "app_tags": ["APP-CHK"], "project_tags": ["PRJ-SHOP"]},
+    {"id": "200000000004", "app_tags": ["APP-PAY"], "project_tags": ["PRJ-PAY"]},
+    {"id": "200000000005", "app_tags": ["APP-PAY"], "project_tags": ["PRJ-PAY"]},
+    {"id": "200000000010", "app_tags": [""], "project_tags": [""]},
+    {"id": "200000000011", "app_tags": [""], "project_tags": [""]},
+    {"id": "200000000099", "app_tags": ["APP-CHK"], "project_tags": ["PRJ-SHOP"]},
+    {"id": "299999999999", "app_tags": ["APP-CHK"], "project_tags": ["PRJ-SHOP"]}
+  ]
+}
