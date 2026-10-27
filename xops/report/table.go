@@ -107,13 +107,11 @@ func tableHeadersFromFile(path string) (map[string][]string, error) {
 
 func formatTableBlock(kind string, header []string, rows [][]string, appendOnlyRows bool) string {
 	var b strings.Builder
-	if !appendOnlyRows {
-		fmt.Fprintf(&b, "--- %s ---\n", kind)
-		if len(header) > 0 {
-			widths := columnWidths(header, rows)
-			b.WriteString(formatRow(header, widths))
-			b.WriteByte('\n')
-		}
+	fmt.Fprintf(&b, "--- %s ---\n", kind)
+	if !appendOnlyRows && len(header) > 0 {
+		widths := columnWidths(header, rows)
+		b.WriteString(formatRow(header, widths))
+		b.WriteByte('\n')
 	}
 	if len(rows) > 0 {
 		widths := columnWidths(header, rows)

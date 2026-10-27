@@ -18,6 +18,19 @@ func WriteCSV(dir string, tables []KindTable, recs []record.Record) error {
 	for _, t := range tables {
 		path := filepath.Join(dir, t.Kind+".csv")
 		recsK := recordsOfKind(recs, t.Kind)
+		header, exists, err := readCSVHeader(path)
+		if err != nil {
+			return err
+		}
+		if exists {
+			if extra := ExtraFields(header, recsK); len(extra) > 0 {
+				return fmt.Errorf("kind %q: record fields not in header: %s", t.Kind, strings.Join(extra, ", "))
+			}
+		}
+	}
+	for _, t := range tables {
+		path := filepath.Join(dir, t.Kind+".csv")
+		recsK := recordsOfKind(recs, t.Kind)
 		if err := appendCSV(path, t.Kind, recsK); err != nil {
 			return err
 		}

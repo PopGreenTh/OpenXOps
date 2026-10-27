@@ -137,6 +137,51 @@ func TestAppendTwiceTableFile(t *testing.T) {
 	assertGolden(t, "table-append.txt", data)
 }
 
+func TestAppendNewFieldCSVSecondKind(t *testing.T) {
+	dir := t.TempDir()
+	mixed := filepath.Join("testdata", "mixed.jsonl")
+	recs := readMixed(t, mixed)
+	tables, err := report.Group(recs, []string{"alpha", "beta"}, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := report.WriteCSV(dir, tables, recs); err != nil {
+		t.Fatal(err)
+	}
+	alphaBefore, err := os.ReadFile(filepath.Join(dir, "alpha.csv"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	betaBefore, err := os.ReadFile(filepath.Join(dir, "beta.csv"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	bad := append([]record.Record{}, recs[2])
+	bad[0] = record.Record{"kind": "beta", "code": "b3", "qty": 1.0, "newfield": "x"}
+	badTables, err := report.Group(bad, []string{"beta"}, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = report.WriteCSV(dir, badTables, bad)
+	if err == nil {
+		t.Fatal("expected error for new field on append")
+	}
+	alphaAfter, err := os.ReadFile(filepath.Join(dir, "alpha.csv"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	betaAfter, err := os.ReadFile(filepath.Join(dir, "beta.csv"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(alphaBefore, alphaAfter) {
+		t.Fatalf("alpha.csv changed when beta append failed")
+	}
+	if !bytes.Equal(betaBefore, betaAfter) {
+		t.Fatalf("beta.csv changed after failed append")
+	}
+}
+
 func TestAppendNewFieldCSV(t *testing.T) {
 	dir := t.TempDir()
 	mixed := filepath.Join("testdata", "mixed.jsonl")
