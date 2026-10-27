@@ -107,13 +107,14 @@ by OU, the shared account serving both, the Security accounts left unmapped. It 
 **Assignee:** open
 **Depends on:** WO-0101-A (may run in parallel with WO-0102-A and WO-0103-A)
 **Packages:** `finops/enrich/`, `finops/main.go`, `Taskfile.yml`, `.vscode/launch.json`,
-`README.md`
+`README.md`, `go.mod`, `go.sum`
 
 **Goal.** `validate` and `map` as specified.
 
 **In scope.**
 - Taxonomy model and YAML loader (strict: unknown keys are errors), validation, resolution,
-  the command, the demo taxonomy.
+  the command, the demo taxonomy, and `testdata/demo-accounts.jsonl` (the demo organization's
+  `ou` and `account` records).
 - Tasks and launch entries for `validate` and `map` on the demo taxonomy and fixture files.
 - Tests: every map reference case; a table of validation errors, one per rule.
 - README: the taxonomy format and both commands.
@@ -123,7 +124,10 @@ by OU, the shared account serving both, the Security accounts left unmapped. It 
 **Done when.**
 - Every `cases/map/` case passes, unchanged.
 - `finops enrich validate --taxonomy finops/enrich/testdata/demo-taxonomy.yaml` exits 0.
-- `xops sense aws-accounts --mock | finops enrich map --taxonomy …/demo-taxonomy.yaml` prints an
-  `allocation` for every mock account, and the Security accounts get `account-unmapped`.
+- `finops enrich map --taxonomy …/demo-taxonomy.yaml --from-accounts
+  finops/enrich/testdata/demo-accounts.jsonl` prints an `allocation` for every account, and the
+  Security accounts get `account-unmapped`. `demo-accounts.jsonl` is WI-0102's demo organization
+  as `ou` and `account` records (WI-0102 Contracts), written by this Work Order. If WO-0102-A is
+  already on `main`, the PR also shows the same result piped from `xops sense aws-accounts --mock`.
 
 **Verify.** `go run ./scripts/check`

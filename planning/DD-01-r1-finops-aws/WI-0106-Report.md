@@ -39,7 +39,7 @@ Writing to an existing file appends, so repeated runs build one growing table.
 **Out of scope.** Markdown, Power BI, REST. Any summing.
 
 **Done when.**
-- The tests above pass on Windows and Linux.
+- The tests above pass on Linux (CI's Linux job; Windows is optional, D-026).
 - `xops report excel --out x.xlsx --from-cost …` run twice leaves one workbook whose sheets hold
   both runs' rows under one header (opened in Excel or LibreOffice; said in the PR).
 

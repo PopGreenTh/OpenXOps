@@ -49,7 +49,7 @@ the management account. WI-0104's demo taxonomy is written for this organization
 **Assignee:** open
 **Depends on:** WO-0101-A
 **Packages:** `aws/`, `xops/sense/`, `xops/main.go`, `Taskfile.yml`, `.vscode/launch.json`,
-`README.md`
+`README.md`, `go.mod`, `go.sum`
 
 **Goal.** `xops sense aws-accounts` as specified, live and `--mock`.
 
