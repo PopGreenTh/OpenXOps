@@ -1,0 +1,9 @@
+{
+  "go.useLanguageServer": true,
+  "go.lintTool": "off",
+  "go.testOnSave": false,
+  "[go]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "golang.go"
+  }
+}

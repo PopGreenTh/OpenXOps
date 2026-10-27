@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "xops version",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/xops",
+      "args": ["version"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "finops version",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/finops",
+      "args": ["version"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "record: tests",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceFolder}/record",
+      "console": "integratedTerminal"
+    }
+  ]
+}

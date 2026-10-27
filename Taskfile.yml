@@ -1,0 +1,53 @@
+version: "3"
+
+vars:
+  EXE: '{{if eq OS "windows"}}.exe{{end}}'
+
+tasks:
+  default:
+    cmds:
+      - task: check
+
+  build:
+    desc: Build xops and finops into bin/
+    cmds:
+      - go build -o bin/xops{{.EXE}} ./xops
+      - go build -o bin/finops{{.EXE}} ./finops
+
+  check:
+    desc: Verify (build, vet, gofmt, test)
+    cmds:
+      - go run ./scripts/check
+
+  test:
+    desc: Run all tests
+    cmds:
+      - go test ./...
+
+  run:xops:version:
+    desc: Run xops version
+    cmds:
+      - go run ./xops version
+
+  run:finops:version:
+    desc: Run finops version
+    cmds:
+      - go run ./finops version
+
+  clean:
+    desc: Remove built binaries
+    cmds:
+      - task: clean:posix
+      - task: clean:windows
+
+  clean:posix:
+    platforms: [linux, darwin]
+    internal: true
+    cmds:
+      - rm -rf bin
+
+  clean:windows:
+    platforms: [windows]
+    internal: true
+    cmds:
+      - cmd /c if exist bin rmdir /s /q bin
