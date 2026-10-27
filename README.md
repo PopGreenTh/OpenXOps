@@ -68,6 +68,24 @@ Read-only IAM (management or delegated admin): `organizations:DescribeOrganizati
 `organizations:ListRoots`, `organizations:ListOrganizationalUnitsForParent`,
 `organizations:ListAccountsForParent`.
 
+### `finops enrich validate` and `finops enrich map`
+
+The taxonomy is a YAML file (see `finops/enrich/testdata/demo-taxonomy.yaml`) with business units,
+projects, apps, landing zones (`lzs`), optional `ou_links` and per-account overrides.
+
+```bash
+go run ./finops enrich validate --taxonomy finops/enrich/testdata/demo-taxonomy.yaml
+go run ./finops enrich map --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
+  --from-accounts finops/enrich/testdata/demo-accounts.jsonl
+task run:finops:enrich-validate
+task run:finops:enrich-map
+```
+
+`validate` prints `finding` records and exits 1 on severity `error`. `map` passes through `ou`
+and `account` records, adds `allocation` rows, enriches optional `cost` records, and emits
+mapping `finding` records. Pipe inventory from `xops sense aws-accounts --mock` instead of
+`--from-accounts` when the org fixture is available.
+
 ### `xops report table|csv|excel`
 
 Turns JSON Lines records into human-readable tables. One table per `kind`, in first-seen order;
