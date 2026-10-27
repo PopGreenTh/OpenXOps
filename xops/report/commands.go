@@ -90,8 +90,7 @@ func runReport(cmd *cobra.Command, kinds, out, format string, froms []record.Fro
 	}
 	record.LogStart("xops report "+format, files, map[string]string{"kinds": kinds})
 
-	pipeOn := record.IsPipe(os.Stdin)
-	recs, err := record.Assemble(os.Stdin, pipeOn, froms)
+	recs, err := record.Assemble(os.Stdin, froms)
 	if err != nil {
 		return err
 	}

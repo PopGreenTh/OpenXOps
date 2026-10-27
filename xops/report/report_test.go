@@ -116,6 +116,42 @@ func TestAppendTwiceExcel(t *testing.T) {
 	}
 }
 
+func TestExcelAppendAfterAllEmptyRecord(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "out.xlsx")
+	first := []record.Record{
+		{"kind": "alpha", "name": "first", "score": 1.0},
+		{"kind": "alpha", "name": "", "score": nil},
+	}
+	tables, err := report.Group(first, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := report.WriteExcel(path, tables, first); err != nil {
+		t.Fatal(err)
+	}
+	second := []record.Record{{"kind": "alpha", "name": "second", "score": 2.0}}
+	tables, err = report.Group(second, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := report.WriteExcel(path, tables, second); err != nil {
+		t.Fatal(err)
+	}
+	f, err := excelize.OpenFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	row2Name, _ := f.GetCellValue("alpha", "A3")
+	if row2Name != "" {
+		t.Fatalf("row 3 name = %q, want empty (blank append row preserved)", row2Name)
+	}
+	row3Name, _ := f.GetCellValue("alpha", "A4")
+	if row3Name != "second" {
+		t.Fatalf("row 4 name = %q, want second", row3Name)
+	}
+}
+
 func TestAppendTwiceTableFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "out.txt")
 	mixed := filepath.Join("testdata", "mixed.jsonl")
@@ -218,7 +254,7 @@ func TestAppendNewFieldCSV(t *testing.T) {
 
 func readMixed(t *testing.T, path string) []record.Record {
 	t.Helper()
-	recs, err := record.ReadFile(path)
+	recs, err := record.ReadFile(path, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

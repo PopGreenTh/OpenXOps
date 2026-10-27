@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/PopGreenTh/OpenXOps/record/schema"
 )
 
 const maxRecordLine = 10 << 20 // 10 MiB
@@ -26,7 +28,8 @@ func (e *LineError) Error() string {
 func (e *LineError) Unwrap() error { return e.Err }
 
 // Read parses UTF-8 JSON Lines from r. name is the file path or "stdin", used in errors.
-func Read(r io.Reader, name string) ([]Record, error) {
+// When checkKinds is non-nil, records whose kind is in the set are validated against schema.
+func Read(r io.Reader, name string, checkKinds map[string]struct{}) ([]Record, error) {
 	sc := bufio.NewScanner(r)
 	sc.Buffer(make([]byte, 0, 64*1024), maxRecordLine)
 
@@ -42,6 +45,9 @@ func Read(r io.Reader, name string) ([]Record, error) {
 		if err != nil {
 			return nil, &LineError{File: name, Line: line, Err: err}
 		}
+		if err := schema.Validate(name, line, rec, checkKinds); err != nil {
+			return nil, err
+		}
 		recs = append(recs, rec)
 	}
 	if err := sc.Err(); err != nil {
@@ -51,16 +57,16 @@ func Read(r io.Reader, name string) ([]Record, error) {
 }
 
 // ReadFile reads JSON Lines from path. A path of "-" reads stdin.
-func ReadFile(path string) ([]Record, error) {
+func ReadFile(path string, checkKinds map[string]struct{}) ([]Record, error) {
 	if path == "-" {
-		return Read(os.Stdin, "stdin")
+		return Read(os.Stdin, "stdin", checkKinds)
 	}
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("open %s: %w", path, err)
 	}
 	defer f.Close()
-	return Read(f, path)
+	return Read(f, path, checkKinds)
 }
 
 func parseRecord(raw []byte) (Record, error) {

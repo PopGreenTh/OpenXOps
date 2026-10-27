@@ -29,6 +29,7 @@ func Map(t Taxonomy, recs []record.Record) []record.Record {
 		effectsByLZ[lz.Code] = applyOULinks(t, lz.Code, in, &findings)
 	}
 
+	lzUnknownOrgs := map[string]struct{}{}
 	var allocations []record.Record
 	for _, ac := range sortedAccounts(in.accounts) {
 		mgmt := strID(ac["management_account"])
@@ -39,7 +40,7 @@ func Map(t Taxonomy, recs []record.Record) []record.Record {
 		} else {
 			effects = map[string]ouLinkEffect{}
 		}
-		allocs, f := resolveAccount(t, in, ac, effects)
+		allocs, f := resolveAccount(t, in, ac, effects, lzUnknownOrgs)
 		allocations = append(allocations, allocs...)
 		findings = append(findings, f...)
 	}

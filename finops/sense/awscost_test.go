@@ -41,7 +41,7 @@ func runCost(t *testing.T, opt CostOptions) []record.Record {
 	if err := RunAwsCost(context.Background(), opt); err != nil {
 		t.Fatal(err)
 	}
-	recs, err := record.Read(bytes.NewReader(buf.Bytes()), "test")
+	recs, err := record.Read(bytes.NewReader(buf.Bytes()), "test", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

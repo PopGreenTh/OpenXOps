@@ -72,11 +72,11 @@ func appendSheet(f *excelize.File, kind string, recs []record.Record) error {
 	}
 	startRow := 1
 	if exists {
-		n, err := f.GetRows(sheet)
+		last, err := sheetLastRow(f, sheet)
 		if err != nil {
 			return err
 		}
-		startRow = len(n) + 1
+		startRow = last + 1
 	} else {
 		for i, col := range cols {
 			cell, _ := excelize.CoordinatesToCellName(i+1, 1)
@@ -96,6 +96,22 @@ func appendSheet(f *excelize.File, kind string, recs []record.Record) error {
 		}
 	}
 	return nil
+}
+
+func sheetLastRow(f *excelize.File, sheet string) (int, error) {
+	rows, err := f.Rows(sheet)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = rows.Close() }()
+	last := 0
+	for rows.Next() {
+		last++
+	}
+	if err := rows.Error(); err != nil {
+		return 0, err
+	}
+	return last, nil
 }
 
 func readExcelHeader(f *excelize.File, sheet string) ([]string, error) {

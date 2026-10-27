@@ -30,11 +30,12 @@ func changesCommand() *cobra.Command {
 				"before": before,
 				"map":    mapFrom.File,
 			}, nil)
-			beforeRecs, err := record.ReadFile(before)
+			check := record.CheckKindsFrom([]record.From{*mapFrom})
+			beforeRecs, err := record.ReadFile(before, check)
 			if err != nil {
 				return err
 			}
-			nowRecs, err := record.Assemble(os.Stdin, record.IsPipe(os.Stdin), []record.From{*mapFrom})
+			nowRecs, err := record.Assemble(os.Stdin, []record.From{*mapFrom})
 			if err != nil {
 				return err
 			}

@@ -1,4 +1,4 @@
-{"kind":"cost","id":"c1"}
-{"kind":"account","id":"a1"}
-{"kind":"cost","id":"c2"}
-{"kind":"ou","id":"o1"}
+{"kind":"cost","id":"c1","csp":"aws","management_account":"111111111111","granularity":"monthly","period":"2026-09","metric":"UnblendedCost","amount":1,"currency":"USD","estimated":false,"account_id":"200000000001","service":"AmazonEC2","app_tag":""}
+{"kind":"account","id":"a1","csp":"aws","org_id":"o-main","management_account":"111111111111","name":"a","email":"a@example.com","status":"ACTIVE","parent_id":"r-1","ou_path":"/","ou_id_path":"r-1"}
+{"kind":"cost","id":"c2","csp":"aws","management_account":"111111111111","granularity":"monthly","period":"2026-09","metric":"UnblendedCost","amount":2,"currency":"USD","estimated":false,"account_id":"200000000002","service":"AmazonS3","app_tag":""}
+{"kind":"ou","id":"o1","csp":"aws","org_id":"o-main","management_account":"111111111111","name":"Root","parent_id":"","path":"/","id_path":"r-1","has_children":false}

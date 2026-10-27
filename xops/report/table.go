@@ -154,5 +154,5 @@ func formatRow(cells []string, widths []int) string {
 			parts[i] = c
 		}
 	}
-	return strings.Join(parts, "  ")
+	return strings.TrimRight(strings.Join(parts, "  "), " ")
 }

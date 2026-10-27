@@ -38,11 +38,8 @@ type OrgAPI interface {
 	ListAccountsForParent(ctx context.Context, parentID string) ([]Account, error)
 }
 
-// DiscoverSnapshot walks the organization through api with at most maxConcurrent list calls.
-func DiscoverSnapshot(ctx context.Context, api OrgAPI, maxConcurrent int) (Snapshot, error) {
-	if maxConcurrent < 1 {
-		maxConcurrent = 1
-	}
+// DiscoverSnapshot walks the organization through api (list calls run serially per parent).
+func DiscoverSnapshot(ctx context.Context, api OrgAPI) (Snapshot, error) {
 	var orgID, mgmt string
 	slog.Debug("organizations call", slog.String("operation", "DescribeOrganization"))
 	if err := Retry(ctx, func() error {
@@ -61,7 +58,6 @@ func DiscoverSnapshot(ctx context.Context, api OrgAPI, maxConcurrent int) (Snaps
 	}); err != nil {
 		return Snapshot{}, err
 	}
-	_ = maxConcurrent // reserved; listing runs serially per parent today.
 	var (
 		allOUs  []OU
 		allAccs []Account

@@ -169,7 +169,7 @@ func deepestOURule(chain []string, effects map[string]ouLinkEffect, pickApp bool
 	return "", ""
 }
 
-func resolveAccount(t Taxonomy, in inv, ac record.Record, ouEffects map[string]ouLinkEffect) ([]record.Record, []record.Record) {
+func resolveAccount(t Taxonomy, in inv, ac record.Record, ouEffects map[string]ouLinkEffect, lzUnknownOrgs map[string]struct{}) ([]record.Record, []record.Record) {
 	var findings []record.Record
 	acctID := strID(ac["id"])
 	mgmt := strID(ac["management_account"])
@@ -178,8 +178,16 @@ func resolveAccount(t Taxonomy, in inv, ac record.Record, ouEffects map[string]o
 
 	lz, ok := lzByMgmt(t, mgmt)
 	if !ok {
-		findings = append(findings, record.Finding("warning", "lz-unknown", org,
-			fmt.Sprintf("no LZ for management account %s", mgmt), cmdMap))
+		if org != "" {
+			if _, dup := lzUnknownOrgs[org]; !dup {
+				lzUnknownOrgs[org] = struct{}{}
+				findings = append(findings, record.Finding("warning", "lz-unknown", org,
+					fmt.Sprintf("no LZ for management account %s", mgmt), cmdMap))
+			}
+		} else {
+			findings = append(findings, record.Finding("warning", "lz-unknown", org,
+				fmt.Sprintf("no LZ for management account %s", mgmt), cmdMap))
+		}
 		rec := allocationRecord(acctID, strID(ac["name"]), lzUnalloc, ouPath, prjUnalloc, appUnalloc, envUnalloc, buUnalloc, ccUnalloc, "unalloc", "unalloc", false)
 		return []record.Record{rec}, findings
 	}
@@ -381,8 +389,30 @@ func checkProjectTags(t Taxonomy, in inv, rec record.Record, byAcct map[string][
 	if _, ok := allowed[tag]; ok {
 		return nil
 	}
-	return []record.Record{record.Finding("warning", "project-tag-mismatch", acctID+"/"+tag,
-		fmt.Sprintf("project tag %q does not match taxonomy project(s) for account %s", tag, acctID), cmdMap)}
+	projs := make([]string, 0, len(allocs))
+	seen := map[string]struct{}{}
+	for _, a := range allocs {
+		p := strID(a["project"])
+		if p == "" {
+			continue
+		}
+		if _, ok := seen[p]; ok {
+			continue
+		}
+		seen[p] = struct{}{}
+		projs = append(projs, p)
+	}
+	sort.Strings(projs)
+	var msg string
+	switch len(projs) {
+	case 0:
+		msg = fmt.Sprintf("project tag %q does not match account projects for account %s", tag, acctID)
+	case 1:
+		msg = fmt.Sprintf("project tag %q does not match account project %q", tag, projs[0])
+	default:
+		msg = fmt.Sprintf("project tag %q does not match account projects %s", tag, strings.Join(projs, ", "))
+	}
+	return []record.Record{record.Finding("warning", "project-tag-mismatch", acctID+"/"+tag, msg, cmdMap)}
 }
 
 func staleAccountEntries(t Taxonomy, in inv) []record.Record {
