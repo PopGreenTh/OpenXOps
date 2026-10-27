@@ -41,7 +41,6 @@ func RunAwsCost(ctx context.Context, opt CostOptions) error {
 	now := Clock()
 	if opt.Mock {
 		now = ce.NowFunc()
-		Clock = ce.NowFunc
 	}
 	ceGranularity, recordGranularity, err := parseGranularity(opt.Granularity)
 	if err != nil {
@@ -270,7 +269,7 @@ func fetchAndCache(ctx context.Context, opt CostOptions, store *cacheStore, leve
 			}
 			slice := filterResultsForPeriod(out.Results, p, ceGranularity)
 			closed := periodClosed(p, recordGranularity, now)
-			if err := store.write(level, recordGranularity, metric, tagKey, account, p, closed, slice); err != nil {
+			if err := store.write(level, recordGranularity, metric, tagKey, account, p, closed, opt.Refresh, slice); err != nil {
 				return err
 			}
 			cached[p] = &cacheEntry{Results: slice}

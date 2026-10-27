@@ -40,39 +40,62 @@ func (c *cacheStore) dir(level int, recordGranularity, metric, tagKey, account s
 	return filepath.Join(c.root, c.managementAccount, name)
 }
 
+type cacheCandidate struct {
+	path string
+	ts   time.Time
+}
+
 func (c *cacheStore) read(level int, recordGranularity, metric, tagKey, account, period string, refresh bool) (*cacheEntry, bool) {
 	if refresh {
 		slog.Debug("cache miss", slog.String("period", period), slog.String("reason", "refresh"))
 		return nil, false
 	}
 	dir := c.dir(level, recordGranularity, metric, tagKey, account)
-	closedPath := filepath.Join(dir, period+".json")
-	if data, err := os.ReadFile(closedPath); err == nil {
-		slog.Debug("cache hit", slog.String("period", period), slog.String("file", closedPath))
+	var cands []cacheCandidate
+	plain := filepath.Join(dir, period+".json")
+	if data, err := os.ReadFile(plain); err == nil {
 		var ent cacheEntry
 		if json.Unmarshal(data, &ent) == nil {
-			return &ent, true
+			cands = append(cands, cacheCandidate{plain, time.Time{}})
 		}
 	}
 	entries, _ := filepath.Glob(filepath.Join(dir, period+"@*.json"))
-	if len(entries) == 0 {
+	for _, path := range entries {
+		cands = append(cands, cacheCandidate{path, timestampFromCacheFile(path)})
+	}
+	if len(cands) == 0 {
 		slog.Debug("cache miss", slog.String("period", period))
 		return nil, false
 	}
-	sort.Strings(entries)
-	latest := entries[len(entries)-1]
-	if ts := timestampFromCacheFile(latest); !ts.IsZero() {
-		if c.now.Sub(ts) > cacheMaxAge {
+	sort.Slice(cands, func(i, j int) bool {
+		if cands[i].ts.Equal(cands[j].ts) {
+			return cands[i].path < cands[j].path
+		}
+		return cands[i].ts.Before(cands[j].ts)
+	})
+	best := cands[len(cands)-1]
+	if !best.ts.IsZero() && c.now.Sub(best.ts) > cacheMaxAge {
+		for i := len(cands) - 1; i >= 0; i-- {
+			if cands[i].ts.IsZero() {
+				best = cands[i]
+				break
+			}
+			if c.now.Sub(cands[i].ts) <= cacheMaxAge {
+				best = cands[i]
+				break
+			}
+		}
+		if !best.ts.IsZero() && c.now.Sub(best.ts) > cacheMaxAge {
 			slog.Debug("cache miss", slog.String("period", period), slog.String("reason", "stale"))
 			return nil, false
 		}
 	}
-	data, err := os.ReadFile(latest)
+	data, err := os.ReadFile(best.path)
 	if err != nil {
 		slog.Debug("cache miss", slog.String("period", period))
 		return nil, false
 	}
-	slog.Debug("cache hit", slog.String("period", period), slog.String("file", latest))
+	slog.Debug("cache hit", slog.String("period", period), slog.String("file", best.path))
 	var ent cacheEntry
 	if err := json.Unmarshal(data, &ent); err != nil {
 		return nil, false
@@ -80,7 +103,7 @@ func (c *cacheStore) read(level int, recordGranularity, metric, tagKey, account,
 	return &ent, true
 }
 
-func (c *cacheStore) write(level int, recordGranularity, metric, tagKey, account, period string, closed bool, results []ce.ResultByTime) error {
+func (c *cacheStore) write(level int, recordGranularity, metric, tagKey, account, period string, closed, refresh bool, results []ce.ResultByTime) error {
 	dir := c.dir(level, recordGranularity, metric, tagKey, account)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
@@ -91,7 +114,7 @@ func (c *cacheStore) write(level int, recordGranularity, metric, tagKey, account
 		return err
 	}
 	var path string
-	if closed {
+	if closed && !refresh {
 		path = filepath.Join(dir, period+".json")
 		if _, err := os.Stat(path); err == nil {
 			return nil

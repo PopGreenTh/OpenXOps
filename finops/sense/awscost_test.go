@@ -182,6 +182,10 @@ func TestRefreshDoesNotOverwriteClosed(t *testing.T) {
 	if !info2.ModTime().Equal(mod) {
 		t.Fatal("refresh overwrote closed cache file")
 	}
+	atFiles, _ := filepath.Glob(filepath.Join(cache, "111111111111", "1-monthly-UnblendedCost-Project", "2024-11@*.json"))
+	if len(atFiles) == 0 {
+		t.Fatal("refresh should write a timestamped cache file for a closed period")
+	}
 }
 
 func TestDifferentMetricSeparateCache(t *testing.T) {
@@ -211,9 +215,9 @@ func TestLevel2OneCallPerAccount(t *testing.T) {
 		Mock: true, CE: &countingCE{inner: inner, n: &calls},
 		From: from, To: to, CacheRoot: testCacheDir(t),
 	})
-	// level 1: one range call; level 2: one call per account (9 mock accounts)
-	if calls < 10 {
-		t.Fatalf("expected level1 + level2 calls, got %d", calls)
+	want := 1 + 9 // one level-1 range call plus one level-2 call per account from level 1
+	if calls != want {
+		t.Fatalf("expected %d CE calls (1 level-1 + 9 level-2), got %d", want, calls)
 	}
 }
 
@@ -222,6 +226,7 @@ func TestCostHistoryShortFinding(t *testing.T) {
 	recs := runCost(t, CostOptions{
 		Mock: true, CE: ce.NewMock(),
 		From: "2020-01", To: "2026-10",
+		CacheRoot: testCacheDir(t),
 	})
 	var found bool
 	for _, r := range recs {
