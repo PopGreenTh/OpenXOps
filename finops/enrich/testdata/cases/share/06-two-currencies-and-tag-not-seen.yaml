@@ -1,0 +1,36 @@
+name: two-currencies-and-tag-not-seen
+why: >
+  Splits never mix currencies, and the total per period, metric and currency is unchanged. When
+  shared accounts exist but none of their rows carries any App tag, the tag is probably not
+  activated for cost allocation, and that is reported once.
+taxonomy:
+  business_units: [{ code: BU-RETAIL, name: Retail }]
+  cost_centers: [{ code: CC-ECOM, name: E-commerce, business_unit: BU-RETAIL }]
+  projects: [{ code: PRJ-SHOP, name: Online shop, business_unit: BU-RETAIL }]
+  apps:
+    - { code: APP-A, name: A, project: PRJ-SHOP, cost_center: CC-ECOM, environments: [{ code: ENV-PROD, name: Production }] }
+    - { code: APP-B, name: B, project: PRJ-SHOP, cost_center: CC-ECOM, environments: [{ code: ENV-PROD, name: Production }] }
+    - { code: APP-C, name: C, project: PRJ-SHOP, cost_center: CC-ECOM, environments: [{ code: ENV-PROD, name: Production }] }
+  lzs: [{ code: LZ-MAIN, name: Main, csp: aws, currency: USD, management_account: "111111111111" }]
+  accounts:
+    - { account: "200000000001", apps: [APP-A, APP-B], environment: ENV-PROD }
+    - { account: "200000000002", apps: [APP-C], environment: ENV-PROD }
+    - { account: "200000000003", apps: [APP-A, APP-B, APP-C], environment: ENV-PROD }
+records:
+  - { kind: allocation, account_id: "200000000001", account_name: acct-200000000001, lz: LZ-MAIN, ou_path: /, project: PRJ-SHOP, app: APP-A, environment: ENV-PROD, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, environment_rule: account, shared: true }
+  - { kind: allocation, account_id: "200000000001", account_name: acct-200000000001, lz: LZ-MAIN, ou_path: /, project: PRJ-SHOP, app: APP-B, environment: ENV-PROD, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, environment_rule: account, shared: true }
+  - { kind: allocation, account_id: "200000000002", account_name: acct-200000000002, lz: LZ-MAIN, ou_path: /, project: PRJ-SHOP, app: APP-C, environment: ENV-PROD, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, environment_rule: account, shared: false }
+  - { kind: allocation, account_id: "200000000003", account_name: acct-200000000003, lz: LZ-MAIN, ou_path: /, project: PRJ-SHOP, app: APP-A, environment: ENV-PROD, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, environment_rule: account, shared: true }
+  - { kind: allocation, account_id: "200000000003", account_name: acct-200000000003, lz: LZ-MAIN, ou_path: /, project: PRJ-SHOP, app: APP-B, environment: ENV-PROD, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, environment_rule: account, shared: true }
+  - { kind: allocation, account_id: "200000000003", account_name: acct-200000000003, lz: LZ-MAIN, ou_path: /, project: PRJ-SHOP, app: APP-C, environment: ENV-PROD, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, environment_rule: account, shared: true }
+  - { kind: cost, csp: aws, management_account: "111111111111", account_id: "200000000001", granularity: monthly, period: 2026-09, metric: UnblendedCost, service: AmazonEC2, app_tag: "", amount: 100, currency: USD, estimated: false, lz: LZ-MAIN, environment: ENV-PROD, environment_rule: account, shared: true, project: "", app: "", business_unit: "", cost_center: "", app_rule: "" }
+  - { kind: cost, csp: aws, management_account: "111111111111", account_id: "200000000001", granularity: monthly, period: 2026-09, metric: UnblendedCost, service: AmazonEC2, app_tag: "", amount: 50, currency: EUR, estimated: false, lz: LZ-MAIN, environment: ENV-PROD, environment_rule: account, shared: true, project: "", app: "", business_unit: "", cost_center: "", app_rule: "" }
+expect:
+  costs:
+    - { account_id: "200000000001", app: APP-A, amount: 25, currency: EUR, share_rule: untagged-equal }
+    - { account_id: "200000000001", app: APP-A, amount: 50, currency: USD, share_rule: untagged-equal }
+    - { account_id: "200000000001", app: APP-B, amount: 25, currency: EUR, share_rule: untagged-equal }
+    - { account_id: "200000000001", app: APP-B, amount: 50, currency: USD, share_rule: untagged-equal }
+  findings:
+    - { code: shared-untagged, subject: 200000000001/2026-09 }
+    - { code: app-tag-not-seen, subject: App }

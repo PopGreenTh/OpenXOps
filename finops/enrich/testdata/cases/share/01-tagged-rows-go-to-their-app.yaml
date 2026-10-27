@@ -1,0 +1,31 @@
+name: tagged-rows-go-to-their-app
+why: >
+  A shared account's row tagged with one of its Apps goes whole to that App. Tags match App codes
+  ignoring case and surrounding spaces (D-016).
+taxonomy:
+  business_units: [{ code: BU-RETAIL, name: Retail }]
+  cost_centers: [{ code: CC-ECOM, name: E-commerce, business_unit: BU-RETAIL }]
+  projects: [{ code: PRJ-SHOP, name: Online shop, business_unit: BU-RETAIL }]
+  apps:
+    - { code: APP-A, name: A, project: PRJ-SHOP, cost_center: CC-ECOM, environments: [{ code: ENV-PROD, name: Production }] }
+    - { code: APP-B, name: B, project: PRJ-SHOP, cost_center: CC-ECOM, environments: [{ code: ENV-PROD, name: Production }] }
+    - { code: APP-C, name: C, project: PRJ-SHOP, cost_center: CC-ECOM, environments: [{ code: ENV-PROD, name: Production }] }
+  lzs: [{ code: LZ-MAIN, name: Main, csp: aws, currency: USD, management_account: "111111111111" }]
+  accounts:
+    - { account: "200000000001", apps: [APP-A, APP-B], environment: ENV-PROD }
+    - { account: "200000000002", apps: [APP-C], environment: ENV-PROD }
+    - { account: "200000000003", apps: [APP-A, APP-B, APP-C], environment: ENV-PROD }
+records:
+  - { kind: allocation, account_id: "200000000001", account_name: acct-200000000001, lz: LZ-MAIN, ou_path: /, project: PRJ-SHOP, app: APP-A, environment: ENV-PROD, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, environment_rule: account, shared: true }
+  - { kind: allocation, account_id: "200000000001", account_name: acct-200000000001, lz: LZ-MAIN, ou_path: /, project: PRJ-SHOP, app: APP-B, environment: ENV-PROD, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, environment_rule: account, shared: true }
+  - { kind: allocation, account_id: "200000000002", account_name: acct-200000000002, lz: LZ-MAIN, ou_path: /, project: PRJ-SHOP, app: APP-C, environment: ENV-PROD, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, environment_rule: account, shared: false }
+  - { kind: allocation, account_id: "200000000003", account_name: acct-200000000003, lz: LZ-MAIN, ou_path: /, project: PRJ-SHOP, app: APP-A, environment: ENV-PROD, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, environment_rule: account, shared: true }
+  - { kind: allocation, account_id: "200000000003", account_name: acct-200000000003, lz: LZ-MAIN, ou_path: /, project: PRJ-SHOP, app: APP-B, environment: ENV-PROD, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, environment_rule: account, shared: true }
+  - { kind: allocation, account_id: "200000000003", account_name: acct-200000000003, lz: LZ-MAIN, ou_path: /, project: PRJ-SHOP, app: APP-C, environment: ENV-PROD, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, environment_rule: account, shared: true }
+  - { kind: cost, csp: aws, management_account: "111111111111", account_id: "200000000001", granularity: monthly, period: 2026-09, metric: UnblendedCost, service: AmazonEC2, app_tag: "app-a", amount: 40, currency: USD, estimated: false, lz: LZ-MAIN, environment: ENV-PROD, environment_rule: account, shared: true, project: "", app: "", business_unit: "", cost_center: "", app_rule: "" }
+  - { kind: cost, csp: aws, management_account: "111111111111", account_id: "200000000001", granularity: monthly, period: 2026-09, metric: UnblendedCost, service: AmazonEC2, app_tag: " APP-B ", amount: 60, currency: USD, estimated: false, lz: LZ-MAIN, environment: ENV-PROD, environment_rule: account, shared: true, project: "", app: "", business_unit: "", cost_center: "", app_rule: "" }
+expect:
+  costs:
+    - { account_id: "200000000001", app: APP-A, project: PRJ-SHOP, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, amount: 40, source_amount: 40, share: 1, share_rule: tag }
+    - { account_id: "200000000001", app: APP-B, project: PRJ-SHOP, amount: 60, source_amount: 60, share: 1, share_rule: tag }
+  findings: []

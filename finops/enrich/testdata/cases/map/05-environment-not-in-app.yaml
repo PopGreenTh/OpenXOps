@@ -1,0 +1,31 @@
+name: environment-not-in-app
+why: >
+  A resolved Environment that is not defined under the account's App becomes ENV-UNSPEC with a
+  finding. Here the global default ENV-QA exists only under APP-PAY.
+taxonomy:
+  business_units: [{ code: BU-RETAIL, name: Retail }]
+  cost_centers: [{ code: CC-ECOM, name: E-commerce, business_unit: BU-RETAIL }]
+  projects:
+    - { code: PRJ-SHOP, name: Online shop, business_unit: BU-RETAIL }
+    - { code: PRJ-PAY, name: Payments, business_unit: BU-RETAIL }
+  apps:
+    - { code: APP-CHK, name: Checkout, project: PRJ-SHOP, cost_center: CC-ECOM,
+        environments: [{ code: ENV-PROD, name: Production }] }
+    - { code: APP-PAY, name: Payments, project: PRJ-PAY, cost_center: CC-ECOM,
+        environments: [{ code: ENV-QA, name: Quality }] }
+  lzs: [{ code: LZ-MAIN, name: Main, csp: aws, currency: USD, management_account: "111111111111" }]
+  ou_links:
+    - { lz: LZ-MAIN, ou: /Workloads/Checkout, app: APP-CHK }
+  defaults: { environment: ENV-QA }
+records:
+  - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: r-1, name: Root, parent_id: "", path: /, id_path: r-1, has_children: true }
+  - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: ou-1, name: Workloads, parent_id: r-1, path: /Workloads, id_path: r-1/ou-1, has_children: true }
+  - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: ou-2, name: Checkout, parent_id: ou-1, path: /Workloads/Checkout, id_path: r-1/ou-1/ou-2, has_children: true }
+  - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: ou-3, name: Prod, parent_id: ou-2, path: /Workloads/Checkout/Prod, id_path: r-1/ou-1/ou-2/ou-3, has_children: false }
+  - { kind: account, csp: aws, org_id: o-main, management_account: "111111111111", id: "200000000001", name: chk-prod, email: chk-prod@example.com, status: ACTIVE, parent_id: ou-3, ou_path: /Workloads/Checkout/Prod, ou_id_path: r-1/ou-1/ou-2/ou-3 }
+expect:
+  allocations:
+    - { account_id: "200000000001", lz: LZ-MAIN, app: APP-CHK, environment: ENV-UNSPEC, app_rule: "ou:/Workloads/Checkout",
+        environment_rule: unspec, shared: false }
+  findings:
+    - { code: environment-not-in-app, subject: 200000000001/APP-CHK }

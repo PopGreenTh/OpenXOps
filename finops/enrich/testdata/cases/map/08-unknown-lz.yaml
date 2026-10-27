@@ -1,0 +1,23 @@
+name: unknown-lz
+why: >
+  An organization whose management account matches no LZ maps every account to LZ-UNALLOC and
+  every level to UNALLOC, with one finding for the organization; no other rule runs.
+taxonomy:
+  business_units: [{ code: BU-RETAIL, name: Retail }]
+  cost_centers: [{ code: CC-ECOM, name: E-commerce, business_unit: BU-RETAIL }]
+  projects: [{ code: PRJ-SHOP, name: Online shop, business_unit: BU-RETAIL }]
+  apps:
+    - { code: APP-CHK, name: Checkout, project: PRJ-SHOP, cost_center: CC-ECOM,
+        environments: [{ code: ENV-PROD, name: Production }] }
+  lzs: [{ code: LZ-MAIN, name: Main, csp: aws, currency: USD, management_account: "111111111111" }]
+  defaults: { app: APP-CHK, environment: ENV-PROD }
+records:
+  - { kind: ou, csp: aws, org_id: o-other, management_account: "999999999999", id: r-9, name: Root, parent_id: "", path: /, id_path: r-9, has_children: false }
+  - { kind: account, csp: aws, org_id: o-other, management_account: "999999999999", id: "900000000001", name: stray, email: stray@example.com, status: ACTIVE, parent_id: r-9, ou_path: /, ou_id_path: r-9 }
+expect:
+  allocations:
+    - { account_id: "900000000001", lz: LZ-UNALLOC, project: PRJ-UNALLOC, app: APP-UNALLOC,
+        environment: ENV-UNALLOC, business_unit: BU-UNALLOC, cost_center: CC-UNALLOC,
+        app_rule: unalloc, environment_rule: unalloc, shared: false }
+  findings:
+    - { code: lz-unknown, subject: o-other }
