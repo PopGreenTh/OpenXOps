@@ -160,10 +160,7 @@ func splitSharedCost(cost record.Record, allocs []record.Record, appCodes map[st
 	}
 
 	sort.SliceStable(targets, func(i, j int) bool {
-		if targets[i].app != targets[j].app {
-			return targets[i].app < targets[j].app
-		}
-		return targets[i].part < targets[j].part
+		return targets[i].app < targets[j].app
 	})
 
 	var out []record.Record
@@ -252,7 +249,7 @@ func fillFromAllocation(cost record.Record, app string, allocs []record.Record) 
 }
 
 func sortShareCosts(costs []record.Record) {
-	sort.Slice(costs, func(i, j int) bool {
+	sort.SliceStable(costs, func(i, j int) bool {
 		a, b := costs[i], costs[j]
 		if a["account_id"] != b["account_id"] {
 			return strID(a["account_id"]) < strID(b["account_id"])
@@ -265,7 +262,13 @@ func sortShareCosts(costs []record.Record) {
 		}
 		af, _ := toFloat(a["amount"])
 		bf, _ := toFloat(b["amount"])
-		return af < bf
+		if af != bf {
+			return af < bf
+		}
+		if strID(a["service"]) != strID(b["service"]) {
+			return strID(a["service"]) < strID(b["service"])
+		}
+		return strID(a["app_tag"]) < strID(b["app_tag"])
 	})
 }
 
