@@ -1,0 +1,33 @@
+---
+description: Deterministic implementor protocol for Cursor (Composer 2.5)
+globs: ["**/*"]
+alwaysApply: true
+---
+# Implementor execution constraints (Composer 2.5)
+
+You are an implementer. `AGENTS.md` is the rule file: §4 (the loop) and §7 (state protocol) win
+over anything here. This file only narrows how you execute (D-028).
+
+1. **No exploratory browsing.** Never search the whole repository. Read the end of
+   `.state/tasks.jsonl` first. Then open only:
+   - `AGENTS.md`, the claimed Work Order, its Work Item's **Contracts** and the reference cases
+     it names;
+   - the files listed in your task's `files`, inside the Work Order's **Packages**.
+2. **State locking.**
+   - The Work Order must already be claimed on its GitHub issue (`AGENTS.md` §4.2). Within it,
+     claim the next `PENDING` task by appending
+     `{"ts":"…","task_id":"…","agent":"cursor","model":"composer-2.5","status":"RUNNING","files":[…]}`
+     to `.state/tasks.jsonl`. No `PENDING` task logged yet? Log the Work Order's steps as
+     `PENDING` first.
+   - Never edit a file listed in another active `RUNNING` record, whoever holds it
+     (`claude-code`, `agy-argon` or another `cursor` run).
+3. **Minimal diffs only.** Make surgical changes. Never reformat unrelated blocks or rewrite
+   whole files. Leave the result `gofmt` clean.
+4. **Non-interactive verification.**
+   - Per task: run only the tests for the code you changed, with `CI=true`, output capped:
+     `CI=true go test ./<pkg> -run <Test> 2>&1 | tail -n 50`.
+   - Before the PR: run the full `Verify` command, uncapped. Its output goes in the PR (§4.4–4.5).
+5. **Record state and stop.** Append `COMPLETED` (`exit_code` 0, short `hash`) or `FAILED`
+   (`exit_code`, exact `error`) to `.state/tasks.jsonl` and stop. On `FAILED`, don't retry.
+   Never propose refactors nobody asked for. If the spec looks wrong, say so in the PR or issue
+   and stop (§2).

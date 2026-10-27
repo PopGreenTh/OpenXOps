@@ -24,11 +24,11 @@ OpenXOps is a fresh start ([D-001](planning/DECISIONS.md#d-001)). The earlier pr
 | Who | Role | Writes |
 |---|---|---|
 | **Repo owner** | Decides, answers grill questions, gives the go-ahead to dispatch and to merge | Anything |
-| **Claude Code** | Planner and reviewer. Writes specs, decisions, Work Orders and reference cases; reviews every PR | `planning/`, reference cases, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`. **Never implementation code** |
+| **Claude Code** | Planner and reviewer. Writes specs, decisions, Work Orders and reference cases; reviews every PR | `planning/`, reference cases, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/`. **Never implementation code** |
 | **Antigravity** | Implementer | Source, tests, CI and docs inside the claimed Work Order's scope |
 | **Cursor** | Implementer | Source, tests, CI and docs inside the claimed Work Order's scope |
 
-Implementers never edit `planning/`, reference cases or this file. If the spec is wrong,
+Implementers never edit `planning/`, reference cases, `.cursor/rules/` or this file. If the spec is wrong,
 contradicts itself or is unclear, **stop and say so** in the PR or issue; Claude fixes the spec.
 
 **Claude's duties.** Claude never writes implementation code, even when asked to "just fix"
@@ -128,7 +128,8 @@ issue claim still decides who builds a Work Order, and `Verify` still runs befor
   and any locks.
 
 **Records.** Every line has `ts` (RFC 3339 UTC), `task_id`, `agent` and `status`.
-- `agent`: `claude-code`, `agy-argon` or `cursor`.
+- `agent`: `claude-code`, `agy-argon` or `cursor`. Add `model` when it helps
+  (`"model":"composer-2.5"`); locks follow `files`, whatever the agent or model.
 - `task_id`: the Work Order ID, plus a step for implementers (`WO-0102-A/discovery`), or a short
   name for Claude's work (`review-pr-3`).
 - `status`: `PENDING`, `RUNNING`, `COMPLETED` or `FAILED`.

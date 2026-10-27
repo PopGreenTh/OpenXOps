@@ -295,3 +295,22 @@ repo owner's text was adjusted to fit the existing rules:
   `error`.
 
 This replaces the first draft of D-027 (an implementer-only protocol), which was never merged.
+
+## D-028
+
+**A Cursor rule that holds Composer 2.5 to execution** (repo owner, 2026-10-27).
+`.cursor/rules/implementor.mdc` is applied to every Cursor request. It points to `AGENTS.md` §4
+and §7, which win, and narrows execution: no repository-wide search, minimal diffs, logged
+state, stop after each task. Claude writes `.cursor/rules/`; implementers don't edit it. The
+repo owner's text was adjusted to fit the existing rules:
+
+- **Agent names stay as in §7.** The owner's text used `cursor-composer-2.5` and
+  `agy-gemini-3.8-flash`. The rule uses `agent` `cursor` with `model` `composer-2.5` (§7 now
+  allows a `model` field). Every active lock counts, including another Cursor run's.
+- **The spec is always read.** Besides the task's files: `AGENTS.md`, the Work Order, its
+  Contracts and its reference cases.
+- **The issue claim comes first.** Logging `RUNNING` doesn't replace claiming the Work Order on
+  its GitHub issue (§4.2). If no `PENDING` task is logged yet, the implementer logs the Work
+  Order's steps first.
+- **`Verify` still runs in full.** The 50-line cap is for targeted tests; the full `Verify`
+  runs uncapped before the PR, and its output goes in the PR.
