@@ -115,8 +115,20 @@ task run:finops:enrich-map
 
 `validate` prints `finding` records and exits 1 on severity `error`. `map` passes through `ou`
 and `account` records, adds `allocation` rows, enriches optional `cost` records, and emits
-mapping `finding` records. Pipe inventory from `xops sense aws-accounts --mock` instead of
-`--from-accounts` when the org fixture is available.
+mapping `finding` records.
+
+**Pipe rule:** stdin is read only when no `--from-*` flag is set, or when a flag uses `FILE` `-`.
+Commands with file-only inputs never read stdin (so they do not hang under cron). Mix pipe and
+files like this:
+
+```bash
+go run ./finops sense aws-cost --mock | go run ./finops enrich map \
+  --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
+  --from-accounts finops/enrich/testdata/demo-accounts.jsonl --from-cost -
+```
+
+Pipe inventory from `xops sense aws-accounts --mock` instead of `--from-accounts` when the org
+fixture is available.
 
 ### `finops enrich share`
 

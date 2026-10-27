@@ -179,7 +179,7 @@ func TestDemoMapSecurityUnmapped(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	recs, err := record.ReadFile("testdata/demo-accounts.jsonl")
+	recs, err := record.ReadFile("testdata/demo-accounts.jsonl", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

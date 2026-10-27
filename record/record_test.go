@@ -5,10 +5,11 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestNestedValueRejected(t *testing.T) {
-	_, err := ReadFile("testdata/nested.jsonl")
+	_, err := ReadFile("testdata/nested.jsonl", nil)
 	if err == nil {
 		t.Fatal("expected nested value to be rejected")
 	}
@@ -21,7 +22,7 @@ func TestNestedValueRejected(t *testing.T) {
 }
 
 func TestBadLineReportsFileAndLine(t *testing.T) {
-	_, err := ReadFile("testdata/bad.jsonl")
+	_, err := ReadFile("testdata/bad.jsonl", nil)
 	if err == nil {
 		t.Fatal("expected bad line to be rejected")
 	}
@@ -31,7 +32,7 @@ func TestBadLineReportsFileAndLine(t *testing.T) {
 }
 
 func TestUnknownKindsPassThroughInOrder(t *testing.T) {
-	in, err := ReadFile("testdata/mixed.jsonl")
+	in, err := ReadFile("testdata/mixed.jsonl", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,22 +53,65 @@ func TestUnknownKindsPassThroughInOrder(t *testing.T) {
 	}
 }
 
-func TestPipePlusFlagSameKindError(t *testing.T) {
-	pipe := strings.NewReader("{\"kind\":\"cost\",\"id\":\"p\"}\n")
-	_, err := Assemble(pipe, true, []From{{
-		Name:  "cost",
-		Kinds: []string{"cost"},
-		File:  "testdata/from-cost.jsonl",
-	}})
+func TestTwoFlagsSameKindError(t *testing.T) {
+	_, err := Assemble(nil, []From{
+		{Name: "a", Kinds: []string{"cost"}, File: "testdata/from-cost.jsonl"},
+		{Name: "b", Kinds: []string{"cost"}, File: "testdata/from-cost.jsonl"},
+	}, []string{})
 	if err == nil {
-		t.Fatal("expected conflict between pipe and flag")
+		t.Fatal("expected conflict between flags")
 	}
-	msg := err.Error()
-	if !strings.Contains(msg, `"cost"`) {
+	if !strings.Contains(err.Error(), `"cost"`) {
 		t.Fatalf("error should name the kind: %v", err)
 	}
-	if !strings.Contains(msg, "stdin") || !strings.Contains(msg, "--from-cost") {
-		t.Fatalf("error should name both sources: %v", err)
+}
+
+func TestAssembleIgnoresOpenPipeWhenOnlyFileFlags(t *testing.T) {
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	defer w.Close()
+	done := make(chan error, 1)
+	go func() {
+		_, err := Assemble(r, []From{{
+			Name:  "cost",
+			Kinds: []string{"cost"},
+			File:  "testdata/from-cost.jsonl",
+		}}, []string{})
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Assemble blocked on open stdin pipe")
+	}
+}
+
+func TestAssembleMixFileAndStdinFlag(t *testing.T) {
+	stdin := strings.NewReader("{\"kind\":\"cost\",\"id\":\"pipe-cost\",\"amount\":1}\n")
+	recs, err := Assemble(stdin, []From{
+		{Name: "accounts", Kinds: []string{"ou", "account"}, File: "testdata/mixed.jsonl"},
+		{Name: "cost", Kinds: []string{"cost"}, File: "-"},
+	}, []string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var hasAccount, hasPipeCost bool
+	for _, r := range recs {
+		if r.Kind() == "account" {
+			hasAccount = true
+		}
+		if r.Kind() == "cost" && r["id"] == "pipe-cost" {
+			hasPipeCost = true
+		}
+	}
+	if !hasAccount || !hasPipeCost {
+		t.Fatalf("got %v", recs)
 	}
 }
 
@@ -77,7 +121,7 @@ func TestMixedPipeSortedByKind(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer f.Close()
-	recs, err := Assemble(f, true, nil)
+	recs, err := Assemble(f, nil, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +152,7 @@ func TestWriteRoundTrip(t *testing.T) {
 	if bytes.Contains(buf.Bytes(), []byte("\n\n")) {
 		t.Fatal("writer emitted a blank line")
 	}
-	out, err := Read(&buf, "mem")
+	out, err := Read(&buf, "mem", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,11 +165,11 @@ func TestWriteRoundTrip(t *testing.T) {
 }
 
 func TestAssembleFlagOnly(t *testing.T) {
-	recs, err := Assemble(nil, false, []From{{
+	recs, err := Assemble(nil, []From{{
 		Name:  "cost",
 		Kinds: []string{"cost"},
 		File:  "testdata/from-cost.jsonl",
-	}})
+	}}, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}

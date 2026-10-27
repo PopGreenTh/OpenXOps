@@ -47,7 +47,7 @@ func (f *fakeOrg) ListAccountsForParent(ctx context.Context, parentID string) ([
 }
 
 func TestDiscoverSnapshotRetryOnThrottle(t *testing.T) {
-	snap, err := DiscoverSnapshot(context.Background(), &fakeOrg{}, 5)
+	snap, err := DiscoverSnapshot(context.Background(), &fakeOrg{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func (nestedOrg) ListAccountsForParent(ctx context.Context, parentID string) ([]
 }
 
 func TestDiscoverSnapshotNestedOUsAndAccounts(t *testing.T) {
-	snap, err := DiscoverSnapshot(context.Background(), nestedOrg{}, 5)
+	snap, err := DiscoverSnapshot(context.Background(), nestedOrg{})
 	if err != nil {
 		t.Fatal(err)
 	}

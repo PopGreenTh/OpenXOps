@@ -11,6 +11,8 @@ import (
 	awssdk "github.com/aws/aws-sdk-go-v2/aws"
 )
 
+var errSimulatedDiscovery = errors.New("simulated discovery failure")
+
 type listRootsErrOrg struct{}
 
 func (listRootsErrOrg) DescribeOrganization(ctx context.Context) (string, string, error) {
@@ -18,7 +20,7 @@ func (listRootsErrOrg) DescribeOrganization(ctx context.Context) (string, string
 }
 
 func (listRootsErrOrg) ListRoots(ctx context.Context) ([]string, error) {
-	return nil, errors.New("simulated discovery failure")
+	return nil, errSimulatedDiscovery
 }
 
 func (listRootsErrOrg) ListOrganizationalUnitsForParent(ctx context.Context, parentID string) ([]aws.OU, error) {
@@ -48,6 +50,9 @@ func TestAWSAccountsCommandDiscoveryError(t *testing.T) {
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected discovery error")
+	}
+	if !errors.Is(err, errSimulatedDiscovery) {
+		t.Fatalf("error = %v, want %v", err, errSimulatedDiscovery)
 	}
 	if out.Len() != 0 {
 		t.Fatalf("stdout = %q, want empty", out.String())

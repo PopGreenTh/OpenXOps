@@ -77,8 +77,19 @@ Later commands take files:
 go run ./finops enrich map --from-cost testdata\cost.jsonl --from-accounts testdata\accounts.jsonl --taxonomy testdata\taxonomy.yaml
 ```
 
-`--from-<kind> -` reads stdin. When stdin is not a terminal, the command also reads the pipe;
-the same kind from both the pipe and a flag is an error. Logs go to stderr; records go to stdout.
+**Pipe rule (D-030).** A command reads stdin only when it is given **no** `--from-<kind>` flag,
+or when a flag's `FILE` is `-`. File-only flags never read stdin, even if stdin is an open pipe
+(that would hang under cron). Stdin records are sorted by `kind`. The same kind from stdin and
+from a file is an error that names both flags.
+
+Mix pipe and files explicitly, for example:
+
+```powershell
+go run ./finops sense aws-cost --mock | go run ./finops enrich map --taxonomy finops/enrich/testdata/demo-taxonomy.yaml --from-accounts finops/enrich/testdata/demo-accounts.jsonl --from-cost -
+```
+
+`--from-<kind> -` reads stdin; `--from-accounts` reads only `ou` and `account` from its file.
+Logs go to stderr; records go to stdout.
 
 ## Debug in VS Code
 

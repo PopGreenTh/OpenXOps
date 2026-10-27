@@ -127,11 +127,11 @@ func TestChangesWithoutCost(t *testing.T) {
 }
 
 func TestChangesDemoEnvironmentRemapped(t *testing.T) {
-	accounts, err := record.ReadFile(filepath.Join("..", "enrich", "testdata", "demo-accounts.jsonl"))
+	accounts, err := record.ReadFile(filepath.Join("..", "enrich", "testdata", "demo-accounts.jsonl"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	costs, err := record.ReadFile(filepath.Join("testdata", "cost.jsonl"))
+	costs, err := record.ReadFile(filepath.Join("testdata", "cost.jsonl"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -68,7 +68,7 @@ func mapCommand() *cobra.Command {
 			if HasErrorSeverity(ValidateTaxonomy(tax)) {
 				return fmt.Errorf("taxonomy has validation errors; run finops enrich validate")
 			}
-			recs, err := record.Assemble(os.Stdin, record.IsPipe(os.Stdin), []record.From{*accountsFrom, *costFrom})
+			recs, err := record.Assemble(os.Stdin, []record.From{*accountsFrom, *costFrom}, nil)
 			if err != nil {
 				return err
 			}
@@ -102,7 +102,7 @@ func shareCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			recs, err := record.Assemble(os.Stdin, record.IsPipe(os.Stdin), []record.From{*mapCostFrom})
+			recs, err := record.Assemble(os.Stdin, []record.From{*mapCostFrom}, nil)
 			if err != nil {
 				return err
 			}

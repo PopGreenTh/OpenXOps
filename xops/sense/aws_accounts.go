@@ -45,7 +45,7 @@ func awsAccountsCommand() *cobra.Command {
 				if loadErr != nil {
 					return loadErr
 				}
-				snap, err = aws.DiscoverSnapshot(ctx, newOrgAPI(cfg), 5)
+				snap, err = aws.DiscoverSnapshot(ctx, newOrgAPI(cfg))
 			}
 			if err != nil {
 				return err
@@ -60,7 +60,7 @@ func awsAccountsCommand() *cobra.Command {
 				}
 			}
 			recs := BuildRecords(snap, lzCode)
-			return record.Write(os.Stdout, recs)
+			return record.Write(cmd.OutOrStdout(), recs)
 		},
 	}
 	cmd.Flags().BoolVar(&mock, "mock", false, "read the embedded demo organization")

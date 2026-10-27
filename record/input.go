@@ -18,7 +18,7 @@ type From struct {
 	File string
 }
 
-// ConflictError is returned when the same kind arrives from both the pipe and a flag.
+// ConflictError is returned when the same kind arrives from two inputs.
 type ConflictError struct {
 	Kind string
 	Pipe string
@@ -41,45 +41,105 @@ func IsPipe(f *os.File) bool {
 	return fi.Mode()&os.ModeCharDevice == 0
 }
 
-// Assemble reads the pipe (when pipeOn) and every set From flag.
-// Pipe records are sorted by kind. A kind present in both the pipe and a flag is an error.
-func Assemble(pipe io.Reader, pipeOn bool, froms []From) ([]Record, error) {
-	var stdinFlag string
+// CheckKindsFrom returns the set of kinds to validate from explicit kinds or from --from-* declarations.
+// A non-nil empty validateKinds skips schema checks (used in assembly tests with minimal fixtures).
+func CheckKindsFrom(froms []From, validateKinds []string) map[string]struct{} {
+	if validateKinds != nil && len(validateKinds) == 0 {
+		return nil
+	}
+	if len(validateKinds) > 0 {
+		return kindSet(validateKinds)
+	}
+	out := map[string]struct{}{}
 	for _, f := range froms {
-		if f.File == "-" {
-			stdinFlag = "--from-" + f.Name
-			break
+		for _, k := range f.Kinds {
+			out[k] = struct{}{}
 		}
 	}
-	if pipeOn && stdinFlag != "" {
-		return nil, fmt.Errorf("stdin is used by both the pipe and %s", stdinFlag)
+	return out
+}
+
+func kindSet(kinds []string) map[string]struct{} {
+	out := map[string]struct{}{}
+	for _, k := range kinds {
+		out[k] = struct{}{}
+	}
+	return out
+}
+
+// Assemble reads inputs per D-030: stdin only when no --from-* flag is set, or when a flag's
+// FILE is "-". Commands that pass only file paths never read stdin, even if it is an open pipe.
+// validateKinds limits schema checks; when nil, every kind declared on froms is checked.
+func Assemble(stdin io.Reader, froms []From, validateKinds []string) ([]Record, error) {
+	checkKinds := CheckKindsFrom(froms, validateKinds)
+	var active []From
+	for _, f := range froms {
+		if strings.TrimSpace(f.File) != "" {
+			active = append(active, f)
+		}
 	}
 
-	var out []Record
-	pipeKinds := map[string]struct{}{}
-	if pipeOn && pipe != nil {
-		recs, err := Read(pipe, "stdin")
+	if len(active) == 0 {
+		if stdin == nil || !isNonTTY(stdin) {
+			return nil, nil
+		}
+		recs, err := Read(stdin, "stdin", checkKinds)
 		if err != nil {
 			return nil, err
 		}
 		sort.SliceStable(recs, func(i, j int) bool {
 			return recs[i].Kind() < recs[j].Kind()
 		})
-		for _, r := range recs {
-			pipeKinds[r.Kind()] = struct{}{}
-		}
-		out = append(out, recs...)
+		return recs, nil
 	}
 
-	for _, f := range froms {
-		if strings.TrimSpace(f.File) == "" {
-			continue
+	stdinViaFlag := false
+	for _, f := range active {
+		if f.File == "-" {
+			stdinViaFlag = true
+			break
 		}
-		recs, err := ReadFile(f.File)
+	}
+
+	var stdinRecs []Record
+	if stdinViaFlag {
+		if stdin == nil {
+			return nil, fmt.Errorf("stdin: no input")
+		}
+		recs, err := Read(stdin, "stdin", checkKinds)
 		if err != nil {
 			return nil, err
 		}
+		sort.SliceStable(recs, func(i, j int) bool {
+			return recs[i].Kind() < recs[j].Kind()
+		})
+		stdinRecs = recs
+	}
+
+	kindFrom := map[string]string{}
+	var out []Record
+
+	for _, f := range active {
 		flagName := "--from-" + f.Name
+		var recs []Record
+		if f.File == "-" {
+			for _, r := range stdinRecs {
+				if kindDeclared(r.Kind(), f.Kinds) {
+					recs = append(recs, r)
+				}
+			}
+		} else {
+			var err error
+			allRecs, err := ReadFile(f.File, checkKinds)
+			if err != nil {
+				return nil, err
+			}
+			for _, r := range allRecs {
+				if kindDeclared(r.Kind(), f.Kinds) {
+					recs = append(recs, r)
+				}
+			}
+		}
 		seen := map[string]struct{}{}
 		for _, r := range recs {
 			k := r.Kind()
@@ -87,11 +147,29 @@ func Assemble(pipe io.Reader, pipeOn bool, froms []From) ([]Record, error) {
 				continue
 			}
 			seen[k] = struct{}{}
-			if _, ok := pipeKinds[k]; ok {
-				return nil, &ConflictError{Kind: k, Pipe: "stdin", Flag: flagName}
+			if prev, ok := kindFrom[k]; ok {
+				return nil, &ConflictError{Kind: k, Pipe: prev, Flag: flagName}
 			}
+			kindFrom[k] = flagName
 		}
 		out = append(out, recs...)
 	}
 	return out, nil
+}
+
+func kindDeclared(kind string, kinds []string) bool {
+	for _, k := range kinds {
+		if k == kind {
+			return true
+		}
+	}
+	return false
+}
+
+func isNonTTY(r io.Reader) bool {
+	f, ok := r.(*os.File)
+	if !ok {
+		return true
+	}
+	return IsPipe(f)
 }
