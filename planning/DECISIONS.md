@@ -156,7 +156,8 @@ details are the planner's, Q-002 confirms them).
 
 ## Q-002
 
-**Open: developer setup** (planner, 2026-10-27). Blocks WI-0101.
+**Partly closed** by [D-019](#d-019) (items 1–3); item 4 is open. Developer setup (planner,
+2026-10-27). Item 4 blocks WI-0101.
 
 1. Editor: VS Code (with `launch.json`), GoLand, or both?
 2. Your OS for development: Windows, macOS or Linux? (Decides how the DuckDB/CGO build is set up.)
@@ -238,3 +239,16 @@ the Release 1 Work Items (item 2).
    `APP-A,APP-WRONG` gives half to APP-A and half to `APP-INVALID`. Right?
 2. Release 1 = skeleton, `aws-accounts`, `aws-cost`, `map`, `share`, `report`; Release 2 =
    FOCUS, Analyze, Enforce, history. Right?
+
+## D-019
+
+**VS Code on Windows first; Task as the task runner** (repo owner, 2026-10-27; Q-002 items 1–3).
+
+- **Editor:** VS Code. `.vscode/launch.json` (one debug entry per command), `settings.json` and
+  `extensions.json` (the Go extension) are part of the repository. Other editors aren't
+  configured, but nothing stops them.
+- **OS:** Windows first, then Linux and macOS. Every Work Order's `Verify` must pass on Windows;
+  CI runs it on Windows and Linux (macOS when a Work Order needs it). The DuckDB/CGO build and
+  Delve debugging must work on Windows, with the toolchain written down in `docs/develop.md`.
+- **Task runner:** Task (`Taskfile.yml`), with tasks that work in PowerShell and in bash: at
+  least `build`, `check` (the Verify command), `test`, `run:<command>` on the mock, and `clean`.
