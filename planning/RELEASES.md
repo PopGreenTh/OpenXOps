@@ -26,7 +26,7 @@ release is direction, not a commitment.
 | Release | Deliverable | Theme | State |
 |---|---|---|---|
 | 1 | [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md) | AWS cost owned by Project › App › Environment, in Excel | Specified; building |
-| 2 | [DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md) | FOCUS, history, trend and impact | Specified; waiting for Release 1 and Q-006 |
+| 2 | [DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md) | FOCUS, history, trend and impact | Specified; waiting for Release 1 |
 | 3 | not written yet | Enforce | First rules decided (D-033) |
 | Later | — | More clouds, SecOps, CloudOps | Direction only |
 
@@ -85,8 +85,8 @@ permissions.
 
 Also decided: FOCUS files cached once per closed month ([D-038](DECISIONS.md#d-038)), history
 saved with `--save` on `map`, `share`, `trend` and `impact` ([D-039](DECISIONS.md#d-039)),
-`--as-reported` in Release 2 ([D-040](DECISIONS.md#d-040)), and trend depth
-([D-041](DECISIONS.md#d-041)).
+`--as-reported` in Release 2 ([D-040](DECISIONS.md#d-040)), trend depth
+([D-041](DECISIONS.md#d-041)), and the DD-02 planner defaults ([D-042](DECISIONS.md#d-042)).
 
 ## Release 3 — Enforce
 

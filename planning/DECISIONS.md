@@ -509,8 +509,7 @@ Project › App › Environment from `aws-cost`, and › Feature only when FOCUS
 
 ## Q-006
 
-**Planner defaults in DD-02, to confirm** (planner, 2026-10-27). Open; blocks dispatching any
-DD-02 Work Order.
+**Planner defaults in DD-02, to confirm** (planner, 2026-10-27). **Closed** by [D-042](#d-042).
 
 1. **Impact floor unit:** the floor (default 30) applies to the monthly equivalent of the rise:
    (`daily_avg` − baseline) × the calendar days of the month (WI-0204).
@@ -523,3 +522,20 @@ DD-02 Work Order.
 5. **As reported:** a period uses the newest snapshot saved before its end; `allocation` records are
    written per snapshot used, and `share` matches on `snapshot` (WI-0205).
 
+## D-042
+
+**The DD-02 planner defaults stand** (repo owner, 2026-10-27; closes Q-006). All five items of
+[Q-006](#q-006) are decided as written there:
+
+1. The impact floor applies to the monthly equivalent of the rise: (`daily_avg` − baseline) ×
+   the calendar days of the month (WI-0204).
+2. A node's trend baseline uses only earlier periods in which the node has cost (WI-0203).
+3. `aws-focus` emits `focus_file` records; `focus-cost` reads the files with DuckDB; the mock
+   FOCUS data is CSV (WI-0202).
+4. A change touches a cost node through its account, and a project node when its `old` or `new`
+   equals the node's value for the changed field (WI-0204).
+5. As reported, a period uses the newest snapshot saved before its end; `allocation` records are
+   written per snapshot, and `share` matches on `snapshot` (WI-0205).
+
+DD-02 Work Orders are dispatched once Release 1 and WO-0101-B have merged, on the repo owner's
+go-ahead.
