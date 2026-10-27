@@ -1,0 +1,6 @@
+{"kind":"alpha","name":"first","score":1.5}
+{"kind":"beta","code":"b1","qty":10}
+{"kind":"gamma","label":"g1","active":true}
+{"kind":"alpha","name":"second","score":3.25}
+{"kind":"beta","code":"b2","qty":20}
+{"kind":"gamma","label":"g2","active":false}

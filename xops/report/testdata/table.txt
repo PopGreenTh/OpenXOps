@@ -1,0 +1,14 @@
+--- alpha ---
+name    score
+first   1.50 
+second  3.25 
+
+--- beta ---
+code  qty  
+b1    10.00
+b2    20.00
+
+--- gamma ---
+active  label
+true    g1   
+false   g2   
