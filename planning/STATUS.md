@@ -12,13 +12,15 @@ Written by Claude only. Status values: see [README.md](README.md#status-values).
 | [Q-002](DECISIONS.md#q-002): editor, OS, task runner, dev container | — | closed by D-019, D-020 |
 | [Q-005](DECISIONS.md#q-005): Release 2 scope | — | closed by D-032 to D-036 |
 | [Q-006](DECISIONS.md#q-006): DD-02 planner defaults | — | closed by D-042 |
+| [Q-007](DECISIONS.md#q-007): drop stdin kind-sort so piped and file runs are byte-identical | Release 1 tag | open |
+| [Q-008](DECISIONS.md#q-008): `scripts/check` leaves gitignored mock cache under `data/mock/` | — | open |
 
 ## DD-01 — Release 1: AWS cost owned by Project › App › Environment
 
 | Work Order | Assignee | Depends on | Status | Issue | PR | Branch | Revisions |
 |---|---|---|---|---|---|---|---|
 | [WO-0101-A](DD-01-r1-finops-aws/WI-0101-Skeleton.md#wo-0101-a--binaries-record-check-ci-and-developer-setup) | Cursor (claimed in PR) | — | merged | [#1](https://github.com/PopGreenTh/OpenXOps/issues/1) | [#3](https://github.com/PopGreenTh/OpenXOps/pull/3), landed through [#2](https://github.com/PopGreenTh/OpenXOps/pull/2) | `cursor/wo-0101-a-skeleton-7589` | 1 |
-| [WO-0101-B](DD-01-r1-finops-aws/WI-0101-Skeleton.md#wo-0101-b--pipe-rule-and-review-follow-ups) | Cursor (claimed in PR) | WO-0103-A, WO-0105-A, WO-0107-A | merged | [#31](https://github.com/PopGreenTh/OpenXOps/issues/31) | [#33](https://github.com/PopGreenTh/OpenXOps/pull/33) | `cursor/wo-0101-b-pipe-7589` | 1 |
+| [WO-0101-B](DD-01-r1-finops-aws/WI-0101-Skeleton.md#wo-0101-b--pipe-rule-and-review-follow-ups) | Cursor (claimed in PR) | WO-0103-A, WO-0105-A, WO-0107-A | merged | [#31](https://github.com/PopGreenTh/OpenXOps/issues/31) | [#33](https://github.com/PopGreenTh/OpenXOps/pull/33) | `cursor/wo-0101-b-pipe-7589` | 2 |
 | [WO-0102-A](DD-01-r1-finops-aws/WI-0102-Aws-Accounts.md#wo-0102-a--organizations-discovery-and-mock) | Cursor (claimed in PR) | WO-0101-A | merged | [#6](https://github.com/PopGreenTh/OpenXOps/issues/6) | [#10](https://github.com/PopGreenTh/OpenXOps/pull/10) | `cursor/wo-0102-a-aws-accounts-7589` | 3 |
 | [WO-0103-A](DD-01-r1-finops-aws/WI-0103-Aws-Cost.md#wo-0103-a--two-level-cost-explorer-cache-mock-cost) | Cursor (claimed in PR) | WO-0102-A | merged | [#12](https://github.com/PopGreenTh/OpenXOps/issues/12) | [#22](https://github.com/PopGreenTh/OpenXOps/pull/22) | `cursor/wo-0103-aws-cost-7589` | 3 |
 | [WO-0104-A](DD-01-r1-finops-aws/WI-0104-Enrich-Map.md#wo-0104-a--taxonomy-validate-and-map) | Cursor (claimed in PR) | WO-0101-A | merged | [#7](https://github.com/PopGreenTh/OpenXOps/issues/7) | [#15](https://github.com/PopGreenTh/OpenXOps/pull/15) | `cursor/wo-0104-enrich-7589` | 2 |
@@ -45,17 +47,13 @@ WO-0101-B (D-030 pipe rule and the review follow-ups) specified 2026-10-27, to b
 
 D-037 (schema check on every input) added to WO-0101-B 2026-10-27. Release 2's second round answered (D-038 to D-041); `DD-02` can now be written.
 
-WO-0105-A merged 2026-10-27 (#23, `c62476b`) after two review rounds and an addendum, with all 6 share reference cases passing. WO-0107-A (#24) approved on `77bd734`; it conflicts with `main` in the shared wiring files, and Cursor was asked to merge `main` in. WO-0103-A (#22) is at changes requested: one item left, the `cost-history-short` subject. Q-006 closed by D-042.
+WO-0103-A merged 2026-10-27 (#22, `ff91c89`) after four review rounds. WO-0105-A merged 2026-10-27 (#23, `c62476b`) after two review rounds, with all 6 share reference cases passing. WO-0107-A merged 2026-10-27 (#24, `6478dd5`) after two review rounds. Q-006 closed by D-042.
 
-WO-0107-A merged 2026-10-27 (#24, `6478dd5`) after two review rounds, once Cursor had merged `main` in (additions only in the wiring files). Release 1 now waits only on WO-0103-A (#22).
+PR #33 (WO-0101-B, Cursor) reviewed 2026-10-27: changes requested (file inputs drop undeclared kinds; mixing example not shown; Excel append row; stdin-versus-file conflict test missing). The same review found a WO-0105-A defect missed in #23: `share` wrote every unhandled record twice and dropped `allocation`. WO-0105-B (#34) was dispatched in `finops/enrich/share/` only, alongside WO-0101-B.
 
-WO-0103-A merged 2026-10-27 (#22, `ff91c89`) after four review rounds; every Release 1 Work Order is merged. WO-0101-B dispatched 2026-10-27 (#31) on the repo owner's go-ahead (D-031). Before dispatch, its **Packages** gained `finops/enrich/commands.go` and `finops/analyze/commands.go`, and *Done when* gained the mock mixing pipeline, which fails on `main` today ("stdin is used by both the pipe and --from-cost").
+WO-0105-B merged 2026-10-27 (#36, `ebcb461`), approved in the first round. On the mock data, `share` keeps `map`'s `ou`, `account` and `allocation` records once each, and findings are `map`'s plus its own.
 
-PR #33 (WO-0101-B, Cursor) reviewed 2026-10-27: changes requested (file inputs drop undeclared kinds; mixing example not shown; Excel append still uses `GetRows`; stdin-versus-file conflict test missing). The same review found a WO-0105-A defect missed in #23: `share` writes every unhandled record twice and drops `allocation`. WI-0105 Contracts now state `share`'s output order, and WO-0105-B (#34) was dispatched on the repo owner's go-ahead, in `finops/enrich/share/` only, so it runs alongside WO-0101-B.
-
-WO-0105-B merged 2026-10-27 (#36, `ebcb461`), approved in the first round. On the mock data, `share` now keeps `map`'s `ou`, `account` and `allocation` records once each, and findings are `map`'s plus its own. Release 1 now waits on WO-0101-B (#33).
-
-WO-0101-B merged 2026-10-27 (#33, `9da24f3`) after one review round. Every DD-01 Work Order is merged, and each Work Item has its `Delivered (as built)` section. Release criteria 1 to 5 were checked on a clean clone (`DELIVERABLE.md`). Criterion 6, a run against the real Organization, is for the repo owner, and so is the release tag. Open for the planner: whether to drop "records from stdin are sorted by kind", so piped and file runs give byte-identical output.
+WO-0101-B merged 2026-10-27 (#33, `9da24f3`) after two review rounds. Every DD-01 Work Order is merged, and each Work Item has its `Delivered (as built)` section. Release criteria 1 to 5 were checked on a clean clone of `main` at `9da24f3` (`DELIVERABLE.md`). Criterion 6, a run against the real Organization, is for the repo owner, and so is the release tag. Open questions: Q-007 (stdin kind-sort) and Q-008 (mock cache after `scripts/check`).
 
 WI-0107 Contracts clarified 2026-10-27 during PR #24's review: `environment` and `lz` changes are account changes, and an allocation's `cost_moved` counts only cost records with its own `app`.
 
@@ -70,5 +68,5 @@ WI-0107 Contracts clarified 2026-10-27 during PR #24's review: `environment` and
 | [WO-0204-A](DD-02-r2-finops-history-trend/WI-0204-Analyze-Impact.md#wo-0204-a--impact) | open | WO-0203-A, WO-0107-A | not started | — | — | — | 0 |
 | [WO-0205-A](DD-02-r2-finops-history-trend/WI-0205-As-Reported.md#wo-0205-a--snapshots-and---as-reported) | open | WO-0201-A, WO-0105-A | not started | — | — | — | 0 |
 
-DD-02 written 2026-10-27 with 8 reference cases (`finops/analyze/testdata/cases/trend/`, `…/impact/`); Q-006 closed by D-042; dispatch waits for Release 1 and WO-0101-B.
+DD-02 written 2026-10-27 with 8 reference cases (`finops/analyze/testdata/cases/trend/`, `…/impact/`); Q-006 closed by D-042; dispatch waits for the Release 1 tag.
 

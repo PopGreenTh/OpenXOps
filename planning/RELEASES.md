@@ -26,7 +26,7 @@ release is direction, not a commitment.
 | Release | Deliverable | Theme | State |
 |---|---|---|---|
 | 1 | [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md) | AWS cost owned by Project › App › Environment, in Excel | Built; criteria 1–5 pass; waiting for the real-Organization run (criterion 6) and the tag |
-| 2 | [DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md) | FOCUS, history, trend and impact | Specified; waiting for Release 1 |
+| 2 | [DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md) | FOCUS, history, trend and impact | Specified; dispatch after Release 1 tag |
 | 3 | not written yet | Enforce | First rules decided (D-033) |
 | Later | — | More clouds, SecOps, CloudOps | Direction only |
 
@@ -42,7 +42,7 @@ Project › App › Environment. Shared accounts are split by the App tag, unmap
 | Work Order | Delivers | Depends on |
 |---|---|---|
 | [WO-0101-A](DD-01-r1-finops-aws/WI-0101-Skeleton.md) | `xops`, `finops`, `record/`, `scripts/check`, CI, Task, VS Code, `docs/develop.md` | — |
-| [WO-0101-B](DD-01-r1-finops-aws/WI-0101-Skeleton.md) | D-030 pipe rule, D-037 schema check, review follow-ups | 0103, 0105, 0107 |
+| [WO-0101-B](DD-01-r1-finops-aws/WI-0101-Skeleton.md) | D-030 pipe rule, D-037 schema checks, review follow-ups | 0103, 0105, 0107 |
 | [WO-0102-A](DD-01-r1-finops-aws/WI-0102-Aws-Accounts.md) | `xops sense aws-accounts`, demo organization | 0101 |
 | [WO-0103-A](DD-01-r1-finops-aws/WI-0103-Aws-Cost.md) | `finops sense aws-cost`, two-level Cost Explorer, cache, mock | 0102 |
 | [WO-0104-A](DD-01-r1-finops-aws/WI-0104-Enrich-Map.md) | Taxonomy, `finops enrich validate` and `map` | 0101 |
