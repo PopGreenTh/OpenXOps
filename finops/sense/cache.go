@@ -45,7 +45,7 @@ type cacheCandidate struct {
 	ts   time.Time
 }
 
-func (c *cacheStore) read(level int, recordGranularity, metric, tagKey, account, period string, refresh bool) (*cacheEntry, bool) {
+func (c *cacheStore) read(level int, recordGranularity, metric, tagKey, account, period string, closed, refresh bool) (*cacheEntry, bool) {
 	if refresh {
 		slog.Debug("cache miss", slog.String("period", period), slog.String("reason", "refresh"))
 		return nil, false
@@ -74,7 +74,7 @@ func (c *cacheStore) read(level int, recordGranularity, metric, tagKey, account,
 		return cands[i].ts.Before(cands[j].ts)
 	})
 	best := cands[len(cands)-1]
-	if !best.ts.IsZero() && c.now.Sub(best.ts) > cacheMaxAge {
+	if !closed && !best.ts.IsZero() && c.now.Sub(best.ts) > cacheMaxAge {
 		for i := len(cands) - 1; i >= 0; i-- {
 			if cands[i].ts.IsZero() {
 				best = cands[i]

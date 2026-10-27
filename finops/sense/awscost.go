@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/PopGreenTh/OpenXOps/aws"
@@ -106,12 +107,13 @@ func RunAwsCost(ctx context.Context, opt CostOptions) error {
 	if opt.Mock {
 		avail := ce.MockPeriodsAvailable(ceGranularity)
 		if len(periods) > avail {
-			findings = append(findings, record.Finding("warn", "cost-history-short", periods[0],
+			findings = append(findings, record.Finding("warning", "cost-history-short", periods[0],
 				fmt.Sprintf("mock has %d %s periods; range asks for %d", avail, recordGranularity, len(periods)),
 				"finops sense aws-cost"))
 			periods = periods[len(periods)-avail:]
 		}
 	}
+	var ceCalls atomic.Int64
 	root := cacheRoot(opt.Mock)
 	if opt.CacheRoot != "" {
 		root = opt.CacheRoot
@@ -121,11 +123,12 @@ func RunAwsCost(ctx context.Context, opt CostOptions) error {
 	level2Group := []ce.GroupBy{{Type: "DIMENSION", Key: "SERVICE"}, {Type: "TAG", Key: appTag}}
 
 	var projectRecs, costRecs []record.Record
-	accounts, err := fetchLevel1(ctx, opt, store, ceGranularity, recordGranularity, metric, projectTag, level1Group, periods, now, &projectRecs)
+	accounts, periods, shortFind, err := fetchLevel1(ctx, opt, store, ceGranularity, recordGranularity, metric, projectTag, level1Group, periods, now, &projectRecs, &ceCalls)
 	if err != nil {
 		return err
 	}
-	if err := fetchLevel2(ctx, opt, store, ceGranularity, recordGranularity, metric, appTag, level2Group, periods, now, accounts, &costRecs); err != nil {
+	findings = append(findings, shortFind...)
+	if err := fetchLevel2(ctx, opt, store, ceGranularity, recordGranularity, metric, appTag, level2Group, periods, now, accounts, &costRecs, &ceCalls); err != nil {
 		return err
 	}
 	recs := append(projectRecs, costRecs...)
@@ -139,26 +142,31 @@ func RunAwsCost(ctx context.Context, opt CostOptions) error {
 	if err := record.Write(opt.Out, out); err != nil {
 		return err
 	}
-	calls := 0
+	calls := int(ceCalls.Load())
 	if opt.CallCount != nil {
-		calls = *opt.CallCount
+		*opt.CallCount = calls
 	}
 	fmt.Fprintf(os.Stderr, "Cost Explorer: %d calls ($%.2f)\n", calls, float64(calls)*0.01)
 	return nil
 }
 
-func fetchLevel1(ctx context.Context, opt CostOptions, store *cacheStore, ceGranularity, recordGranularity, metric, projectTag string, group []ce.GroupBy, periods []string, now time.Time, out *[]record.Record) ([]string, error) {
+func fetchLevel1(ctx context.Context, opt CostOptions, store *cacheStore, ceGranularity, recordGranularity, metric, projectTag string, group []ce.GroupBy, periods []string, now time.Time, out *[]record.Record, ceCalls *atomic.Int64) ([]string, []string, []record.Record, error) {
 	var needFetch []string
 	cached := map[string]*cacheEntry{}
 	for _, p := range periods {
-		if ent, ok := store.read(1, recordGranularity, metric, projectTag, "", p, opt.Refresh); ok {
+		closed := periodClosed(p, recordGranularity, now)
+		if ent, ok := store.read(1, recordGranularity, metric, projectTag, "", p, closed, opt.Refresh); ok {
 			cached[p] = ent
 			continue
 		}
 		needFetch = append(needFetch, p)
 	}
-	if err := fetchAndCache(ctx, opt, store, 1, ceGranularity, recordGranularity, metric, projectTag, "", group, nil, needFetch, now, cached); err != nil {
-		return nil, err
+	if err := fetchAndCache(ctx, opt, store, 1, ceGranularity, recordGranularity, metric, projectTag, "", group, nil, needFetch, now, cached, ceCalls); err != nil {
+		return nil, periods, nil, err
+	}
+	var shortFind []record.Record
+	if !opt.Mock {
+		periods, shortFind = trimLeadingEmptyHistory(periods, cached, recordGranularity)
 	}
 	accountSet := map[string]struct{}{}
 	for _, p := range periods {
@@ -186,10 +194,10 @@ func fetchLevel1(ctx context.Context, opt CostOptions, store *cacheStore, ceGran
 			}
 		}
 	}
-	return accounts, nil
+	return accounts, periods, shortFind, nil
 }
 
-func fetchLevel2(ctx context.Context, opt CostOptions, store *cacheStore, ceGranularity, recordGranularity, metric, appTag string, group []ce.GroupBy, periods []string, now time.Time, accounts []string, out *[]record.Record) error {
+func fetchLevel2(ctx context.Context, opt CostOptions, store *cacheStore, ceGranularity, recordGranularity, metric, appTag string, group []ce.GroupBy, periods []string, now time.Time, accounts []string, out *[]record.Record, ceCalls *atomic.Int64) error {
 	sem := make(chan struct{}, 5)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
@@ -204,13 +212,14 @@ func fetchLevel2(ctx context.Context, opt CostOptions, store *cacheStore, ceGran
 			var needFetch []string
 			cached := map[string]*cacheEntry{}
 			for _, p := range periods {
-				if ent, ok := store.read(2, recordGranularity, metric, appTag, acct, p, opt.Refresh); ok {
+				closed := periodClosed(p, recordGranularity, now)
+				if ent, ok := store.read(2, recordGranularity, metric, appTag, acct, p, closed, opt.Refresh); ok {
 					cached[p] = ent
 					continue
 				}
 				needFetch = append(needFetch, p)
 			}
-			if err := fetchAndCache(ctx, opt, store, 2, ceGranularity, recordGranularity, metric, appTag, acct, group, &ce.Filter{LinkedAccountID: acct}, needFetch, now, cached); err != nil {
+			if err := fetchAndCache(ctx, opt, store, 2, ceGranularity, recordGranularity, metric, appTag, acct, group, &ce.Filter{LinkedAccountID: acct}, needFetch, now, cached, ceCalls); err != nil {
 				mu.Lock()
 				if firstErr == nil {
 					firstErr = err
@@ -242,7 +251,7 @@ func fetchLevel2(ctx context.Context, opt CostOptions, store *cacheStore, ceGran
 	return firstErr
 }
 
-func fetchAndCache(ctx context.Context, opt CostOptions, store *cacheStore, level int, ceGranularity, recordGranularity, metric, tagKey, account string, group []ce.GroupBy, filter *ce.Filter, periods []string, now time.Time, cached map[string]*cacheEntry) error {
+func fetchAndCache(ctx context.Context, opt CostOptions, store *cacheStore, level int, ceGranularity, recordGranularity, metric, tagKey, account string, group []ce.GroupBy, filter *ce.Filter, periods []string, now time.Time, cached map[string]*cacheEntry, ceCalls *atomic.Int64) error {
 	if len(periods) == 0 {
 		return nil
 	}
@@ -260,8 +269,8 @@ func fetchAndCache(ctx context.Context, opt CostOptions, store *cacheStore, leve
 		if err != nil {
 			return err
 		}
-		if opt.CallCount != nil {
-			*opt.CallCount++
+		if ceCalls != nil {
+			ceCalls.Add(1)
 		}
 		for _, p := range periodsInAPIRange(rg, ceGranularity) {
 			if !contains(periods, p) {
@@ -373,4 +382,33 @@ func sortedKeys(m map[string]struct{}) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+func cachePeriodHasData(ent *cacheEntry) bool {
+	if ent == nil {
+		return false
+	}
+	for _, rt := range ent.Results {
+		if len(rt.Rows) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func trimLeadingEmptyHistory(periods []string, cached map[string]*cacheEntry, recordGranularity string) ([]string, []record.Record) {
+	drop := 0
+	for _, p := range periods {
+		if cachePeriodHasData(cached[p]) {
+			break
+		}
+		drop++
+	}
+	if drop == 0 || drop >= len(periods) {
+		return periods, nil
+	}
+	f := record.Finding("warning", "cost-history-short", periods[0],
+		fmt.Sprintf("%d leading %s periods had no cost data; range starts at %s", drop, recordGranularity, periods[drop]),
+		"finops sense aws-cost")
+	return periods[drop:], []record.Record{f}
 }

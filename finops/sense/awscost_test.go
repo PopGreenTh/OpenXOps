@@ -5,22 +5,13 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/PopGreenTh/OpenXOps/aws/ce"
 	"github.com/PopGreenTh/OpenXOps/record"
 )
-
-type countingCE struct {
-	inner ce.API
-	n     *int
-}
-
-func (c *countingCE) GetCostAndUsage(ctx context.Context, in ce.GetCostAndUsageInput) (ce.GetCostAndUsageOutput, error) {
-	*c.n++
-	return c.inner.GetCostAndUsage(ctx, in)
-}
 
 func testNow() time.Time {
 	return time.Date(2026, 10, 15, 12, 0, 0, 0, time.UTC)
@@ -125,7 +116,7 @@ func TestCacheSecondRunZeroCalls(t *testing.T) {
 	from, to := "2024-11", "2026-09"
 	var calls int
 	opt := CostOptions{
-		Mock: true, CE: &countingCE{inner: ce.NewMock(), n: &calls},
+		Mock: true, CE: ce.NewMock(), CallCount: &calls,
 		From: from, To: to, CacheRoot: cache,
 	}
 	_ = runCost(t, opt)
@@ -148,7 +139,7 @@ func TestOpenPeriodCacheReuse(t *testing.T) {
 	from, to := now.Format("2006-01"), now.Format("2006-01")
 	var calls int
 	opt := CostOptions{
-		Mock: true, CE: &countingCE{inner: ce.NewMock(), n: &calls},
+		Mock: true, CE: ce.NewMock(), CallCount: &calls,
 		From: from, To: to, CacheRoot: cache,
 	}
 	_ = runCost(t, opt)
@@ -194,7 +185,7 @@ func TestDifferentMetricSeparateCache(t *testing.T) {
 	from, to := "2024-11", "2024-11"
 	var calls int
 	opt := CostOptions{
-		Mock: true, CE: &countingCE{inner: ce.NewMock(), n: &calls},
+		Mock: true, CE: ce.NewMock(), CallCount: &calls,
 		From: from, To: to, CacheRoot: cache, Metric: "UnblendedCost",
 	}
 	_ = runCost(t, opt)
@@ -210,15 +201,80 @@ func TestLevel2OneCallPerAccount(t *testing.T) {
 	defer setupTestClock(t)()
 	from, to := "2024-11", "2024-11"
 	var calls int
-	inner := ce.NewMock()
 	_ = runCost(t, CostOptions{
-		Mock: true, CE: &countingCE{inner: inner, n: &calls},
+		Mock: true, CE: ce.NewMock(), CallCount: &calls,
 		From: from, To: to, CacheRoot: testCacheDir(t),
 	})
 	want := 1 + 9 // one level-1 range call plus one level-2 call per account from level 1
 	if calls != want {
 		t.Fatalf("expected %d CE calls (1 level-1 + 9 level-2), got %d", want, calls)
 	}
+}
+
+func TestRefreshClosedStillUsedAfter13Hours(t *testing.T) {
+	defer setupTestClock(t)()
+	cache := testCacheDir(t)
+	from, to := "2024-11", "2024-11"
+	opt := CostOptions{Mock: true, CE: ce.NewMock(), From: from, To: to, CacheRoot: cache}
+	_ = runCost(t, opt)
+	opt.Refresh = true
+	_ = runCost(t, opt)
+	later := testNow().Add(13 * time.Hour)
+	Clock = func() time.Time { return later }
+	ce.NowFunc = Clock
+	var calls int
+	recs := runCost(t, CostOptions{
+		Mock: true, CE: ce.NewMock(), CallCount: &calls,
+		From: from, To: to, CacheRoot: cache,
+	})
+	if calls != 0 {
+		t.Fatalf("expected cached closed refresh after 13h, got %d CE calls", calls)
+	}
+	if len(recs) == 0 {
+		t.Fatal("expected cost output from refreshed closed cache")
+	}
+}
+
+func TestCostHistoryShortLiveLeadingEmpty(t *testing.T) {
+	defer setupTestClock(t)()
+	inner := ce.NewMock()
+	stub := &emptyLeadingCE{inner: inner, emptyPeriod: "2024-11"}
+	cache := testCacheDir(t)
+	recs := runCost(t, CostOptions{
+		Mock: false, CE: stub,
+		From: "2024-11", To: "2024-12", CacheRoot: cache,
+		Management: "111111111111",
+	})
+	var found bool
+	for _, r := range recs {
+		if r.Kind() == "finding" && r["code"] == "cost-history-short" {
+			found = true
+			if r["severity"] != "warning" {
+				t.Fatalf("severity = %v", r["severity"])
+			}
+		}
+	}
+	if !found {
+		t.Fatal("expected cost-history-short on live leading empty periods")
+	}
+}
+
+type emptyLeadingCE struct {
+	inner       ce.API
+	emptyPeriod string
+}
+
+func (e *emptyLeadingCE) GetCostAndUsage(ctx context.Context, in ce.GetCostAndUsageInput) (ce.GetCostAndUsageOutput, error) {
+	out, err := e.inner.GetCostAndUsage(ctx, in)
+	if err != nil {
+		return out, err
+	}
+	for i := range out.Results {
+		if strings.HasPrefix(out.Results[i].Start, e.emptyPeriod) {
+			out.Results[i].Rows = nil
+		}
+	}
+	return out, nil
 }
 
 func TestCostHistoryShortFinding(t *testing.T) {
