@@ -171,24 +171,83 @@ func findingLiteralsInFile(path string) (map[string]bool, error) {
 		return nil, err
 	}
 	out := map[string]bool{}
-	ast.Inspect(f, func(n ast.Node) bool {
+	for _, decl := range f.Decls {
+		fn, ok := decl.(*ast.FuncDecl)
+		if !ok || fn.Body == nil {
+			continue
+		}
+		collectFindingCodesInBlock(fn.Body, out)
+	}
+	return out, nil
+}
+
+func collectFindingCodesInBlock(body *ast.BlockStmt, out map[string]bool) {
+	if body == nil {
+		return
+	}
+	helpers := map[string]struct{}{}
+	for _, stmt := range body.List {
+		assign, ok := stmt.(*ast.AssignStmt)
+		if !ok {
+			continue
+		}
+		for i, rhs := range assign.Rhs {
+			fl, ok := rhs.(*ast.FuncLit)
+			if !ok || !forwardsCodeToFinding(fl) {
+				continue
+			}
+			if id, ok := assign.Lhs[i].(*ast.Ident); ok {
+				helpers[id.Name] = struct{}{}
+			}
+		}
+	}
+	ast.Inspect(body, func(n ast.Node) bool {
+		switch node := n.(type) {
+		case *ast.FuncLit:
+			collectFindingCodesInBlock(node.Body, out)
+			return false
+		case *ast.CallExpr:
+			if sel, ok := node.Fun.(*ast.SelectorExpr); ok && sel.Sel.Name == "Finding" {
+				if len(node.Args) >= 2 {
+					if lit, ok := node.Args[1].(*ast.BasicLit); ok && lit.Kind == token.STRING {
+						out[strings.Trim(lit.Value, `"`)] = true
+					}
+				}
+			}
+			if id, ok := node.Fun.(*ast.Ident); ok {
+				if _, ok := helpers[id.Name]; ok && len(node.Args) >= 1 {
+					if lit, ok := node.Args[0].(*ast.BasicLit); ok && lit.Kind == token.STRING {
+						out[strings.Trim(lit.Value, `"`)] = true
+					}
+				}
+			}
+		}
+		return true
+	})
+}
+
+func forwardsCodeToFinding(fl *ast.FuncLit) bool {
+	if fl.Type.Params.NumFields() < 1 || len(fl.Type.Params.List[0].Names) < 1 {
+		return false
+	}
+	codeName := fl.Type.Params.List[0].Names[0].Name
+	found := false
+	ast.Inspect(fl.Body, func(n ast.Node) bool {
 		call, ok := n.(*ast.CallExpr)
 		if !ok {
 			return true
 		}
 		sel, ok := call.Fun.(*ast.SelectorExpr)
-		if !ok || sel.Sel.Name != "Finding" {
+		if !ok || sel.Sel.Name != "Finding" || len(call.Args) < 2 {
 			return true
 		}
-		if len(call.Args) < 2 {
-			return true
-		}
-		if lit, ok := call.Args[1].(*ast.BasicLit); ok && lit.Kind == token.STRING {
-			out[strings.Trim(lit.Value, `"`)] = true
+		if id, ok := call.Args[1].(*ast.Ident); ok && id.Name == codeName {
+			found = true
+			return false
 		}
 		return true
 	})
-	return out, nil
+	return found
 }
 
 func checkCommands(root string) []string {

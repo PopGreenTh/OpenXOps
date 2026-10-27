@@ -50,5 +50,6 @@ cost by the App tag on each `cost` row.
 go run ./finops enrich validate --taxonomy finops/enrich/testdata/demo-taxonomy.yaml
 ```
 
-Fix severity `error` findings before running `map` on live data. Warnings such as unused codes are
-safe to review but do not block exit 0 unless you treat warnings as errors in your process.
+Fix severity `error` findings before running `map` on live data. Every `taxonomy-*` code is listed
+in [findings.md](findings.md). Warnings such as unused codes are safe to review but do not block
+exit 0 unless you treat warnings as errors in your process.
