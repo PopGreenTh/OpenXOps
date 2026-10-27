@@ -1,7 +1,7 @@
 # Developer setup
 
-Windows is the main path. Linux and macOS follow the same commands once the tools are on `PATH`.
-Release 1 builds with plain `go build` (no CGO, no DuckDB).
+Linux is the main path (D-025). Windows and macOS follow the same commands once the tools are on
+`PATH`. Windows CI is optional (D-026). Release 1 builds with plain `go build` (no CGO, no DuckDB).
 
 ## Install on Windows
 
