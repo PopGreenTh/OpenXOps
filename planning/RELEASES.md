@@ -63,11 +63,11 @@ flowchart LR
 ```
 
 Once WO-0101-A merges, three Work Orders can run at once: 0102, 0104 and 0106 touch different
-packages. Release 1 is done when the six
+packages. Release 1 is done when all seven
 [release criteria](DD-01-r1-finops-aws/DELIVERABLE.md#release-criteria) hold: a mock pipeline
 from a clean clone, every reference case passing unchanged, cost conserved after `share`, zero
-Cost Explorer calls on a cached rerun, and a run against the real Organization with read-only
-permissions.
+Cost Explorer calls on a cached rerun, the user and developer docs with a passing doc check
+(D-044, WI-0108), and a run against the real Organization with read-only permissions.
 
 **Not in Release 1:** DuckDB, FOCUS, trend, impact, Enforce, the history store,
 `--as-reported`, and any cloud but AWS.
