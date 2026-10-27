@@ -156,8 +156,7 @@ details are the planner's, Q-002 confirms them).
 
 ## Q-002
 
-**Partly closed** by [D-019](#d-019) (items 1–3); item 4 is open. Developer setup (planner,
-2026-10-27). Item 4 blocks WI-0101.
+**Closed** by [D-019](#d-019) (items 1–3) and [D-020](#d-020) (item 4). Developer setup.
 
 1. Editor: VS Code (with `launch.json`), GoLand, or both?
 2. Your OS for development: Windows, macOS or Linux? (Decides how the DuckDB/CGO build is set up.)
@@ -202,8 +201,7 @@ before). Stated here in full; nothing refers back to OpenLZ.
   spaces (`app-chk` = `APP-CHK`).
 - **Several Apps in one tag:** a value may list Apps separated by `,` or `__`
   (`APP-A,APP-B`, `APP-A__APP-B`). The row is split equally between the listed values, and each
-  value is then judged on its own as below. *Planner's reading* of the equal split; Q-003 item 1
-  confirms it.
+  value is then judged on its own as below (confirmed by D-021).
 - A value matching one of the account's Apps → that App. **Untagged** → split equally between
   all the account's Apps, with finding `shared-untagged`. A value naming a real App the account
   doesn't serve → `APP-INVALID` (finding `shared-tag-wrong-app`); naming no App at all →
@@ -232,8 +230,7 @@ proposal*, Q-003 item 2 confirms it:
 
 ## Q-003
 
-**Open: confirm the split and the slice** (planner, 2026-10-27). Blocks WI-0105 (item 1) and
-the Release 1 Work Items (item 2).
+**Closed** by [D-021](#d-021). Confirm the split and the slice.
 
 1. A tag `APP-A,APP-B` splits the row equally (half each), each half then judged alone, so
    `APP-A,APP-WRONG` gives half to APP-A and half to `APP-INVALID`. Right?
@@ -252,3 +249,28 @@ the Release 1 Work Items (item 2).
   Delve debugging must work on Windows, with the toolchain written down in `docs/develop.md`.
 - **Task runner:** Task (`Taskfile.yml`), with tasks that work in PowerShell and in bash: at
   least `build`, `check` (the Verify command), `test`, `run:<command>` on the mock, and `clean`.
+
+## D-020
+
+**A dev container as an optional extra** (repo owner, 2026-10-27; Q-002 item 4). Native Windows
+stays the main path (D-019); `.devcontainer/` gives a ready Linux environment (Go, Task, AWS
+CLI, Delve) for VS Code "Reopen in Container" and GitHub Codespaces.
+
+## D-021
+
+**Multi-App tags split equally; Release 1 adds `analyze changes`** (repo owner, 2026-10-27;
+Q-003).
+
+- `APP-A,APP-B` splits the row equally, each part judged on its own: `APP-A,APP-WRONG` gives
+  half to `APP-A` and half to `APP-INVALID`.
+- Release 1 = D-018's slice **plus `finops analyze changes`**: what changed between two `map`
+  outputs (accounts added, removed, moved between OUs, remapped to another App or Environment)
+  and the cost that moved with it. Trend, impact, Enforce, FOCUS and the history store stay in
+  Release 2.
+
+## D-022
+
+**Release 1 links no DuckDB** (planner, 2026-10-27). Nothing in Release 1 needs SQL or Parquet:
+the Cost Explorer cache is JSON files under `data/cache/`. DuckDB, its CGO toolchain and the
+`no_duckdb_arrow` tag arrive with FOCUS in Release 2, so Release 1 builds with plain `go build`
+on Windows.
