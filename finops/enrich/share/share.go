@@ -1,4 +1,4 @@
-package enrich
+package share
 
 import (
 	"fmt"
@@ -12,11 +12,20 @@ import (
 const (
 	cmdShare      = "finops enrich share"
 	appInvalid    = "APP-INVALID"
+	prjUnalloc    = "PRJ-UNALLOC"
+	buUnalloc     = "BU-UNALLOC"
+	ccUnalloc     = "CC-UNALLOC"
 	conservationE = 1e-6
 )
 
-// Share splits shared-account cost rows by App tag; other records pass through unchanged.
-func Share(t Taxonomy, recs []record.Record) ([]record.Record, error) {
+// Options holds taxonomy fields the split needs without importing finops/enrich.
+type Options struct {
+	AppTagKey string
+	AppCodes  []string
+}
+
+// Split shared-account cost rows by App tag; other records pass through unchanged.
+func Split(recs []record.Record, opt Options) ([]record.Record, error) {
 	allocs := map[string][]record.Record{}
 	var other []record.Record
 	var costs []record.Record
@@ -31,17 +40,9 @@ func Share(t Taxonomy, recs []record.Record) ([]record.Record, error) {
 			other = append(other, r)
 		}
 	}
-	appTagKey := "App"
-	if t.Tags != nil && t.Tags.App != "" {
-		appTagKey = t.Tags.App
-	}
 	appCodes := map[string]struct{}{}
-	for _, a := range t.Apps {
-		appCodes[a.Code] = struct{}{}
-	}
-	taxAppsByCode := map[string]App{}
-	for _, a := range t.Apps {
-		taxAppsByCode[a.Code] = a
+	for _, c := range opt.AppCodes {
+		appCodes[c] = struct{}{}
 	}
 
 	var outCosts []record.Record
@@ -63,7 +64,7 @@ func Share(t Taxonomy, recs []record.Record) ([]record.Record, error) {
 		if tag != "" {
 			sharedSawTag = true
 		}
-		split, f, err := splitSharedCost(t, c, allocs[strID(c["account_id"])], appCodes, taxAppsByCode, tag)
+		split, f, err := splitSharedCost(c, allocs[strID(c["account_id"])], appCodes, tag)
 		if err != nil {
 			return nil, err
 		}
@@ -71,10 +72,14 @@ func Share(t Taxonomy, recs []record.Record) ([]record.Record, error) {
 		findings = append(findings, f...)
 	}
 	if anySharedCost && !sharedSawTag {
-		findings = append(findings, record.Finding("warning", "app-tag-not-seen", appTagKey,
+		key := opt.AppTagKey
+		if key == "" {
+			key = "App"
+		}
+		findings = append(findings, record.Finding("warning", "app-tag-not-seen", key,
 			"no App tag seen on shared cost rows", cmdShare))
 	}
-	if err := checkConservation(costs, outCosts); err != nil {
+	if err := CheckConservation(costs, outCosts); err != nil {
 		return nil, err
 	}
 	sortShareCosts(outCosts)
@@ -87,7 +92,33 @@ func Share(t Taxonomy, recs []record.Record) ([]record.Record, error) {
 	return record.PassThrough(recs, []string{"allocation", "cost"}, out), nil
 }
 
-func splitSharedCost(t Taxonomy, cost record.Record, allocs []record.Record, appCodes map[string]struct{}, taxApps map[string]App, tag string) ([]record.Record, []record.Record, error) {
+// CheckConservation verifies output cost totals match input for shared splits.
+func CheckConservation(in, out []record.Record) error {
+	type key struct {
+		acct, period, metric, currency string
+	}
+	sumIn := map[key]float64{}
+	sumOut := map[key]float64{}
+	for _, r := range in {
+		k := key{strID(r["account_id"]), strID(r["period"]), strID(r["metric"]), strID(r["currency"])}
+		v, _ := toFloat(r["amount"])
+		sumIn[k] += v
+	}
+	for _, r := range out {
+		k := key{strID(r["account_id"]), strID(r["period"]), strID(r["metric"]), strID(r["currency"])}
+		v, _ := toFloat(r["amount"])
+		sumOut[k] += v
+	}
+	for k, vin := range sumIn {
+		vout := sumOut[k]
+		if math.Abs(vin-vout) > conservationE {
+			return fmt.Errorf("conservation failed for account %s period %s: in=%v out=%v", k.acct, k.period, vin, vout)
+		}
+	}
+	return nil
+}
+
+func splitSharedCost(cost record.Record, allocs []record.Record, appCodes map[string]struct{}, tag string) ([]record.Record, []record.Record, error) {
 	acctID := strID(cost["account_id"])
 	period := strID(cost["period"])
 	amount, _ := toFloat(cost["amount"])
@@ -149,7 +180,7 @@ func splitSharedCost(t Taxonomy, cost record.Record, allocs []record.Record, app
 		rec["source_amount"] = amount
 		rec["share"] = tg.share
 		rec["share_rule"] = tg.rule
-		fillFromAllocation(rec, tg.app, allocs, taxApps)
+		fillFromAllocation(rec, tg.app, allocs)
 		out = append(out, rec)
 	}
 	return out, findings, nil
@@ -195,7 +226,7 @@ func accountApps(allocs []record.Record) []string {
 	return apps
 }
 
-func fillFromAllocation(cost record.Record, app string, allocs []record.Record, taxApps map[string]App) {
+func fillFromAllocation(cost record.Record, app string, allocs []record.Record) {
 	if app == appInvalid {
 		cost["app"] = appInvalid
 		cost["project"] = prjUnalloc
@@ -220,31 +251,6 @@ func fillFromAllocation(cost record.Record, app string, allocs []record.Record, 
 	}
 }
 
-func checkConservation(in, out []record.Record) error {
-	type key struct {
-		acct, period, metric, currency string
-	}
-	sumIn := map[key]float64{}
-	sumOut := map[key]float64{}
-	for _, r := range in {
-		k := key{strID(r["account_id"]), strID(r["period"]), strID(r["metric"]), strID(r["currency"])}
-		v, _ := toFloat(r["amount"])
-		sumIn[k] += v
-	}
-	for _, r := range out {
-		k := key{strID(r["account_id"]), strID(r["period"]), strID(r["metric"]), strID(r["currency"])}
-		v, _ := toFloat(r["amount"])
-		sumOut[k] += v
-	}
-	for k, vin := range sumIn {
-		vout := sumOut[k]
-		if math.Abs(vin-vout) > conservationE {
-			return fmt.Errorf("conservation failed for account %s period %s: in=%v out=%v", k.acct, k.period, vin, vout)
-		}
-	}
-	return nil
-}
-
 func sortShareCosts(costs []record.Record) {
 	sort.Slice(costs, func(i, j int) bool {
 		a, b := costs[i], costs[j]
@@ -261,6 +267,35 @@ func sortShareCosts(costs []record.Record) {
 		bf, _ := toFloat(b["amount"])
 		return af < bf
 	})
+}
+
+func sortFindings(findings []record.Record) {
+	sort.Slice(findings, func(i, j int) bool {
+		a, b := findings[i], findings[j]
+		if a["code"] != b["code"] {
+			return strID(a["code"]) < strID(b["code"])
+		}
+		return strID(a["subject"]) < strID(b["subject"])
+	})
+}
+
+func copyRecord(r record.Record) record.Record {
+	out := record.Record{}
+	for k, v := range r {
+		out[k] = v
+	}
+	return out
+}
+
+func strID(v any) string {
+	switch x := v.(type) {
+	case string:
+		return x
+	case float64:
+		return fmt.Sprintf("%.0f", x)
+	default:
+		return fmt.Sprint(v)
+	}
 }
 
 func toFloat(v any) (float64, bool) {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/PopGreenTh/OpenXOps/finops/enrich/share"
 	"github.com/PopGreenTh/OpenXOps/record"
 	"github.com/spf13/cobra"
 )
@@ -105,7 +106,7 @@ func shareCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			out, err := Share(tax, recs)
+			out, err := share.Split(recs, shareOptions(tax))
 			if err != nil {
 				return err
 			}
@@ -116,6 +117,18 @@ func shareCommand() *cobra.Command {
 	record.AddFromFlags(cmd, []*record.From{mapCostFrom})
 	_ = cmd.MarkFlagRequired("taxonomy")
 	return cmd
+}
+
+func shareOptions(t Taxonomy) share.Options {
+	key := "App"
+	if t.Tags != nil && t.Tags.App != "" {
+		key = t.Tags.App
+	}
+	codes := make([]string, 0, len(t.Apps))
+	for _, a := range t.Apps {
+		codes = append(codes, a.Code)
+	}
+	return share.Options{AppTagKey: key, AppCodes: codes}
 }
 
 func hasInventory(recs []record.Record) bool {

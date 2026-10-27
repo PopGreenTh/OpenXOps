@@ -91,10 +91,14 @@ mapping `finding` records. Pipe inventory from `xops sense aws-accounts --mock` 
 Splits shared-account `cost` rows by App tag using `allocation` records from `map` output.
 
 ```bash
-go run ./finops enrich map --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
-  --from-accounts finops/enrich/testdata/demo-accounts.jsonl \
-  | go run ./finops enrich share --taxonomy finops/enrich/testdata/demo-taxonomy.yaml --from-cost -
+go run ./finops enrich share --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
+  --from-cost finops/enrich/testdata/demo-map.jsonl
+task run:finops:enrich-share
 ```
+
+Shared cost is split by the App tag on each row (`APP-CHK`, comma-separated multi-App tags,
+case-insensitive match, wrong or unknown App → `APP-INVALID`, empty tag → equal split). Output
+rows fill `app`, `project`, and related fields from `allocation` records.
 
 ### `xops report table|csv|excel`
 

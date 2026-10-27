@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/PopGreenTh/OpenXOps/finops/enrich/share"
 	"github.com/PopGreenTh/OpenXOps/record"
 	"gopkg.in/yaml.v3"
 )
@@ -48,7 +49,7 @@ func runShareCase(t *testing.T, path string) {
 	if err := yaml.Unmarshal(data, &c); err != nil {
 		t.Fatal(err)
 	}
-	out, err := Share(c.Taxonomy, c.Records)
+	out, err := share.Split(c.Records, shareOptions(c.Taxonomy))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,6 +60,19 @@ func runShareCase(t *testing.T, path string) {
 	}
 	if !matchFindings(gotFind, c.Expect.Findings) {
 		t.Fatalf("findings mismatch\ngot: %v\nwant: %v", gotFind, c.Expect.Findings)
+	}
+}
+
+func toFloat(v any) (float64, bool) {
+	switch x := v.(type) {
+	case float64:
+		return x, true
+	case int:
+		return float64(x), true
+	case int64:
+		return float64(x), true
+	default:
+		return 0, false
 	}
 }
 
@@ -106,15 +120,13 @@ func TestShareConservationFailure(t *testing.T) {
 		{"kind": "allocation", "account_id": "1", "app": "APP-B", "shared": true, "project": "P", "business_unit": "B", "cost_center": "C", "app_rule": "account", "environment": "E"},
 		{"kind": "cost", "account_id": "1", "period": "2026-09", "metric": "UnblendedCost", "currency": "USD", "amount": 10.0, "shared": true, "app_tag": ""},
 	}
-	_, err := Share(tax, recs)
+	_, err := share.Split(recs, shareOptions(tax))
 	if err != nil {
 		return
 	}
-	// Break conservation by patching Share output path — use internal broken split via fake hook is hard;
-	// instead call checkConservation directly.
 	out := []record.Record{{"account_id": "1", "period": "2026-09", "metric": "UnblendedCost", "currency": "USD", "amount": 9.0}}
 	in := []record.Record{{"account_id": "1", "period": "2026-09", "metric": "UnblendedCost", "currency": "USD", "amount": 10.0, "shared": true}}
-	if err := checkConservation(in, out); err == nil {
+	if err := share.CheckConservation(in, out); err == nil {
 		t.Fatal("expected conservation error")
 	}
 }
