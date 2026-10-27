@@ -542,8 +542,8 @@ go-ahead.
 
 ## Q-007
 
-**Drop the stdin sort by kind?** (raised by Cursor, kept by the repo owner, 2026-10-27; blocks the
-Release 1 tag). WI-0101 *Inputs* says "Records from stdin are sorted by `kind`". As a result, a
+**Drop the stdin sort by kind?** (raised by Cursor, kept by the repo owner, 2026-10-27; blocked the
+Release 1 tag until WO-0101-C merged). WI-0101 *Inputs* said "Records from stdin are sorted by `kind`". As a result, a
 piped run passes records through in kind order and a file run in file order: the same records,
 in a different order. Dropping the sort would make piped and file runs byte-identical. **Closed** by [D-043](#d-043).
 
@@ -557,8 +557,9 @@ Options: point the check's mock runs at a temporary cache, or accept it. Open.
 
 **Records from stdin keep their input order** (repo owner, 2026-10-27; closes Q-007; amends
 D-030 and WI-0101 *Inputs*). The sort of stdin records by `kind` is dropped, so a piped run and
-the same steps run through files print the same bytes. Built by WO-0101-C. Q-007 blocked the
-Release 1 tag, so the tag waits for WO-0101-C.
+the same steps run through files print the same bytes. Built by WO-0101-C (#41, `0dbec3d`).
+Q-007 blocked the Release 1 tag until WO-0101-C merged; the tag now waits only on Release 1
+criterion 6 (real-Organization run).
 
 ## D-044
 
