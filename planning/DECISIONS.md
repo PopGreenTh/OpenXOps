@@ -277,15 +277,21 @@ on Windows.
 
 ## D-027
 
-**An execution protocol for implementers** (repo owner, 2026-10-27). `AGENTS.md` §7 is the rule.
-The repo owner's text was adjusted to fit the existing rules:
+**One state protocol for every agent** (repo owner, 2026-10-27). `AGENTS.md` §7 is the rule. The
+repo owner's text was adjusted to fit the existing rules:
 
-- It binds the implementers (Antigravity and Cursor), not Claude Code, which never writes
-  implementation code (D-002). The owner's text named Claude Code and Antigravity.
-- Targeted tests are for iterating; the full `Verify` command still runs before every PR (§4).
-- The working set always includes `AGENTS.md`, the Work Order, its Work Item's Contracts and its
-  reference cases.
-- `.state/tasks.jsonl` is local and never committed (`.git/info/exclude`), so no Work Order has
-  to change `.gitignore`. It does not survive a fresh clone or cloud container; across sessions,
-  the issue, the branch and the PR remain the record.
-- Output truncation never applies to the `Verify` output pasted in a PR.
+- **Covers Cursor too.** The owner's text named Claude Code and Antigravity (`agy-argon`); Cursor
+  is an implementer (D-002), so it gets `agent` `cursor`.
+- **Doesn't change roles.** Claude logs its planning and review steps but still writes no
+  implementation code, and the issue claim still decides who builds a Work Order.
+- **Stale locks.** A `RUNNING` record from a crashed run would lock its files for good. The repo
+  owner releases it, or the same agent does with the owner's go-ahead, by appending `FAILED`
+  with `stale lock`.
+- **Local only.** `.state/tasks.jsonl` is never committed: a log shared through git would
+  conflict on every branch. So it locks within one checkout. Across machines, the issue claim
+  and the one-Work-Order-per-package rule remain the lock, and the issue, branch and PR remain
+  the record across sessions.
+- **Fixed field names**: `ts`, `task_id`, `agent`, `status`, `files`, `exit_code`, `hash`,
+  `error`.
+
+This replaces the first draft of D-027 (an implementer-only protocol), which was never merged.

@@ -115,35 +115,46 @@ go run -tags=no_duckdb_arrow ./scripts/check   # build, vet, gofmt -l, tests —
 
 (`scripts/check` arrives with the first Work Order; until then the repository holds only plans.)
 
-## 7. Implementer execution protocol
+## 7. State protocol
 
-For Antigravity and Cursor while they build a claimed Work Order ([D-027](planning/DECISIONS.md#d-027)).
-It adds to §4 and §5 and never overrides them. Claude plans and reviews and is not bound by it.
+For every agent: Claude Code, Antigravity and Cursor ([D-027](planning/DECISIONS.md#d-027)). It
+adds to §2 and §4 and never overrides them: Claude still writes no implementation code, the
+issue claim still decides who builds a Work Order, and `Verify` still runs before every PR.
 
-**Stance.** Execution first: deliver diffs and command output, not summaries or speculation
-about the design. A spec that looks wrong is still reported and not guessed around (§2, §4.4).
+**State lives in `.state/tasks.jsonl`, not in chat memory or scratchpads.**
+- One JSON object per line, appended, never edited or deleted.
+- Local to one checkout and never committed: add `.state/` to `.git/info/exclude`.
+- Before any tool call that changes a file, read the end of the log to check the current state
+  and any locks.
 
-**State log: `.state/tasks.jsonl`.** Execution state lives in this file, not in chat memory or a
-compacted context.
-- Local only, never committed: add `.state/` to `.git/info/exclude` in your clone.
-- **Before a step:** read the log, check that the step's prerequisites are `COMPLETED`, then
-  append `{"task_id":"…","status":"RUNNING"}`.
-- **After a step:** append one line:
-  `{"task_id":"…","status":"COMPLETED","files":["path/to/file"],"exit_code":0,"timestamp":1793088000}`
-  (`timestamp` in Unix seconds).
-- **On failure:** append `"status":"FAILED"` with the exact exit code and error, then stop. Never
-  re-run steps that are already `COMPLETED`, and never restart the whole plan.
+**Records.** Every line has `ts` (RFC 3339 UTC), `task_id`, `agent` and `status`.
+- `agent`: `claude-code`, `agy-argon` or `cursor`.
+- `task_id`: the Work Order ID, plus a step for implementers (`WO-0102-A/discovery`), or a short
+  name for Claude's work (`review-pr-3`).
+- `status`: `PENDING`, `RUNNING`, `COMPLETED` or `FAILED`.
 
-**Working set.**
-- Read `AGENTS.md`, the claimed Work Order, its Work Item's **Contracts**, the reference cases
-  it names, and the files in its **Packages**. Anything else only when one of these points to
-  it.
-- No repository-wide sweeps or AST dumps unless the Work Order asks for them.
-- Change files with targeted edits; don't rewrite parts of a file you aren't changing.
+**Lifecycle.**
+1. **Claim.** Before starting a `PENDING` task, append `RUNNING` with your `agent` and the
+   `files` you will change.
+2. **Execute.** Make minimal-diff edits. Run commands non-interactively (`CI=true`).
+3. **Record.** Append `COMPLETED` with `exit_code` 0 and a short git or file hash (`hash`), or
+   `FAILED` with the exit code and the exact error text (`error`).
+4. **Halt on failure.** After `FAILED`, stop. Don't wipe earlier state, and don't retry outside
+   what the log records. Resuming means a new `RUNNING` line for the same `task_id`.
 
-**Running commands.**
-- Non-interactive: `export CI=true DEBIAN_FRONTEND=noninteractive GIT_TERMINAL_PROMPT=0`.
-- While iterating, run only the tests for the code you changed (`go test ./<pkg> -run <Test>`).
-  **Before opening the PR, run the full `Verify` command** (§4.4); its output goes in the PR.
-- Captured output: strip ANSI escapes and keep the first 50 and last 100 lines. The `Verify`
-  output in the PR is pasted in full.
+**Locks.**
+- A `RUNNING` record with no later `COMPLETED` or `FAILED` for its `task_id` locks its `files`.
+  Don't change a locked file.
+- Only the agent that holds a lock releases it, by appending its outcome. A lock left by a
+  crashed run is released by the repo owner, or by that agent after the owner's go-ahead,
+  appending `FAILED` with `error` `stale lock`.
+- The log only locks within one checkout. Across machines, the GitHub issue claim (§4.2) and
+  the rule that two Work Orders on the same package never run at once
+  ([`planning/README.md`](planning/README.md#sizing)) remain the lock.
+
+Example:
+
+```json
+{"ts":"2026-10-27T07:30:00Z","task_id":"WO-0102-A/discovery","agent":"cursor","status":"RUNNING","files":["aws/org.go"]}
+{"ts":"2026-10-27T07:42:10Z","task_id":"WO-0102-A/discovery","agent":"cursor","status":"COMPLETED","exit_code":0,"hash":"3f2a1bc"}
+```
