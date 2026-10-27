@@ -165,3 +165,21 @@ notes left from the WO-0102-A, WO-0104-A and WO-0106-A reviews.
 
 **Verify.** `go run ./scripts/check`
 
+## Delivered (as built)
+
+Built by WO-0101-A (#3, landed through #2, `c27018d`) and WO-0101-B (#33, `9da24f3`).
+
+- `xops/` and `finops/` binaries, each with `version`. `record/` holds the reader, writer,
+  `PassThrough`, `LogStart`, the `--from-<kind>` flags and `Assemble`. `record/schema/` holds
+  one table per kind: `ou`, `account`, `cost`, `project_tag_cost`, `allocation`, `change` and
+  `finding`.
+- **Pipe rule (D-030) as built.** A command reads stdin only with no `--from-<kind>` flag, or
+  with `FILE` `-`. A command whose inputs are all files never touches stdin, even when stdin is
+  an open pipe. Every record in a file or on stdin is kept. Schema checks (D-037) and conflicts
+  apply only to the kinds a flag declares, and a path given to two flags is read once.
+- `scripts/check` (build, vet, `gofmt -l`, tests); CI with a required Linux job and an optional
+  Windows job (D-026); a Task and a VS Code launch entry for every command; `docs/develop.md`.
+- **Known differences.**
+  - Records from stdin are sorted by kind, so a piped run passes records through in kind order
+    and a file run in file order. The records are the same.
+  - `scripts/check` leaves a mock cache in `data/mock/` at the repo root. It is gitignored.

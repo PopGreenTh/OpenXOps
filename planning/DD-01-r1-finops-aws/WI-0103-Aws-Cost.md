@@ -109,3 +109,18 @@ its fixtures in `aws/ce/testdata/`. The cache lives in `finops/sense/`.
 - Per period, metric and currency, the `cost` total equals the `project_tag_cost` total.
 
 **Verify.** `go run ./scripts/check` and `go run ./finops sense aws-cost --mock`
+
+## Delivered (as built)
+
+Built by WO-0103-A (#22, `ff91c89`) after four review rounds.
+
+- `aws/ce/`: the Cost Explorer client behind an interface, plus the mock (26 months, 60 days)
+  and its seed. `aws/retry.go` retries `LimitExceededException`.
+- `finops/sense/`: `aws-cost`, the two levels, the cache and the periods, with a clock the tests
+  can set.
+  - A first mock run makes 10 calls (1 at level 1, plus 1 per account); a rerun makes 0.
+  - A closed month fetched again with `--refresh` stays the newest file and never expires.
+- `cost-history-short` fires on live data when the first periods of the range have no cost.
+  Its subject is the first period returned.
+- Adds `github.com/aws/aws-sdk-go-v2/service/costexplorer`, which raised the AWS SDK core to
+  v1.30.0.

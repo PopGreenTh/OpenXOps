@@ -132,3 +132,15 @@ by OU, the shared account serving both, the Security accounts left unmapped. It 
   already on `main`, the PR also shows the same result piped from `xops sense aws-accounts --mock`.
 
 **Verify.** `go run ./scripts/check`
+
+## Delivered (as built)
+
+Built by WO-0104-A (#15, `f07c7c5`), with follow-ups in WO-0101-B (#33).
+
+- `finops enrich validate` and `map`, the strict taxonomy loader, the demo taxonomy and
+  `testdata/demo-accounts.jsonl`. All 12 map reference cases pass. Case 12
+  (`environment-unresolved`) was added during review.
+- WO-0101-B changes:
+  - `lz-unknown` is emitted once per organization;
+  - the `project-tag-mismatch` message names the tag and the account's Project or Projects;
+  - `map` declares the kinds it reads, for the D-037 schema check.
