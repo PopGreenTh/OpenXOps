@@ -30,9 +30,9 @@ func awsAccountsCommand() *cobra.Command {
 			if mock {
 				snap, err = aws.DemoSnapshot()
 			} else {
-				cfg, err := aws.LoadConfig(ctx, aws.Config{Profile: profile, Region: region})
-				if err != nil {
-					return err
+				cfg, loadErr := aws.LoadConfig(ctx, aws.Config{Profile: profile, Region: region})
+				if loadErr != nil {
+					return loadErr
 				}
 				client := aws.NewOrgClient(cfg)
 				snap, err = aws.DiscoverSnapshot(ctx, client, 5)

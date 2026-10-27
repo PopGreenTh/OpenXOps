@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/aws/smithy-go"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Retry runs fn with exponential backoff on throttling and 5xx errors.
@@ -43,10 +44,15 @@ func Retry(ctx context.Context, fn func() error) error {
 }
 
 func retryable(err error) bool {
+	var respErr *smithyhttp.ResponseError
+	if errors.As(err, &respErr) && respErr.HTTPStatusCode() >= 500 {
+		return true
+	}
 	var apiErr smithy.APIError
 	if errors.As(err, &apiErr) {
 		switch apiErr.ErrorCode() {
-		case "ThrottlingException", "TooManyRequestsException", "ServiceUnavailable", "InternalServerError":
+		case "ThrottlingException", "TooManyRequestsException", "ServiceUnavailable",
+			"InternalServerError", "ServiceException":
 			return true
 		}
 	}

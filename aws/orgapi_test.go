@@ -94,6 +94,49 @@ func TestDiscoverSnapshotNestedOUsAndAccounts(t *testing.T) {
 	}
 }
 
+type pagingOrg struct{}
+
+func (pagingOrg) DescribeOrganization(ctx context.Context) (string, string, error) {
+	return "o-page", "111111111111", nil
+}
+
+func (pagingOrg) ListRoots(ctx context.Context) ([]string, error) {
+	return []string{"r-1"}, nil
+}
+
+func (pagingOrg) ListOrganizationalUnitsForParent(ctx context.Context, parentID string) ([]OU, error) {
+	if parentID == "r-1" {
+		return []OU{
+			{ID: "ou-page-1", Name: "FromPageOne"},
+			{ID: "ou-page-2", Name: "FromPageTwo"},
+		}, nil
+	}
+	return nil, nil
+}
+
+func (pagingOrg) ListAccountsForParent(ctx context.Context, parentID string) ([]Account, error) {
+	if parentID == "r-1" {
+		return []Account{
+			{ID: "200000000001", Name: "a1", Email: "a1@example.com", Status: "ACTIVE"},
+			{ID: "200000000002", Name: "a2", Email: "a2@example.com", Status: "ACTIVE"},
+		}, nil
+	}
+	return nil, nil
+}
+
+func TestDiscoverSnapshotPaging(t *testing.T) {
+	snap, err := DiscoverSnapshot(context.Background(), pagingOrg{}, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(snap.OrganizationalUnits) != 3 {
+		t.Fatalf("ous = %d", len(snap.OrganizationalUnits))
+	}
+	if len(snap.Accounts) != 2 {
+		t.Fatalf("accounts = %d", len(snap.Accounts))
+	}
+}
+
 func TestRetryNotRetryable(t *testing.T) {
 	err := Retry(context.Background(), func() error {
 		return errors.New("permanent")

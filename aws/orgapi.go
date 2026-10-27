@@ -2,6 +2,31 @@ package aws
 
 import "context"
 
+// Snapshot is a flattened AWS Organization tree for record building.
+type Snapshot struct {
+	OrgID               string
+	ManagementAccount   string
+	OrganizationalUnits []OU
+	Accounts            []Account
+}
+
+// OU is one organizational unit before paths are computed.
+type OU struct {
+	ID          string
+	Name        string
+	ParentID    string
+	HasChildren bool
+}
+
+// Account is one member account before OU paths are attached.
+type Account struct {
+	ID       string
+	Name     string
+	Email    string
+	Status   string
+	ParentID string
+}
+
 // OrgAPI lists an AWS Organization. Implementations use the retry wrapper for each call.
 type OrgAPI interface {
 	DescribeOrganization(ctx context.Context) (orgID, managementAccount string, err error)
@@ -31,12 +56,7 @@ func DiscoverSnapshot(ctx context.Context, api OrgAPI, maxConcurrent int) (Snaps
 	}); err != nil {
 		return Snapshot{}, err
 	}
-	sem := make(chan struct{}, maxConcurrent)
-	type result struct {
-		ous      []OU
-		accounts []Account
-		err      error
-	}
+	_ = maxConcurrent // reserved; listing runs serially per parent today.
 	var (
 		allOUs  []OU
 		allAccs []Account
@@ -47,37 +67,28 @@ func DiscoverSnapshot(ctx context.Context, api OrgAPI, maxConcurrent int) (Snaps
 		for len(queue) > 0 {
 			parentID := queue[0]
 			queue = queue[1:]
-			sem <- struct{}{}
-			resCh := make(chan result, 1)
-			go func(pid string) {
-				defer func() { <-sem }()
-				var res result
-				res.err = Retry(ctx, func() error {
-					var err error
-					res.ous, err = api.ListOrganizationalUnitsForParent(ctx, pid)
-					return err
-				})
-				if res.err != nil {
-					resCh <- res
-					return
-				}
-				res.err = Retry(ctx, func() error {
-					var err error
-					res.accounts, err = api.ListAccountsForParent(ctx, pid)
-					return err
-				})
-				resCh <- res
-			}(parentID)
-			res := <-resCh
-			if res.err != nil {
-				return Snapshot{}, res.err
+			var ous []OU
+			if err := Retry(ctx, func() error {
+				var err error
+				ous, err = api.ListOrganizationalUnitsForParent(ctx, parentID)
+				return err
+			}); err != nil {
+				return Snapshot{}, err
 			}
-			for _, ou := range res.ous {
+			var accs []Account
+			if err := Retry(ctx, func() error {
+				var err error
+				accs, err = api.ListAccountsForParent(ctx, parentID)
+				return err
+			}); err != nil {
+				return Snapshot{}, err
+			}
+			for _, ou := range ous {
 				ou.ParentID = parentID
 				allOUs = append(allOUs, ou)
 				queue = append(queue, ou.ID)
 			}
-			for _, ac := range res.accounts {
+			for _, ac := range accs {
 				ac.ParentID = parentID
 				allAccs = append(allAccs, ac)
 			}
