@@ -32,3 +32,5 @@ PR #14 (WO-0106-A, Cursor) reviewed 2026-10-27: changes requested (CSV append wr
 PR #15 (WO-0104-A, Cursor) reviewed 2026-10-27: changes requested (unknown taxonomy keys caught only at the top level; `map` drops record kinds it doesn't handle; validation-error table covers 4 rules out of 7). All 11 map reference cases pass unchanged.
 
 WO-0106-A merged 2026-10-27 (#14, `d94b7c4`) after two review rounds. Its branch was first updated from `main`: `main` requires `check (ubuntu-latest)` on a branch that is up to date.
+
+PR #15 (WO-0104-A) full re-read 2026-10-27, after its approval on `94c0047`: changes requested. The `environment-unresolved` finding is never emitted, and a shared account with no Environment gets `ENV-UNALLOC` instead of `ENV-UNSPEC`. Neither was covered by a reference case, so map case 12 was added and WI-0104 now names the finding's subject.
