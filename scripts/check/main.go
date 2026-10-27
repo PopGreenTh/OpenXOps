@@ -2,7 +2,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"go/format"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -60,7 +62,7 @@ func stepVet() error {
 }
 
 func stepGofmt() error {
-	var files []string
+	var listed []string
 	err := filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -72,26 +74,30 @@ func stepGofmt() error {
 			}
 			return nil
 		}
-		if strings.HasSuffix(path, ".go") {
-			files = append(files, path)
+		if !strings.HasSuffix(path, ".go") {
+			return nil
+		}
+		src, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		// Windows checkouts may use CRLF; gofmt always writes LF.
+		src = bytes.ReplaceAll(src, []byte("\r\n"), []byte("\n"))
+		src = bytes.ReplaceAll(src, []byte("\r"), []byte("\n"))
+		formatted, err := format.Source(src)
+		if err != nil {
+			return fmt.Errorf("%s: %w", path, err)
+		}
+		if !bytes.Equal(src, formatted) {
+			listed = append(listed, path)
 		}
 		return nil
 	})
 	if err != nil {
 		return err
 	}
-	if len(files) == 0 {
-		return nil
-	}
-	args := append([]string{"-l"}, files...)
-	cmd := exec.Command("gofmt", args...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("gofmt: %w\n%s", err, out)
-	}
-	listed := strings.TrimSpace(string(out))
-	if listed != "" {
-		return fmt.Errorf("unformatted files:\n%s", listed)
+	if len(listed) > 0 {
+		return fmt.Errorf("unformatted files:\n%s", strings.Join(listed, "\n"))
 	}
 	return nil
 }

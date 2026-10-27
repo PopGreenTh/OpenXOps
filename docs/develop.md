@@ -8,7 +8,8 @@ Release 1 builds with plain `go build` (no CGO, no DuckDB).
 1. **Go 1.22 or newer.** Download the MSI from https://go.dev/dl/ and run it. Open a **new**
    PowerShell window so `go version` works.
 2. **Git.** https://git-scm.com/download/win — the installer is enough. Use “Git from the command
-   line and also from 3rd-party software”.
+   line and also from 3rd-party software”. The repo’s `.gitattributes` keeps text files as LF,
+   including on Windows, so `gofmt` and Git do not fight over line endings.
 3. **Task.** In the new PowerShell window:
 
    ```powershell
