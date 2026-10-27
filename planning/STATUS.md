@@ -7,7 +7,7 @@ Written by Claude only. Status values: see [README.md](README.md#status-values).
 | Question | Blocks | State |
 |---|---|---|
 | [Q-001](DECISIONS.md#q-001): FOCUS, mapping rules, share rules, impact levels, first release scope | — | closed by D-014 to D-018 |
-| [Q-004](DECISIONS.md#q-004): licence (BSL 1.1 parameters), CLA timing | public release | open |
+| [Q-004](DECISIONS.md#q-004): licence | — | closed by D-024 |
 | [Q-003](DECISIONS.md#q-003): multi-App tag split, Release 1 slice | — | closed by D-021 |
 | [Q-002](DECISIONS.md#q-002): editor, OS, task runner, dev container | — | closed by D-019, D-020 |
 

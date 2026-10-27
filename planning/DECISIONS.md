@@ -289,11 +289,26 @@ on Windows.
   so outside contributions will need a contributor licence agreement (CLA) before the first
   one is merged.
 - This makes OpenXOps **source-available**, not open source in the OSI sense; it supersedes
-  D-001's "open source". The licence text (proposed: Business Source License 1.1 with an
-  Additional Use Grant) is Q-004.
+  D-001's "open source". The licence is D-024.
 
 ## Q-004
 
-**Open: the licence** (planner, 2026-10-27). BSL 1.1 parameters: Licensor, Additional Use Grant
+**Closed** by [D-024](#d-024). The licence (planner, 2026-10-27). BSL 1.1 parameters: Licensor, Additional Use Grant
 wording, Change Date (years until each version becomes open source), Change License (Apache 2.0
 or another); and when the CLA is set up.
+
+## D-024
+
+**Licence: Functional Source License 1.1, Apache 2.0 future licence (`FSL-1.1-Apache-2.0`)**
+(repo owner, 2026-10-27; answers Q-004).
+
+- Licensor: **Chanin Sainumkheaw**. Copyright line: `Copyright 2026 Chanin Sainumkheaw`.
+- Any purpose is permitted except a Competing Use (making OpenXOps, or something substantially
+  similar, available commercially as a product or service). Internal use and professional
+  services for a client (consultants) are permitted.
+- Each released version becomes Apache 2.0 two years after it is made available.
+- The repo owner adds `LICENSE` with the published FSL-1.1-Apache-2.0 text, unchanged except for
+  the licensor and year. The README says in one line: free for your own use; contact the
+  licensor for commercial use.
+- A contributor licence agreement is set up before the first outside contribution is merged
+  (D-023).

@@ -86,7 +86,9 @@ calls plain functions that take and return records (D-013).
 - `record/`: reader (file and line tracking), flat writer, flatness check, input assembly (pipe
   plus `--from-<kind>` flags, the conflict error), finding helper, `--log-level` setup.
 - `scripts/check`, CI, Taskfile, `.vscode/`, `.devcontainer/`, `docs/develop.md`, README (what
-  OpenXOps is, the five stages, build and run), `.gitignore` (`bin/`, `data/`).
+  OpenXOps is, the five stages, build and run, and a licence line: "FSL-1.1-Apache-2.0: free
+  for your own use; contact the licensor for commercial use", D-024), `.gitignore` (`bin/`,
+  `data/`).
 - Unit tests for `record/`: a nested value rejected; a bad line reported with file and line;
   unknown kinds pass through in order; pipe plus flag of the same kind is an error; records
   sorted by kind from a mixed pipe.
