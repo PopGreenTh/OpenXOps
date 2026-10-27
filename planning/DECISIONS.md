@@ -566,6 +566,7 @@ Q-007 blocked the Release 1 tag until WO-0101-C merged; what the tag still waits
 **User and developer docs are part of Release 1, in English only** (repo owner, 2026-10-27).
 Implementers write them under a Work Order the planner specifies (`AGENTS.md` §2): WI-0108,
 with WO-0108-A (user docs and a doc check that keeps the references in step with the code) and
-WO-0108-B (developer and contributor docs). The Release 1 tag waits for both to merge and for
-Release 1 criterion 7 (`DELIVERABLE.md`), as well as criterion 6 (real-Organization run).
+WO-0108-B (developer and contributor docs). Built by WO-0108-A (#48, `816973f`) and WO-0108-B
+(#49, `7802af5`); Release 1 criterion 7 passes on `main` at `7802af5`. The Release 1 tag now
+waits only on criterion 6 (real-Organization run).
 
