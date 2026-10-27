@@ -9,18 +9,31 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 )
 
+type describeOrganizationAPI interface {
+	DescribeOrganization(context.Context, *organizations.DescribeOrganizationInput, ...func(*organizations.Options)) (*organizations.DescribeOrganizationOutput, error)
+}
+
 // OrgClient calls AWS Organizations (retries happen in DiscoverSnapshot).
 type OrgClient struct {
-	svc *organizations.Client
+	describe     describeOrganizationAPI
+	listRoots    organizations.ListRootsAPIClient
+	listOUs      organizations.ListOrganizationalUnitsForParentAPIClient
+	listAccounts organizations.ListAccountsForParentAPIClient
 }
 
 // NewOrgClient returns an Organizations client.
 func NewOrgClient(cfg aws.Config) *OrgClient {
-	return &OrgClient{svc: organizations.NewFromConfig(cfg)}
+	svc := organizations.NewFromConfig(cfg)
+	return &OrgClient{
+		describe:     svc,
+		listRoots:    svc,
+		listOUs:      svc,
+		listAccounts: svc,
+	}
 }
 
 func (c *OrgClient) DescribeOrganization(ctx context.Context) (string, string, error) {
-	out, err := c.svc.DescribeOrganization(ctx, &organizations.DescribeOrganizationInput{})
+	out, err := c.describe.DescribeOrganization(ctx, &organizations.DescribeOrganizationInput{})
 	if err != nil {
 		return "", "", err
 	}
@@ -32,7 +45,7 @@ func (c *OrgClient) DescribeOrganization(ctx context.Context) (string, string, e
 
 func (c *OrgClient) ListRoots(ctx context.Context) ([]string, error) {
 	var ids []string
-	paginator := organizations.NewListRootsPaginator(c.svc, &organizations.ListRootsInput{})
+	paginator := organizations.NewListRootsPaginator(c.listRoots, &organizations.ListRootsInput{})
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -47,7 +60,7 @@ func (c *OrgClient) ListRoots(ctx context.Context) ([]string, error) {
 
 func (c *OrgClient) ListOrganizationalUnitsForParent(ctx context.Context, parentID string) ([]OU, error) {
 	var out []OU
-	paginator := organizations.NewListOrganizationalUnitsForParentPaginator(c.svc, &organizations.ListOrganizationalUnitsForParentInput{
+	paginator := organizations.NewListOrganizationalUnitsForParentPaginator(c.listOUs, &organizations.ListOrganizationalUnitsForParentInput{
 		ParentId: aws.String(parentID),
 	})
 	for paginator.HasMorePages() {
@@ -67,7 +80,7 @@ func (c *OrgClient) ListOrganizationalUnitsForParent(ctx context.Context, parent
 
 func (c *OrgClient) ListAccountsForParent(ctx context.Context, parentID string) ([]Account, error) {
 	var out []Account
-	paginator := organizations.NewListAccountsForParentPaginator(c.svc, &organizations.ListAccountsForParentInput{
+	paginator := organizations.NewListAccountsForParentPaginator(c.listAccounts, &organizations.ListAccountsForParentInput{
 		ParentId: aws.String(parentID),
 	})
 	for paginator.HasMorePages() {

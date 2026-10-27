@@ -7,9 +7,14 @@ import (
 
 	"github.com/PopGreenTh/OpenXOps/aws"
 	"github.com/PopGreenTh/OpenXOps/record"
+	awssdk "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
+
+var newOrgAPI = func(cfg awssdk.Config) aws.OrgAPI {
+	return aws.NewOrgClient(cfg)
+}
 
 func awsAccountsCommand() *cobra.Command {
 	var mock bool
@@ -34,8 +39,7 @@ func awsAccountsCommand() *cobra.Command {
 				if loadErr != nil {
 					return loadErr
 				}
-				client := aws.NewOrgClient(cfg)
-				snap, err = aws.DiscoverSnapshot(ctx, client, 5)
+				snap, err = aws.DiscoverSnapshot(ctx, newOrgAPI(cfg), 5)
 			}
 			if err != nil {
 				return err
