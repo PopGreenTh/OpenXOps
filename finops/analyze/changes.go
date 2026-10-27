@@ -50,13 +50,13 @@ func CompareChanges(before, now []record.Record) []record.Record {
 	for _, id := range bAcctIDs {
 		if !nSet[id] {
 			pf, pt := periodRange(b.costs, id)
-			appendChanges(&changes, "account", id, "removed", "", "", "", costMoved(b.costs, id), pf, pt)
+			appendChanges(&changes, "account", id, "removed", "", "", "", costMoved(b.costs, id), pf, pt, len(b.costs) > 0)
 		}
 	}
 	for _, id := range nAcctIDs {
 		if !bSet[id] {
 			pf, pt := periodRange(n.costs, id)
-			appendChanges(&changes, "account", id, "added", "", "", "", costMoved(n.costs, id), pf, pt)
+			appendChanges(&changes, "account", id, "added", "", "", "", costMoved(n.costs, id), pf, pt, len(n.costs) > 0)
 		}
 	}
 	for _, id := range nAcctIDs {
@@ -66,7 +66,7 @@ func CompareChanges(before, now []record.Record) []record.Record {
 		ba, na := b.accounts[id], n.accounts[id]
 		if strID(ba["ou_path"]) != strID(na["ou_path"]) {
 			pf, pt := periodRange(n.costs, id)
-			appendChanges(&changes, "account", id, "moved", "ou_path", strID(ba["ou_path"]), strID(na["ou_path"]), costMoved(n.costs, id), pf, pt)
+			appendChanges(&changes, "account", id, "moved", "ou_path", strID(ba["ou_path"]), strID(na["ou_path"]), costMoved(n.costs, id), pf, pt, len(n.costs) > 0)
 		}
 	}
 
@@ -84,7 +84,7 @@ func CompareChanges(before, now []record.Record) []record.Record {
 		sort.Strings(nList)
 		if len(bList) == 1 && len(nList) == 1 && bList[0] != nList[0] {
 			pf, pt := periodRange(n.costs, acct)
-			appendChanges(&changes, "account", acct, "remapped", "app", bList[0], nList[0], costMoved(n.costs, acct), pf, pt)
+			appendChanges(&changes, "account", acct, "remapped", "app", bList[0], nList[0], costMoved(n.costs, acct), pf, pt, len(n.costs) > 0)
 			continue
 		}
 		bA, nA := toSet(bList), toSet(nList)
@@ -92,14 +92,14 @@ func CompareChanges(before, now []record.Record) []record.Record {
 			if !nA[app] {
 				subject := acct + "/" + app
 				pf, pt := periodRangeForApp(b.costs, acct, app)
-				appendChanges(&changes, "allocation", subject, "removed", "", app, "", costMovedForApp(b.costs, acct, app), pf, pt)
+				appendChanges(&changes, "allocation", subject, "removed", "", app, "", costMovedForApp(b.costs, acct, app), pf, pt, len(b.costs) > 0)
 			}
 		}
 		for _, app := range nList {
 			if !bA[app] {
 				subject := acct + "/" + app
 				pf, pt := periodRangeForApp(n.costs, acct, app)
-				appendChanges(&changes, "allocation", subject, "added", "", "", app, costMovedForApp(n.costs, acct, app), pf, pt)
+				appendChanges(&changes, "allocation", subject, "added", "", "", app, costMovedForApp(n.costs, acct, app), pf, pt, len(n.costs) > 0)
 			}
 		}
 	}
@@ -113,7 +113,7 @@ func CompareChanges(before, now []record.Record) []record.Record {
 		for _, f := range []string{"environment", "lz"} {
 			if strID(ba[f]) != strID(na[f]) {
 				pf, pt := periodRange(n.costs, id)
-				appendChanges(&changes, "account", id, "remapped", f, strID(ba[f]), strID(na[f]), costMoved(n.costs, id), pf, pt)
+				appendChanges(&changes, "account", id, "remapped", f, strID(ba[f]), strID(na[f]), costMoved(n.costs, id), pf, pt, len(n.costs) > 0)
 			}
 		}
 	}
@@ -127,7 +127,7 @@ func CompareChanges(before, now []record.Record) []record.Record {
 			if strID(ba[f]) != strID(na[f]) {
 				subject := k.account + "/" + k.app
 				pf, pt := periodRangeForApp(n.costs, k.account, k.app)
-				appendChanges(&changes, "allocation", subject, "remapped", f, strID(ba[f]), strID(na[f]), costMovedForApp(n.costs, k.account, k.app), pf, pt)
+				appendChanges(&changes, "allocation", subject, "remapped", f, strID(ba[f]), strID(na[f]), costMovedForApp(n.costs, k.account, k.app), pf, pt, len(n.costs) > 0)
 			}
 		}
 	}
@@ -151,17 +151,17 @@ func CompareChanges(before, now []record.Record) []record.Record {
 	return changes
 }
 
-func appendChanges(changes *[]record.Record, subjectType, subject, change, field, old, newVal string, moved map[string]float64, prFrom, prTo string) {
+func appendChanges(changes *[]record.Record, subjectType, subject, change, field, old, newVal string, moved map[string]float64, prFrom, prTo string, inputHasCost bool) {
 	if len(moved) == 0 {
-		*changes = append(*changes, changeRec(subjectType, subject, change, field, old, newVal, "", 0, prFrom, prTo))
+		*changes = append(*changes, changeRec(subjectType, subject, change, field, old, newVal, "", 0, prFrom, prTo, !inputHasCost))
 		return
 	}
 	for _, cur := range sortedCurrencyKeys(moved) {
-		*changes = append(*changes, changeRec(subjectType, subject, change, field, old, newVal, cur, moved[cur], prFrom, prTo))
+		*changes = append(*changes, changeRec(subjectType, subject, change, field, old, newVal, cur, moved[cur], prFrom, prTo, false))
 	}
 }
 
-func changeRec(subjectType, subject, change, field, old, newVal, currency string, costMovedAmt float64, prFrom, prTo string) record.Record {
+func changeRec(subjectType, subject, change, field, old, newVal, currency string, costMovedAmt float64, prFrom, prTo string, nullCost bool) record.Record {
 	rec := record.Record{
 		"kind":         "change",
 		"subject_type": subjectType,
@@ -172,8 +172,15 @@ func changeRec(subjectType, subject, change, field, old, newVal, currency string
 		"new":          newVal,
 		"command":      cmdChanges,
 	}
-	if currency == "" {
+	if nullCost {
 		rec["cost_moved"] = nil
+		rec["currency"] = ""
+		rec["period_from"] = ""
+		rec["period_to"] = ""
+		return rec
+	}
+	if currency == "" {
+		rec["cost_moved"] = 0.0
 		rec["currency"] = ""
 		rec["period_from"] = ""
 		rec["period_to"] = ""

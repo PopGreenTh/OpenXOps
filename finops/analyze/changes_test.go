@@ -105,7 +105,24 @@ func TestChangesWithoutCost(t *testing.T) {
 	}
 	c := ch[0]
 	if c["cost_moved"] != nil || c["currency"] != "" || c["period_from"] != "" || c["period_to"] != "" {
-		t.Fatalf("expected empty cost fields, got %v", c)
+		t.Fatalf("expected null cost when input has no cost, got %v", c)
+	}
+
+	before = []record.Record{
+		{"kind": "allocation", "account_id": "1", "app": "A", "environment": "E1"},
+		{"kind": "cost", "account_id": "2", "amount": 5.0, "currency": "USD", "period": "2026-09", "metric": "M", "app": "X"},
+	}
+	now = []record.Record{
+		{"kind": "allocation", "account_id": "1", "app": "A", "environment": "E2"},
+		{"kind": "cost", "account_id": "2", "amount": 5.0, "currency": "USD", "period": "2026-09", "metric": "M", "app": "X"},
+	}
+	ch = CompareChanges(before, now)
+	if len(ch) != 1 {
+		t.Fatalf("changes = %v", ch)
+	}
+	c = ch[0]
+	if c["cost_moved"] != 0.0 {
+		t.Fatalf("expected cost_moved 0 when input has cost but not for subject, got %v", c["cost_moved"])
 	}
 }
 
