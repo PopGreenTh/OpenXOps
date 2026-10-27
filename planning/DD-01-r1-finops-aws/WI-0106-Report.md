@@ -49,3 +49,14 @@ Writing to an existing file appends, so repeated runs build one growing table.
   both runs' rows under one header (opened in Excel or LibreOffice; said in the PR).
 
 **Verify.** `go run ./scripts/check`
+
+## Delivered (as built)
+
+Built by WO-0106-A (#14, `d94b7c4`), with follow-ups in WO-0101-B (#33).
+
+- `xops report table|csv|excel`, with appending. A table append writes a fresh `--- <kind> ---`
+  title line, and every header is checked before the first write.
+- WO-0101-B changes:
+  - table rows carry no trailing spaces;
+  - Excel append finds the next row from the sheet's real last row, so an all-empty record's
+    row is kept.

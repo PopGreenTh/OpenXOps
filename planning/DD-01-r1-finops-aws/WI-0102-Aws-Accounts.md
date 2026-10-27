@@ -71,3 +71,12 @@ the management account. WI-0104's demo taxonomy is written for this organization
 - The launch entry stops at a breakpoint in the discovery code (said in the PR).
 
 **Verify.** `go run ./scripts/check` and `go run ./xops sense aws-accounts --mock`
+
+## Delivered (as built)
+
+Built by WO-0102-A (#10, `44e25ff`), with two follow-ups in WO-0101-B (#33).
+
+- `aws/`: config, the retry wrapper, Organizations discovery and the embedded demo organization.
+  `xops sense aws-accounts [--mock] [--lz …]` writes `ou` and `account` records.
+- Discovery lists one parent at a time. WO-0101-B removed the unused concurrency parameter, and
+  the command writes through `cmd.OutOrStdout()`.

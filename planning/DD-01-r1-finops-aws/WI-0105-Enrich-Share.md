@@ -125,3 +125,16 @@ any change to the split itself.
   (shown in the PR).
 
 **Verify.** `go run ./scripts/check`
+
+## Delivered (as built)
+
+Built by WO-0105-A (#23, `c62476b`) and WO-0105-B (#36, `ebcb461`).
+
+- The split lives in `finops/enrich/share/`, and the command lives in
+  `finops/enrich/commands.go`. All 6 share reference cases pass, and so does the
+  conservation-failure test.
+- WO-0105-B fixed the pass-through. Every record that isn't a `cost` now comes out once, in
+  input order, `allocation` included. Before the fix, unhandled records came out twice and
+  `allocation` was dropped.
+- On the mock data, the cost after `share` equals Cost Explorer's per period, metric and
+  currency (largest difference 5e-13), and no `cost` record is left without an App.

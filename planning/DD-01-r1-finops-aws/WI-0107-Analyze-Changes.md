@@ -66,3 +66,15 @@ with the cost that moved (D-021).
   (shown in the PR).
 
 **Verify.** `go run ./scripts/check`
+
+## Delivered (as built)
+
+Built by WO-0107-A (#24, `6478dd5`).
+
+- `finops analyze changes --before FILE [--from-map FILE]`, with
+  `finops/analyze/testdata/cost.jsonl` and a demo taxonomy copy that has the Checkout/Prod
+  Environment link changed.
+- `cost_moved` is `null` only when the input has no `cost` records. It is `0` when the input has
+  cost but none for the subject.
+- On the demo data: one `remapped` / `environment` change on `200000000001`, `ENV-PROD` →
+  `ENV-NONPROD`, 42.5 USD.

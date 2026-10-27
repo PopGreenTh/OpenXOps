@@ -54,5 +54,16 @@ packages.
 6. Against the repo owner's real AWS Organization, the pipeline completes with the read-only
    permissions listed in the README.
 
+**Checked 2026-10-27** on a clean clone of `main` at `9da24f3` with no AWS credentials:
+
+| # | Criterion | Result |
+|---|---|---|
+| 1 | CI Linux green; a Task and a debug entry per command | ✅ |
+| 2 | The pipeline runs on `--mock` and writes an Excel workbook | ✅ `finops.xlsx` written |
+| 3 | Every reference case passes unchanged | ✅ 12 map and 6 share cases |
+| 4 | After `share`, totals equal Cost Explorer's; no `cost` without an App | ✅ largest difference 5e-13; 0 without an App |
+| 5 | A second `aws-cost` run over closed months makes zero calls | ✅ 10 calls, then 0 |
+| 6 | The pipeline completes against the real Organization, read-only | ⏳ for the repo owner to run |
+
 **Release 2:** FOCUS (`aws-focus`, `focus-cost`), `analyze trend` and `impact`, Enforce, the
 history store and `--as-reported`.

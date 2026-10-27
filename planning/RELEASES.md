@@ -25,7 +25,7 @@ release is direction, not a commitment.
 
 | Release | Deliverable | Theme | State |
 |---|---|---|---|
-| 1 | [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md) | AWS cost owned by Project › App › Environment, in Excel | Specified; building |
+| 1 | [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md) | AWS cost owned by Project › App › Environment, in Excel | Built; criteria 1–5 pass; waiting for the real-Organization run (criterion 6) and the tag |
 | 2 | [DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md) | FOCUS, history, trend and impact | Specified; waiting for Release 1 |
 | 3 | not written yet | Enforce | First rules decided (D-033) |
 | Later | — | More clouds, SecOps, CloudOps | Direction only |
