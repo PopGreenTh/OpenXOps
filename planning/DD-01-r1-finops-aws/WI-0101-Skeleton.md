@@ -122,7 +122,9 @@ calls plain functions that take and return records (D-013).
 **Assignee:** open
 **Depends on:** WO-0103-A, WO-0105-A, WO-0107-A (dispatched after they merge, D-031)
 **Packages:** `record/`, `record/schema/` (new), `aws/orgapi.go`, `xops/sense/`, `xops/report/`, `finops/enrich/resolve.go`,
-`docs/develop.md`, `README.md`, and any command package whose tests rely on the old pipe rule
+`finops/enrich/commands.go` and `finops/analyze/commands.go` (declaring the kinds each command
+reads), `docs/develop.md`, `README.md`, and any command package whose tests rely on the old pipe
+rule
 
 **Goal.** The D-030 pipe rule and the D-037 schema check in `record/`, plus the non-blocking
 notes left from the WO-0102-A, WO-0104-A and WO-0106-A reviews.
@@ -155,6 +157,11 @@ notes left from the WO-0102-A, WO-0104-A and WO-0106-A reviews.
   the command finishes as fast as with stdin closed; a `record/` test proves it.
 - Every bullet above has a test, and every reference case still passes unchanged.
 - Every command's existing fixtures and golden files pass the schema check unchanged.
+- The mixing example works on the mock data. Today it fails with "stdin is used by both the
+  pipe and --from-cost". `finops sense aws-cost --mock | finops enrich map --taxonomy
+  finops/enrich/testdata/demo-taxonomy.yaml --from-accounts finops/enrich/testdata/demo-accounts.jsonl
+  --from-cost - | finops enrich share --taxonomy finops/enrich/testdata/demo-taxonomy.yaml`
+  prints the same records as the same three steps run through files (shown in the PR).
 
 **Verify.** `go run ./scripts/check`
 
