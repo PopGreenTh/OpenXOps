@@ -414,7 +414,7 @@ they all use.
 
 ## Q-005
 
-**Release 2 scope** (planner, 2026-10-27). Open; blocks writing `DD-02`.
+**Release 2 scope** (planner, 2026-10-27). **Closed** by [D-032](#d-032) to [D-036](#d-036).
 
 1. Enforce: which rules come first, and what is each rule's action and owner?
 2. History store: record files per run, DuckDB tables, or both? How long is history kept?
@@ -422,4 +422,51 @@ they all use.
    replace it for detailed views?
 4. Trend: monthly only, or daily too? Which baseline when fewer than 3 periods exist?
 5. Release 2 slice: all of it in one release, or split?
+
+## D-032
+
+**Release 2 is FOCUS, history, trend and impact; Release 3 is Enforce** (repo owner, 2026-10-27;
+Q-005 item 5; amends D-018 and D-021). Enforce moves to Release 3 because it grades better once
+impact exists.
+
+## D-033
+
+**The first Enforce rules, for Release 3** (repo owner, 2026-10-27; Q-005 item 1). Each rule is
+its own command and flags only (D-010):
+
+| Rule | Flags | Action | Owner |
+|---|---|---|---|
+| untagged shared cost | a shared account's cost with no App tag | tag the resources | the account's Apps |
+| unallocated cost | `UNALLOC` cost above a threshold | map the account in the taxonomy | FinOps |
+| Project tag mismatch | a `Project` tag that disagrees with the taxonomy | fix the tag or the taxonomy | the Project |
+
+Thresholds and the record format are decided when Release 3 is grilled.
+
+## D-034
+
+**History is record files; DuckDB reads them** (repo owner, 2026-10-27; Q-005 item 2; amends
+D-007). Each saved run is a JSON Lines file, `data/history/<command>/<run timestamp>.jsonl`,
+written once and never edited. DuckDB (Release 2, D-022) reads them on demand; no table is kept
+in step. History is kept forever.
+
+## D-035
+
+**FOCUS is opt-in; trend is monthly on average daily cost** (repo owner, 2026-10-27; Q-005
+items 3 and 4).
+
+- **FOCUS:** `finops sense aws-cost` stays the default. `aws-focus` and `focus-cost` are opt-in,
+  for region and `Feature` detail. Each LZ in the taxonomy gets an optional `focus` entry
+  naming the export's bucket and prefix.
+- **Trend is monthly only** in Release 2, and compares **average daily cost**: a month's amount
+  divided by its number of days, so months of different lengths compare fairly. The open
+  (current) month divides by the days that have cost so far. The baseline is the average of the
+  3 months before, as daily averages (D-017); with fewer, the months there are; with none,
+  finding `trend-no-baseline` and no grade. `impact` grades the same daily averages.
+
+## D-036
+
+**Release 2 scope, in sum** (planner, 2026-10-27; from D-032 to D-035). `finops sense
+aws-focus`, `xops sense focus-cost`, DuckDB with `no_duckdb_arrow`, the history files and
+`--as-reported`, `finops analyze trend` (monthly, average daily cost) and `finops analyze impact`.
+Not in Release 2: Enforce (Release 3), daily trend, other clouds.
 
