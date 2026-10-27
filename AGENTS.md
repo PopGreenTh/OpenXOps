@@ -2,9 +2,9 @@
 
 This is the one rule file, in three parts. **Part A** binds everyone. **Part B** is for the
 planner and reviewer, **Part C** for implementers. Claude Code (`CLAUDE.md`: A and B),
-Antigravity (`GEMINI.md`: A and C, plus B when it stands in) and Cursor (this file directly, and
-`.cursor/rules/implementor.mdc`: A and C) all start here; those files only point here. Change
-the rules here, never in a copy.
+Antigravity (`GEMINI.md`: A and C, plus B when it stands in) and Cursor (`CURSOR.md`, reached
+through `.cursor/rules/implementor.mdc`: A and C) all start here; those files only point here.
+Change the rules here, never in a copy.
 
 # Part A — Everyone
 
@@ -28,12 +28,12 @@ OpenXOps is a fresh start ([D-001](planning/DECISIONS.md#d-001)). The earlier pr
 | Who | Role | Writes |
 |---|---|---|
 | **Repo owner** | Decides, answers grill questions, gives the go-ahead to dispatch and to merge | Anything |
-| **Claude Code** | Planner and reviewer (Part B) | `planning/`, reference cases, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/`. **Never implementation code** |
+| **Claude Code** | Planner and reviewer (Part B) | `planning/`, reference cases, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `CURSOR.md`, `.cursor/rules/`. **Never implementation code** |
 | **Antigravity** (`agy-argon`) | Implementer (Part C). **Stands in as planner and reviewer** when the repo owner says so (§8) | Implementing: source, tests, CI and docs inside the claimed Work Order's scope. Standing in: what Claude writes |
 | **Cursor** | Implementer (Part C) | Source, tests, CI and docs inside the claimed Work Order's scope |
 
 "The planner" and "the reviewer" below mean Claude Code, or Antigravity while it stands in.
-Implementers never edit `planning/`, reference cases, `.cursor/rules/` or this file, except
+Implementers never edit `planning/`, reference cases, `CURSOR.md`, `.cursor/rules/` or this file, except
 Antigravity while standing in. If the spec is wrong, contradicts itself or is unclear, **stop
 and say so** in the PR or issue; the planner fixes the spec.
 

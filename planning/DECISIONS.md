@@ -321,9 +321,11 @@ repo owner's text was adjusted to fit the existing rules:
 2026-10-27).
 
 - **One file, three parts**: A for everyone (§1–7), B for the planner and reviewer (§8), C for
-  implementers (§9). `CLAUDE.md`, `GEMINI.md` and `.cursor/rules/implementor.mdc` point to the
+  implementers (§9). `CLAUDE.md`, `GEMINI.md` and `CURSOR.md` point to the
   parts their agent needs. A real split into separate files waits until Part B or C passes about
-  100 lines. `.cursor/rules/implementor.mdc` becomes a summary of §9, which wins (amends D-028).
+  100 lines. `CURSOR.md` holds the summary of §9 (which wins), and
+  `.cursor/rules/implementor.mdc`, the file Cursor applies to every request, only points to it
+  (amends D-028).
 - **Stand-in** (amends D-002): Antigravity (`agy-argon`) takes the planner and reviewer role
   when the repo owner says so, for a named scope. While standing in, it follows Part B, writes
   what Claude writes and writes no implementation code. It never reviews a PR it implemented,
