@@ -209,6 +209,10 @@ func resolveAccount(t Taxonomy, in inv, ac record.Record, ouEffects map[string]o
 	}
 
 	env, envRule := resolveEnvironment(t, in, acctID, chain, ouEffects, link, hasLink, lz, apps)
+	if env == envUnspec && envRule == "unspec" {
+		findings = append(findings, record.Finding("warning", "environment-unresolved", acctID,
+			fmt.Sprintf("no environment mapping for account %s", acctID), cmdMap))
+	}
 
 	shared := len(apps) > 1
 	var allocs []record.Record
@@ -241,8 +245,7 @@ func resolveEnvironment(t Taxonomy, in inv, acctID string, chain []string, effec
 	if t.Defaults != nil && t.Defaults.Environment != "" {
 		return t.Defaults.Environment, "default"
 	}
-	appResolved := len(apps) == 1 && apps[0] != appUnalloc
-	if appResolved {
+	if len(apps) > 0 && apps[0] != appUnalloc {
 		return envUnspec, "unspec"
 	}
 	return envUnalloc, "unalloc"

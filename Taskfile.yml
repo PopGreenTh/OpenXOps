@@ -49,6 +49,21 @@ tasks:
     cmds:
       - go run ./xops sense aws-accounts --mock
 
+  run:xops:report-table:
+    desc: Print report tables from mixed fixture
+    cmds:
+      - go run ./xops report table --from-cost xops/report/testdata/mixed.jsonl
+
+  run:xops:report-csv:
+    desc: Write CSV report from mixed fixture
+    cmds:
+      - go run ./xops report csv --out /tmp/xops-report-csv --from-cost xops/report/testdata/mixed.jsonl
+
+  run:xops:report-excel:
+    desc: Write Excel report from mixed fixture
+    cmds:
+      - go run ./xops report excel --out /tmp/xops-report.xlsx --from-cost xops/report/testdata/mixed.jsonl
+
   clean:
     desc: Remove built binaries
     cmds:

@@ -58,8 +58,9 @@ For each account, using its organization's `ou` and `account` records:
    (`lz-default`) › the global `defaults.app` (`default`) › `APP-UNALLOC` (`unalloc`, finding
    `account-unmapped`, subject: account ID).
 3. **Environment**, separately, same order and rule names. Nothing found → `ENV-UNSPEC`
-   (`unspec`, finding `environment-unresolved`) if the App resolved, `ENV-UNALLOC` (`unalloc`)
-   if not.
+   (`unspec`, finding `environment-unresolved`, subject: account ID) if the App resolved,
+   `ENV-UNALLOC` (`unalloc`) if not. A shared account's Apps resolved through its account entry,
+   so it gets `ENV-UNSPEC` too (reference case 12).
 4. **Environment under App**: a resolved Environment not defined under the App →
    `ENV-UNSPEC`, `environment_rule` `unspec`, finding `environment-not-in-app` (subject
    `<account>/<app>`). Under `APP-UNALLOC` the Environment is kept as resolved.

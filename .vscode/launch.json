@@ -38,6 +38,33 @@
       "console": "integratedTerminal"
     },
     {
+      "name": "xops report table (mixed.jsonl)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/xops",
+      "args": ["report", "table", "--from-cost", "${workspaceFolder}/xops/report/testdata/mixed.jsonl"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "xops report csv (mixed.jsonl)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/xops",
+      "args": ["report", "csv", "--out", "${env:HOME}/xops-report-csv", "--from-cost", "${workspaceFolder}/xops/report/testdata/mixed.jsonl"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "xops report excel (mixed.jsonl)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/xops",
+      "args": ["report", "excel", "--out", "${env:HOME}/xops-report.xlsx", "--from-cost", "${workspaceFolder}/xops/report/testdata/mixed.jsonl"],
+      "console": "integratedTerminal"
+    },
+    {
       "name": "xops sense aws-accounts (--mock)",
       "type": "go",
       "request": "launch",

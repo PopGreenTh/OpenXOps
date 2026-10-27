@@ -12,14 +12,19 @@ Writing to an existing file appends, so repeated runs build one growing table.
 - Reads any records, from the pipe and from any `--from-<kind>` flags (one per kind it is given).
 - **One table per `kind`**, in first-seen order; `--kinds` limits which. Columns are the fields
   in first-seen order, `kind` left out.
-- **`table`**: aligned text to stdout, one titled block per kind; numbers with 2 decimals. With
-  `--out FILE` the same text is appended to that file instead.
+- **`table`**: aligned text to stdout, one titled block per kind (`--- <kind> ---`, then a header
+  row, then rows); numbers with 2 decimals. With `--out FILE` the same text is appended to that
+  file instead. When a kind already has a block in the file, its new rows are appended at the end
+  of the file after a fresh `--- <kind> ---` title line, with no second header row, so every row
+  stays under its own kind's title.
 - **`csv`**: `--out DIR` (required); `DIR/<kind>.csv`, UTF-8, RFC 4180.
 - **`excel`**: `--out FILE.xlsx` (required); one sheet per kind, named by it. Pure Go library,
   no CGO.
 - **Appending.** A new file or sheet gets a header row, then rows. An existing one gets only
-  rows, at the end. A record field missing from the existing header stops the command with an
-  error naming the fields, and nothing is written; a header column the records lack is empty.
+  rows, at the end (for `table`, after the kind's title line, as above). A record field missing
+  from the existing header stops the command with an error naming the fields, and nothing is
+  written for any kind (all headers are checked before the first write); a header column the
+  records lack is empty.
 - Report never sums or groups (that is Analyze).
 
 ## WO-0106-A — Table, CSV, Excel with appending
