@@ -42,10 +42,12 @@ Project › App › Environment. Shared accounts are split by the App tag, unmap
 | Work Order | Delivers | Depends on |
 |---|---|---|
 | [WO-0101-A](DD-01-r1-finops-aws/WI-0101-Skeleton.md) | `xops`, `finops`, `record/`, `scripts/check`, CI, Task, VS Code, `docs/develop.md` | — |
+| [WO-0101-B](DD-01-r1-finops-aws/WI-0101-Skeleton.md) | D-030 pipe rule, D-037 schema check, review follow-ups | 0103, 0105, 0107 |
 | [WO-0102-A](DD-01-r1-finops-aws/WI-0102-Aws-Accounts.md) | `xops sense aws-accounts`, demo organization | 0101 |
 | [WO-0103-A](DD-01-r1-finops-aws/WI-0103-Aws-Cost.md) | `finops sense aws-cost`, two-level Cost Explorer, cache, mock | 0102 |
 | [WO-0104-A](DD-01-r1-finops-aws/WI-0104-Enrich-Map.md) | Taxonomy, `finops enrich validate` and `map` | 0101 |
 | [WO-0105-A](DD-01-r1-finops-aws/WI-0105-Enrich-Share.md) | `finops enrich share` | 0104 |
+| [WO-0105-B](DD-01-r1-finops-aws/WI-0105-Enrich-Share.md) | `share` pass-through fix | 0105 |
 | [WO-0106-A](DD-01-r1-finops-aws/WI-0106-Report.md) | `xops report table\|csv\|excel` with appending | 0101 |
 | [WO-0107-A](DD-01-r1-finops-aws/WI-0107-Analyze-Changes.md) | `finops analyze changes` | 0104 |
 
