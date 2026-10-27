@@ -20,6 +20,25 @@
       "console": "integratedTerminal"
     },
     {
+      "name": "xops sense aws-accounts (--mock)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/xops",
+      "args": ["sense", "aws-accounts", "--mock"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "xops sense aws-accounts (discover)",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/xops",
+      "args": ["sense", "aws-accounts", "--mock"],
+      "console": "integratedTerminal",
+      "stopOnEntry": false
+    },
+    {
       "name": "record: tests",
       "type": "go",
       "request": "launch",
