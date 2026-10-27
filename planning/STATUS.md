@@ -54,9 +54,9 @@ PR #33 (WO-0101-B, Cursor) reviewed 2026-10-27: changes requested (file inputs d
 
 WO-0105-B merged 2026-10-27 (#36, `ebcb461`), approved in the first round. On the mock data, `share` keeps `map`'s `ou`, `account` and `allocation` records once each, and findings are `map`'s plus its own.
 
-WO-0101-B merged 2026-10-27 (#33, `9da24f3`) after two review rounds. Every DD-01 Work Order is merged, and each Work Item has its `Delivered (as built)` section. Release criteria 1 to 5 were checked on a clean clone of `main` at `9da24f3` (`DELIVERABLE.md`). Criterion 6, a run against the real Organization, is for the repo owner, and so is the release tag. Open questions: Q-007 (stdin kind-sort) and Q-008 (mock cache after `scripts/check`).
+WO-0101-B merged 2026-10-27 (#33, `9da24f3`) after two review rounds. Every DD-01 Work Order through WO-0105-B is merged, and each Work Item has its `Delivered (as built)` section. Release criteria 1 to 5 were checked on a clean clone of `main` at `9da24f3` (`DELIVERABLE.md`). Criterion 6, a run against the real Organization, is for the repo owner, and so is the release tag. Open question: Q-008 (mock cache after `scripts/check`).
 
-Q-007 closed 2026-10-27 by D-043: records from stdin keep their input order. WO-0101-C specified to build it; the Release 1 tag waits for it.
+Q-007 closed 2026-10-27 by [D-043](DECISIONS.md#d-043): records from stdin keep their input order. WO-0101-C specified in [#40](https://github.com/PopGreenTh/OpenXOps/pull/40); the Release 1 tag waits for it to merge.
 
 WI-0107 Contracts clarified 2026-10-27 during PR #24's review: `environment` and `lz` changes are account changes, and an allocation's `cost_moved` counts only cost records with its own `app`.
 

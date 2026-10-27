@@ -210,6 +210,6 @@ Built by WO-0101-A (#3, landed through #2, `c27018d`) and WO-0101-B (#33, `9da24
 - `scripts/check` (build, vet, `gofmt -l`, tests); CI with a required Linux job and an optional
   Windows job (D-026); a Task and a VS Code launch entry for every command; `docs/develop.md`.
 - **Known differences.**
-  - Records from stdin are sorted by kind, so a piped run passes records through in kind order
-    and a file run in file order. The records are the same.
+  - Until WO-0101-C merges, stdin records are still sorted by kind in the binary on `main`
+    ([D-043](DECISIONS.md#d-043) drops the sort).
   - `scripts/check` leaves a mock cache in `data/mock/` at the repo root. It is gitignored.
