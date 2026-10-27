@@ -6,6 +6,8 @@ Read [`AGENTS.md`](../AGENTS.md) first; this file adds the detail behind its §3
 
 | File | What it is | Who writes it |
 |---|---|---|
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Concepts: stages, binaries, record kinds, data flow, layout, cross-cutting rules | Claude |
+| [`RELEASES.md`](RELEASES.md) | What ships in which release, and what is still undecided | Claude |
 | [`DECISIONS.md`](DECISIONS.md) | Numbered decisions (`D-NNN`) and open questions (`Q-NNN`) | Claude, on the repo owner's answer |
 | [`STATUS.md`](STATUS.md) | One row per Work Order: status, assignee, issue, PR, branch | Claude |
 | `DD-NN-<slug>/DELIVERABLE.md` | One release: goal, scope, Work Items, order, release criteria | Claude |
