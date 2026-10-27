@@ -64,6 +64,8 @@ WI-0108 (user and developer docs) added to Release 1 on 2026-10-27 by [D-044](DE
 
 PR #43 (Cursor's planning tidy-up after WO-0101-C) merged 2026-10-27 on the repo owner's go-ahead. WO-0108-A (#45) and WO-0108-B (#46) dispatched 2026-10-27 on the repo owner's go-ahead, to run in parallel.
 
+PR #48 (WO-0108-A) and PR #49 (WO-0108-B, stacked on #48) reviewed 2026-10-27, changes requested on both. #48: four rows in `findings.md` contradict the Contracts; `validate`'s `taxonomy-*` codes are undocumented; the doc check misses codes passed through a helper. The spec only named direct `record.Finding` calls, so WI-0108's doc check now covers helpers. #49: following "Add a record kind" as written fails `scripts/check` (a missing step); no evidence in the PR; wording that will be stale once #48 merges.
+
 WI-0107 Contracts clarified 2026-10-27 during PR #24's review: `environment` and `lz` changes are account changes, and an allocation's `cost_moved` counts only cost records with its own `app`.
 
 ## DD-02 — Release 2: FOCUS, history, trend and impact
