@@ -97,3 +97,18 @@ licensor's name from the repo owner, so it isn't part of this Work Order.
 - Every relative link in both files resolves.
 
 **Verify.** `go run ./scripts/check`
+
+## Delivered (as built)
+
+Built by WO-0108-A (#48, `816973f`) and WO-0108-B (#49, `7802af5`), one review round each.
+
+- `README.md` is a quick start. `docs/user/` holds getting started, AWS setup, taxonomy,
+  commands, records and findings. `docs/develop.md` gains three sections, and `CONTRIBUTING.md`
+  is new.
+- `scripts/doccheck/` runs as the `docs` step of `scripts/check`. It also collects codes passed
+  through a local helper function literal that forwards its first parameter to `record.Finding`
+  (validate's `addErr` and `addWarn`).
+- **Known differences.**
+  - The doc check's failure fixtures carry full copies of `commands.md` and `records.md`.
+  - There is no `LICENSE` file yet: it needs the licensor's name from the repo owner.
+
