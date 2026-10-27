@@ -70,7 +70,7 @@ func Map(t Taxonomy, recs []record.Record) []record.Record {
 	out = append(out, allocations...)
 	out = append(out, enrichedCosts...)
 	out = append(out, findings...)
-	return out
+	return record.PassThrough(recs, []string{"ou", "account", "cost", "project_tag_cost"}, out)
 }
 
 func sortedAccounts(m map[string]record.Record) []record.Record {

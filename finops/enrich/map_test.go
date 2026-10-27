@@ -134,6 +134,35 @@ func matchFindings(got []record.Record, want []mapCaseFinding) bool {
 	return true
 }
 
+func TestMapPassThroughUnhandledKinds(t *testing.T) {
+	tax := Taxonomy{
+		LZs: []LZ{{Code: "LZ-MAIN", Name: "Main", CSP: "aws", Currency: "USD", ManagementAccount: "111111111111"}},
+	}
+	upstream := record.Finding("warning", "ou-path-ambiguous", "/Workloads/Prod", "dup names", "xops sense aws-accounts")
+	recs := []record.Record{
+		{"kind": "ou", "id": "r-1", "path": "/", "management_account": "111111111111", "org_id": "o-main", "parent_id": "", "name": "Root", "id_path": "r-1", "has_children": true, "csp": "aws"},
+		{"kind": "account", "id": "200000000001", "management_account": "111111111111", "org_id": "o-main", "parent_id": "r-1", "name": "a", "email": "a@example.com", "status": "ACTIVE", "ou_path": "/", "ou_id_path": "r-1", "csp": "aws"},
+		upstream,
+		{"kind": "custom_kind", "value": "keep"},
+	}
+	out := Map(tax, recs)
+	var gotFinding, gotCustom bool
+	for _, r := range out {
+		if r.Kind() == "finding" && r["code"] == "ou-path-ambiguous" {
+			gotFinding = true
+		}
+		if r.Kind() == "custom_kind" {
+			gotCustom = true
+		}
+	}
+	if !gotFinding {
+		t.Fatal("upstream finding not passed through")
+	}
+	if !gotCustom {
+		t.Fatal("unknown kind not passed through")
+	}
+}
+
 func TestDemoTaxonomyValidate(t *testing.T) {
 	tax, err := LoadTaxonomy("testdata/demo-taxonomy.yaml")
 	if err != nil {

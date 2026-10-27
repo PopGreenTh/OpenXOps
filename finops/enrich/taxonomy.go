@@ -1,6 +1,7 @@
 package enrich
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"strings"
@@ -88,46 +89,19 @@ type TagKeys struct {
 	Project string `yaml:"project"`
 }
 
-var topLevelKeys = map[string]struct{}{
-	"business_units": {}, "cost_centers": {}, "projects": {}, "apps": {}, "lzs": {},
-	"ou_links": {}, "accounts": {}, "defaults": {}, "tags": {},
-}
-
-// LoadTaxonomy reads and parses a taxonomy YAML file with strict top-level keys.
+// LoadTaxonomy reads and parses a taxonomy YAML file; unknown keys at any depth are rejected.
 func LoadTaxonomy(path string) (Taxonomy, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return Taxonomy{}, err
 	}
-	var root yaml.Node
-	if err := yaml.Unmarshal(data, &root); err != nil {
-		return Taxonomy{}, fmt.Errorf("parse taxonomy %s: %w", path, err)
-	}
-	if err := checkDocKeys(&root, topLevelKeys, "taxonomy"); err != nil {
-		return Taxonomy{}, err
-	}
+	dec := yaml.NewDecoder(bytes.NewReader(data))
+	dec.KnownFields(true)
 	var tax Taxonomy
-	if err := yaml.Unmarshal(data, &tax); err != nil {
+	if err := dec.Decode(&tax); err != nil {
 		return Taxonomy{}, fmt.Errorf("parse taxonomy %s: %w", path, err)
 	}
 	return tax, nil
-}
-
-func checkDocKeys(root *yaml.Node, allowed map[string]struct{}, where string) error {
-	if root.Kind != yaml.DocumentNode || len(root.Content) == 0 {
-		return nil
-	}
-	m := root.Content[0]
-	if m.Kind != yaml.MappingNode {
-		return nil
-	}
-	for i := 0; i < len(m.Content); i += 2 {
-		key := m.Content[i].Value
-		if _, ok := allowed[key]; !ok {
-			return fmt.Errorf("%s: unknown key %q", where, key)
-		}
-	}
-	return nil
 }
 
 func reservedCode(code string) bool {
