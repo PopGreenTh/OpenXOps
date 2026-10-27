@@ -22,8 +22,7 @@ to request the CLA text and signing instructions.
    [planning/STATUS.md](planning/STATUS.md).
 3. Fork or branch from `main`, run `go run ./scripts/check` (or `task check`), and open a pull
    request with a clear description and test evidence.
-4. User-facing command changes should update [docs/user/commands.md](docs/user/commands.md) when
-   that file exists on your branch (WO-0108-A).
+4. User-facing command changes should update [docs/user/commands.md](docs/user/commands.md).
 
 ## Agents
 

@@ -32,8 +32,8 @@ cd OpenXOps
 task check
 ```
 
-`task check` is `go run ./scripts/check`: build, `go vet`, `gofmt -l`, `go test ./...`, and
-(when shipped) a `docs` step that runs `scripts/doccheck`.
+`task check` is `go run ./scripts/check`: build, `go vet`, `gofmt -l`, `go test ./...`, and a
+`docs` step that runs `scripts/doccheck`.
 
 ## Linux and macOS
 
@@ -135,24 +135,27 @@ the command layer does I/O. The full picture is in
 
 1. Add the kind’s field table in `record/schema/schema.go` (`ByKind` and a `*Schema` variable).
    Keep fields flat (scalars only) per [D-006](../planning/DECISIONS.md#d-006).
-2. Add tests in `record/schema/schema_test.go` or `record/record_test.go` if validation behaviour
+2. Add the kind to the `want` slice in `TestEveryContractKindHasSchema` in
+   `record/schema/schema_test.go`.
+3. Add tests in `record/schema/schema_test.go` or `record/record_test.go` if validation behaviour
    is new.
-3. Document the kind in [docs/user/records.md](user/records.md): one `## \`kind\`` section with
+4. Document the kind in [docs/user/records.md](user/records.md): one `## \`kind\`` section with
    columns field, type, required, meaning — every schema field must appear.
-4. If a command emits a new `record.Finding` code with a string literal, add a row to
-   [docs/user/findings.md](user/findings.md).
-5. Run `go run ./scripts/check` (including `docs PASS` once WO-0108-A is on your branch).
+5. If a command emits a new finding code (a string literal passed to `record.Finding` or to a
+   helper that forwards to it), add a row to [docs/user/findings.md](user/findings.md).
+6. Run `go run ./scripts/check` (must print `docs PASS`).
 
 ## Run Release 1 checks (criteria 1–5)
 
 Criteria 6–7 need AWS access and user docs; for day-to-day development, run criteria **1–5** from
 [planning/DD-01-r1-finops-aws/DELIVERABLE.md](../planning/DD-01-r1-finops-aws/DELIVERABLE.md#release-criteria):
 
-1. `go run ./scripts/check` — Linux CI equivalent (build, vet, gofmt, tests, docs when present).
+1. `go run ./scripts/check` — Linux CI equivalent (build, vet, gofmt, tests, docs).
 2. Mock pipeline from [docs/user/getting-started.md](user/getting-started.md) (or the README
    quick start) through `finops.xlsx`.
 3. Reference cases: `go test ./finops/enrich/...` (map and share cases under `testdata/cases/`).
-4. Cost conservation after `share` — covered by enrich tests and manual pipeline checks.
+4. Cost conservation after `share` — `go test ./finops/enrich/...` (share cases and
+   `CheckConservation` in tests).
 5. Second `aws-cost --mock` run reports zero new Cost Explorer calls on stderr.
 
 ## Add a reference case
