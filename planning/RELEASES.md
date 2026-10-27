@@ -25,7 +25,7 @@ release is direction, not a commitment.
 
 | Release | Deliverable | Theme | State |
 |---|---|---|---|
-| 1 | [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md) | AWS cost owned by Project › App › Environment, in Excel | Built; criteria 1–5 pass; tag waits for criterion 6 (real-Organization run) |
+| 1 | [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md) | AWS cost owned by Project › App › Environment, in Excel | Built; criteria 1–5 pass; tag waits for the docs (WI-0108, criterion 7) and the real-Organization run (criterion 6) |
 | 2 | [DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md) | FOCUS, history, trend and impact | Specified; dispatch after Release 1 tag |
 | 3 | not written yet | Enforce | First rules decided (D-033) |
 | Later | — | More clouds, SecOps, CloudOps | Direction only |
@@ -50,6 +50,8 @@ Project › App › Environment. Shared accounts are split by the App tag, unmap
 | [WO-0105-B](DD-01-r1-finops-aws/WI-0105-Enrich-Share.md) | `share` pass-through fix | 0105 |
 | [WO-0106-A](DD-01-r1-finops-aws/WI-0106-Report.md) | `xops report table\|csv\|excel` with appending | 0101 |
 | [WO-0107-A](DD-01-r1-finops-aws/WI-0107-Analyze-Changes.md) | `finops analyze changes` | 0104 |
+| [WO-0108-A](DD-01-r1-finops-aws/WI-0108-Docs.md) | User docs, doc check (D-044) | 0101-C |
+| [WO-0108-B](DD-01-r1-finops-aws/WI-0108-Docs.md) | Developer and contributor docs (D-044) | 0101-C |
 
 ```mermaid
 flowchart LR

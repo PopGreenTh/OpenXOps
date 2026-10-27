@@ -560,3 +560,10 @@ D-030 and WI-0101 *Inputs*). The sort of stdin records by `kind` is dropped, so 
 the same steps run through files print the same bytes. Built by WO-0101-C. Q-007 blocked the
 Release 1 tag, so the tag waits for WO-0101-C.
 
+## D-044
+
+**User and developer docs are part of Release 1, in English only** (repo owner, 2026-10-27).
+Implementers write them under a Work Order the planner specifies (`AGENTS.md` §2): WI-0108,
+with WO-0108-A (user docs and a doc check that keeps the references in step with the code) and
+WO-0108-B (developer and contributor docs). The Release 1 tag waits for both.
+
