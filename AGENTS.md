@@ -54,6 +54,9 @@ and say so** in the PR or issue; the planner fixes the spec.
 - A **Task** is the implementer's own step list. It is never written into `planning/`.
 
 `planning/STATUS.md` is the live state. `planning/README.md` describes the loop in detail.
+**New to the project?** Read `planning/ARCHITECTURE.md` (how the pieces fit) and
+`planning/RELEASES.md` (what ships when) before your first Work Item. They explain; decisions
+and Contracts decide.
 
 ## 4. The loop for one Work Order
 
