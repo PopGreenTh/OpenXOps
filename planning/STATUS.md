@@ -10,7 +10,8 @@ Written by Claude only. Status values: see [README.md](README.md#status-values).
 | [Q-004](DECISIONS.md#q-004): licence | — | closed by D-024 |
 | [Q-003](DECISIONS.md#q-003): multi-App tag split, Release 1 slice | — | closed by D-021 |
 | [Q-002](DECISIONS.md#q-002): editor, OS, task runner, dev container | — | closed by D-019, D-020 |
-| [Q-005](DECISIONS.md#q-005): Release 2 scope | DD-02 | open (grilling started 2026-10-27) |
+| [Q-005](DECISIONS.md#q-005): Release 2 scope | — | closed by D-032 to D-036 |
+| [Q-006](DECISIONS.md#q-006): DD-02 planner defaults | DD-02 dispatch | open |
 
 ## DD-01 — Release 1: AWS cost owned by Project › App › Environment
 
@@ -40,3 +41,21 @@ PR #15 (WO-0104-A) full re-read 2026-10-27, after its approval on `94c0047`: cha
 WO-0104-A merged 2026-10-27 (#15, `f07c7c5`) after two review rounds and a full re-read, with all 12 map reference cases passing. WO-0105-A (#18) and WO-0107-A (#19) dispatched 2026-10-27. Before dispatch, WO-0105-A's split moved to a new `finops/enrich/share/` package (`finops/enrich/` is at the 5-file limit; the command stays in `commands.go` to avoid an import cycle), and both Work Orders' *Done when* now use fixtures instead of the mock cost that WO-0103-A has not built yet.
 
 WO-0101-B (D-030 pipe rule and the review follow-ups) specified 2026-10-27, to be dispatched after WO-0103-A, WO-0105-A and WO-0107-A merge (D-031). Release 2 grilling started: Q-005.
+
+D-037 (schema check on every input) added to WO-0101-B 2026-10-27. Release 2's second round answered (D-038 to D-041); `DD-02` can now be written.
+
+WI-0107 Contracts clarified 2026-10-27 during PR #24's review: `environment` and `lz` changes are account changes, and an allocation's `cost_moved` counts only cost records with its own `app`.
+
+## DD-02 — Release 2: FOCUS, history, trend and impact
+
+| Work Order | Assignee | Depends on | Status | Issue | PR | Branch | Revisions |
+|---|---|---|---|---|---|---|---|
+| [WO-0201-A](DD-02-r2-finops-history-trend/WI-0201-History.md#wo-0201-a--history-store-and---save) | open | Release 1, WO-0101-B | not started | — | — | — | 0 |
+| [WO-0202-A](DD-02-r2-finops-history-trend/WI-0202-Focus.md#wo-0202-a--focus-cost-and-duckdb) | open | Release 1, WO-0101-B | not started | — | — | — | 0 |
+| [WO-0202-B](DD-02-r2-finops-history-trend/WI-0202-Focus.md#wo-0202-b--aws-focus) | open | WO-0202-A | not started | — | — | — | 0 |
+| [WO-0203-A](DD-02-r2-finops-history-trend/WI-0203-Analyze-Trend.md#wo-0203-a--trend) | open | WO-0201-A, WO-0105-A | not started | — | — | — | 0 |
+| [WO-0204-A](DD-02-r2-finops-history-trend/WI-0204-Analyze-Impact.md#wo-0204-a--impact) | open | WO-0203-A, WO-0107-A | not started | — | — | — | 0 |
+| [WO-0205-A](DD-02-r2-finops-history-trend/WI-0205-As-Reported.md#wo-0205-a--snapshots-and---as-reported) | open | WO-0201-A, WO-0105-A | not started | — | — | — | 0 |
+
+DD-02 written 2026-10-27 with 8 reference cases (`finops/analyze/testdata/cases/trend/`, `…/impact/`); dispatch waits for Release 1 and Q-006.
+
