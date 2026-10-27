@@ -26,6 +26,7 @@ func run() int {
 		{"vet", stepVet},
 		{"gofmt", stepGofmt},
 		{"test", stepTest},
+		{"docs", stepDocs},
 	}
 	failed := false
 	for _, s := range steps {
@@ -104,6 +105,10 @@ func stepGofmt() error {
 
 func stepTest() error {
 	return runCmd("go", "test", "./...")
+}
+
+func stepDocs() error {
+	return runCmd("go", "run", "./scripts/doccheck")
 }
 
 func runCmd(name string, args ...string) error {
