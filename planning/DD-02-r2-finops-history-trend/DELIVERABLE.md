@@ -1,7 +1,7 @@
 # DD-02 — Release 2: FOCUS, history, trend and impact
 
-Scope: D-032 to D-041, with D-007, D-010, D-014, D-017 and D-022. Planner defaults still to be
-confirmed are listed in [Q-006](../DECISIONS.md#q-006); no Work Order is dispatched until it closes.
+Scope: D-032 to D-042, with D-007, D-010, D-014, D-017 and D-022. The planner defaults listed
+in [Q-006](../DECISIONS.md#q-006) were confirmed by [D-042](../DECISIONS.md#d-042).
 
 ## Goal
 
