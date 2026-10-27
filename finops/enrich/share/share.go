@@ -27,7 +27,6 @@ type Options struct {
 // Split shared-account cost rows by App tag; other records pass through unchanged.
 func Split(recs []record.Record, opt Options) ([]record.Record, error) {
 	allocs := map[string][]record.Record{}
-	var other []record.Record
 	var costs []record.Record
 	for _, r := range recs {
 		switch r.Kind() {
@@ -36,8 +35,6 @@ func Split(recs []record.Record, opt Options) ([]record.Record, error) {
 			allocs[id] = append(allocs[id], r)
 		case "cost":
 			costs = append(costs, r)
-		default:
-			other = append(other, r)
 		}
 	}
 	appCodes := map[string]struct{}{}
@@ -85,11 +82,10 @@ func Split(recs []record.Record, opt Options) ([]record.Record, error) {
 	sortShareCosts(outCosts)
 	sortFindings(findings)
 
-	var out []record.Record
-	out = append(out, other...)
-	out = append(out, outCosts...)
-	out = append(out, findings...)
-	return record.PassThrough(recs, []string{"allocation", "cost"}, out), nil
+	var own []record.Record
+	own = append(own, outCosts...)
+	own = append(own, findings...)
+	return record.PassThrough(recs, []string{"cost"}, own), nil
 }
 
 // CheckConservation verifies output cost totals match input for shared splits.
