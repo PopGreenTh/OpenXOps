@@ -67,7 +67,7 @@ packages.
 | 4 | After `share`, totals equal Cost Explorer's; no `cost` without an App | ✅ largest difference 5e-13; 0 without an App |
 | 5 | A second `aws-cost` run over closed months makes zero calls | ✅ 10 calls, then 0 |
 | 6 | The pipeline completes against the real Organization, read-only | ⏳ for the repo owner to run |
-| 7 | Docs: `docs PASS`; the getting-started walkthrough runs on a clean clone | ⏳ after WI-0108 (added 2026-10-27, D-044) |
+| 7 | Docs: `docs PASS`; the getting-started walkthrough runs on a clean clone | ✅ checked 2026-10-27 at `7802af5`: `docs PASS`, `finops.xlsx` written |
 
 **Release 2:** FOCUS (`aws-focus`, `focus-cost`), `analyze trend` and `impact`, Enforce, the
 history store and `--as-reported`.
