@@ -245,17 +245,20 @@ func TestCostHistoryShortLiveLeadingEmpty(t *testing.T) {
 		From: "2024-11", To: "2024-12", CacheRoot: cache,
 		Management: "111111111111",
 	})
-	var found bool
+	var finding record.Record
 	for _, r := range recs {
 		if r.Kind() == "finding" && r["code"] == "cost-history-short" {
-			found = true
+			finding = r
 			if r["severity"] != "warning" {
 				t.Fatalf("severity = %v", r["severity"])
 			}
 		}
 	}
-	if !found {
+	if finding == nil {
 		t.Fatal("expected cost-history-short on live leading empty periods")
+	}
+	if subj, _ := finding["subject"].(string); subj != "2024-12" {
+		t.Fatalf("subject = %q, want first period returned 2024-12", subj)
 	}
 }
 
@@ -284,13 +287,21 @@ func TestCostHistoryShortFinding(t *testing.T) {
 		From: "2020-01", To: "2026-10",
 		CacheRoot: testCacheDir(t),
 	})
-	var found bool
+	var finding record.Record
+	var firstCostPeriod string
 	for _, r := range recs {
+		if r.Kind() == "cost" && firstCostPeriod == "" {
+			firstCostPeriod, _ = r["period"].(string)
+		}
 		if r.Kind() == "finding" && r["code"] == "cost-history-short" {
-			found = true
+			finding = r
 		}
 	}
-	if !found {
+	if finding == nil {
 		t.Fatal("expected cost-history-short finding")
+	}
+	subj, _ := finding["subject"].(string)
+	if subj != firstCostPeriod {
+		t.Fatalf("subject = %q, want first period returned %q", subj, firstCostPeriod)
 	}
 }

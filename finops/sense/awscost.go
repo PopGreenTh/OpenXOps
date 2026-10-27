@@ -107,7 +107,8 @@ func RunAwsCost(ctx context.Context, opt CostOptions) error {
 	if opt.Mock {
 		avail := ce.MockPeriodsAvailable(ceGranularity)
 		if len(periods) > avail {
-			findings = append(findings, record.Finding("warning", "cost-history-short", periods[0],
+			firstReturned := periods[len(periods)-avail]
+			findings = append(findings, record.Finding("warning", "cost-history-short", firstReturned,
 				fmt.Sprintf("mock has %d %s periods; range asks for %d", avail, recordGranularity, len(periods)),
 				"finops sense aws-cost"))
 			periods = periods[len(periods)-avail:]
@@ -407,8 +408,9 @@ func trimLeadingEmptyHistory(periods []string, cached map[string]*cacheEntry, re
 	if drop == 0 || drop >= len(periods) {
 		return periods, nil
 	}
-	f := record.Finding("warning", "cost-history-short", periods[0],
-		fmt.Sprintf("%d leading %s periods had no cost data; range starts at %s", drop, recordGranularity, periods[drop]),
+	firstReturned := periods[drop]
+	f := record.Finding("warning", "cost-history-short", firstReturned,
+		fmt.Sprintf("%d leading %s periods had no cost data; range starts at %s", drop, recordGranularity, firstReturned),
 		"finops sense aws-cost")
 	return periods[drop:], []record.Record{f}
 }
