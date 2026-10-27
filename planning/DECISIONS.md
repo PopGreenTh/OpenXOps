@@ -392,5 +392,6 @@ repo owner's text was adjusted to fit the existing rules:
   and a Work Order it specified or dispatched is implemented by Cursor unless the owner says
   otherwise. Its reviews, decisions and state records say it is standing in. Claude resumes from
   `STATUS.md`, `DECISIONS.md` and the open issues and PRs, without re-reviewing unless asked.
-- *Planner's defaults, to confirm:* how a stand-in starts (the owner's word, in any channel),
-  the no-self-review rule, and Cursor implementing what the stand-in specified.
+- **Confirmed by the repo owner (2026-10-27):** the stand-in never reviews its own PR.
+  *Planner's defaults, still to confirm:* a stand-in starts on the owner's word in any channel,
+  and Cursor implements what the stand-in specified.
