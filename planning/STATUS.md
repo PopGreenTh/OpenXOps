@@ -10,7 +10,7 @@ Written by Claude only. Status values: see [README.md](README.md#status-values).
 | [Q-004](DECISIONS.md#q-004): licence | — | closed by D-024 |
 | [Q-003](DECISIONS.md#q-003): multi-App tag split, Release 1 slice | — | closed by D-021 |
 | [Q-002](DECISIONS.md#q-002): editor, OS, task runner, dev container | — | closed by D-019, D-020 |
-| [Q-005](DECISIONS.md#q-005): Release 2 scope | DD-02 | open (grilling started 2026-10-27) |
+| [Q-005](DECISIONS.md#q-005): Release 2 scope | — | closed by D-032 to D-036 |
 
 ## DD-01 — Release 1: AWS cost owned by Project › App › Environment
 
