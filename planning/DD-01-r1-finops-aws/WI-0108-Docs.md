@@ -29,8 +29,11 @@ references in step with the code.
 or FAIL like the other steps. It fails when:
 
 1. a kind in `record/schema.ByKind`, or one of its fields, is missing from `docs/user/records.md`;
-2. a finding code passed to `record.Finding` in any non-test `.go` file is missing from
-   `docs/user/findings.md`. On `main` today these are `account-not-discovered`,
+2. a finding code in any non-test `.go` file is missing from `docs/user/findings.md`. A code is
+   a string literal passed as the code argument to `record.Finding`, or to a helper that passes
+   its own parameter on as that argument (as `addErr` and `addWarn` do in
+   `finops/enrich/validate.go` for the `taxonomy-*` codes). Besides the `taxonomy-*` codes, on
+   `main` today these are `account-not-discovered`,
    `account-not-in-inventory`, `account-unmapped`, `app-on-leaf-ou`, `app-tag-not-seen`,
    `cost-history-short`, `environment-not-in-app`, `environment-unresolved`, `lz-unknown`,
    `ou-not-found`, `ou-path-ambiguous`, `project-tag-mismatch`, `shared-tag-unknown`,
