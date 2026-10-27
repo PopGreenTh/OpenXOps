@@ -53,6 +53,12 @@ calls plain functions that take and return records (D-013).
 - The same kind from both the pipe and a flag is an error that names both.
 - `--from-history FILE` is the command's own earlier output, for commands that use it.
 - A bad line stops the command with an error naming the file (or `stdin`) and the line number.
+- **Schema check** (D-037). Every record of a kind the command reads is checked against that
+  kind's schema in `record/`: each required field present, each value of its type (string,
+  number, bool). A failure stops the command with an error naming the file (or `stdin`), the
+  line and the field. Extra fields are allowed, since records gain fields down the pipeline.
+  Kinds the command doesn't read pass through unchecked. The same check applies to the pipe
+  and to `--from-<kind>` files.
 
 ### Common flags and behaviour
 
@@ -118,13 +124,19 @@ calls plain functions that take and return records (D-013).
 **Packages:** `record/`, `aws/orgapi.go`, `xops/sense/`, `xops/report/`, `finops/enrich/resolve.go`,
 `docs/develop.md`, `README.md`, and any command package whose tests rely on the old pipe rule
 
-**Goal.** The D-030 pipe rule in `record/`, plus the non-blocking notes left from the WO-0102-A,
-WO-0104-A and WO-0106-A reviews.
+**Goal.** The D-030 pipe rule and the D-037 schema check in `record/`, plus the non-blocking
+notes left from the WO-0102-A, WO-0104-A and WO-0106-A reviews.
 
 **In scope.**
 - `record/`: input assembly follows D-030 (*Inputs* above). Tests: no flag reads stdin; a
   `--from-<kind>` file and no `-` never reads stdin, even when stdin is an open pipe that never
   closes; `--from-<kind> -` reads stdin; the same kind from stdin and a file is still an error.
+- `record/`: one schema per record kind as a plain Go table (field, type, required), for every
+  kind in a Work Item's Contracts (`ou`, `account`, `cost`, `project_tag_cost`, `allocation`,
+  `change`, `finding`). The required fields are the ones the producing command always writes.
+  Each command declares the kinds it reads; input assembly checks them (*Inputs* above). Tests:
+  a missing field and a wrong type each fail with file, line and field; an extra field passes;
+  an undeclared kind passes unchecked; a test asserts every kind above has a schema.
 - `xops/sense`: `aws-accounts` writes through `cmd.OutOrStdout()`; the discovery-error test
   checks it gets the injected error (`errors.Is`). `aws/orgapi.go`: drop the unused
   `maxConcurrent` parameter (or use it, bounded at 5).
@@ -141,6 +153,7 @@ WO-0104-A and WO-0106-A reviews.
 - With stdin an open pipe that never closes (`sleep 60 | finops enrich map --taxonomy … --from-accounts …`),
   the command finishes as fast as with stdin closed; a `record/` test proves it.
 - Every bullet above has a test, and every reference case still passes unchanged.
+- Every command's existing fixtures and golden files pass the schema check unchanged.
 
 **Verify.** `go run ./scripts/check`
 
