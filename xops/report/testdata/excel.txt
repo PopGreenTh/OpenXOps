@@ -1,0 +1,12 @@
+--- alpha ---
+name,score
+first,1.5
+second,3.25
+--- beta ---
+code,qty
+b1,10
+b2,20
+--- gamma ---
+active,label
+TRUE,g1
+FALSE,g2

@@ -68,4 +68,30 @@ Read-only IAM (management or delegated admin): `organizations:DescribeOrganizati
 `organizations:ListRoots`, `organizations:ListOrganizationalUnitsForParent`,
 `organizations:ListAccountsForParent`.
 
+### `xops report table|csv|excel`
+
+Turns JSON Lines records into human-readable tables. One table per `kind`, in first-seen order;
+`--kinds` limits which kinds are written. Columns follow field first-seen order (`kind` is
+omitted). Inputs come from the pipe and/or `--from-*` flags (`--from-cost`, `--from-change`,
+`--from-allocation`, `--from-finding`, `--from-accounts`).
+
+```bash
+go run ./xops report table --from-cost xops/report/testdata/mixed.jsonl
+go run ./xops report csv --out /tmp/report --from-cost xops/report/testdata/mixed.jsonl
+go run ./xops report excel --out /tmp/report.xlsx --from-cost xops/report/testdata/mixed.jsonl
+task run:xops:report-table
+task run:xops:report-csv
+task run:xops:report-excel
+```
+
+| Subcommand | Output |
+|---|---|
+| `table` | Aligned text on stdout; numbers show two decimals. `--out FILE` appends the same text. |
+| `csv` | `--out DIR` (required): `DIR/<kind>.csv`, UTF-8 RFC 4180. |
+| `excel` | `--out FILE.xlsx` (required): one sheet per kind. |
+
+Appending to an existing CSV, sheet or table file adds rows only (no second header). A record
+field that is not already in the header stops the command with an error and leaves the file
+unchanged; missing columns are left empty.
+
 Developer setup (Linux first; see [docs/develop.md](docs/develop.md)), debugging and how to add a command.
