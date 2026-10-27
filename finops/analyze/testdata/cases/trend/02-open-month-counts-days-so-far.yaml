@@ -1,0 +1,17 @@
+name: open-month-counts-days-so-far
+why: >
+  The month of --as-of is open: its daily average divides by the days before --as-of (10 here),
+  not by the month's length. 200 over 10 days is 20 a day, twice the baseline of 10.
+args: { hierarchy: project, as_of: "2026-10-11" }
+records:
+  - { kind: cost, account_id: "200000000001", service: AmazonEC2, project: PRJ-SHOP, app: APP-CHK, environment: ENV-PROD, period: 2026-07, metric: UnblendedCost, currency: USD, amount: 310 }
+  - { kind: cost, account_id: "200000000001", service: AmazonEC2, project: PRJ-SHOP, app: APP-CHK, environment: ENV-PROD, period: 2026-08, metric: UnblendedCost, currency: USD, amount: 310 }
+  - { kind: cost, account_id: "200000000001", service: AmazonEC2, project: PRJ-SHOP, app: APP-CHK, environment: ENV-PROD, period: 2026-09, metric: UnblendedCost, currency: USD, amount: 300 }
+  - { kind: cost, account_id: "200000000001", service: AmazonEC2, project: PRJ-SHOP, app: APP-CHK, environment: ENV-PROD, period: 2026-10, metric: UnblendedCost, currency: USD, amount: 200 }
+expect:
+  trends:
+    - { level: app, node: PRJ-SHOP > APP-CHK, metric: UnblendedCost, currency: USD, period: 2026-10,
+        amount: 200, days: 10, open: true, daily_avg: 20, baseline_periods: 3, baseline_daily_avg: 10, factor: 2 }
+    - { level: app, node: PRJ-SHOP > APP-CHK, metric: UnblendedCost, currency: USD, period: 2026-09,
+        amount: 300, days: 30, open: false, daily_avg: 10, baseline_periods: 2, baseline_daily_avg: 10, factor: 1 }
+  findings: []

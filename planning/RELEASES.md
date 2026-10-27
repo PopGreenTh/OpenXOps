@@ -26,7 +26,7 @@ release is direction, not a commitment.
 | Release | Deliverable | Theme | State |
 |---|---|---|---|
 | 1 | [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md) | AWS cost owned by Project › App › Environment, in Excel | Specified; building |
-| 2 | not written yet | FOCUS, history, trend and impact | Scope decided (D-032 to D-036); not specified |
+| 2 | [DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md) | FOCUS, history, trend and impact | Specified; waiting for Release 1 and Q-006 |
 | 3 | not written yet | Enforce | First rules decided (D-033) |
 | Later | — | More clouds, SecOps, CloudOps | Direction only |
 
@@ -70,8 +70,7 @@ permissions.
 ## Release 2 — FOCUS, history, trend and impact
 
 **Scope decided by** [D-032](DECISIONS.md#d-032) to [D-036](DECISIONS.md#d-036), with
-[D-014](DECISIONS.md#d-014), [D-017](DECISIONS.md#d-017) and [D-022](DECISIONS.md#d-022). Not
-yet specified: there is no `DD-02` folder and no Work Item.
+[D-014](DECISIONS.md#d-014), [D-017](DECISIONS.md#d-017) and [D-022](DECISIONS.md#d-022). **Specified in** [DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md).
 
 | Capability | Command | Already decided |
 |---|---|---|
@@ -87,7 +86,7 @@ yet specified: there is no `DD-02` folder and no Work Item.
 Also decided: FOCUS files cached once per closed month ([D-038](DECISIONS.md#d-038)), history
 saved with `--save` on `map`, `share`, `trend` and `impact` ([D-039](DECISIONS.md#d-039)),
 `--as-reported` in Release 2 ([D-040](DECISIONS.md#d-040)), and trend depth
-([D-041](DECISIONS.md#d-041)). Release 2 is ready to be specified as `DD-02`.
+([D-041](DECISIONS.md#d-041)).
 
 ## Release 3 — Enforce
 

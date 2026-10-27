@@ -1,0 +1,17 @@
+name: explained-by-change
+why: >
+  A change touches a cost node when its account is the node's account, and a project node when
+  its old or new value equals the node's value for the changed field. Account 200000000001 was
+  remapped from APP-PAY to APP-CHK, which explains both its account node's rise and APP-CHK's;
+  account 200000000003's rise has no change.
+args: { period: 2026-09 }
+records:
+  - { kind: change, subject_type: account, subject: "200000000001", change: remapped, field: app, old: APP-PAY, new: APP-CHK, cost_moved: 300, currency: USD, period_from: 2026-09, period_to: 2026-09 }
+  - { kind: trend, hierarchy: cost, level: account, node: "/W > 200000000001", ou_path: /W, account_id: "200000000001", region: "", service: "", period: 2026-09, metric: UnblendedCost, currency: USD, amount: 750, days: 30, open: false, daily_avg: 25, baseline_periods: 3, baseline_daily_avg: 10, factor: 2.5 }
+  - { kind: trend, hierarchy: cost, level: account, node: "/W > 200000000003", ou_path: /W, account_id: "200000000003", region: "", service: "", period: 2026-09, metric: UnblendedCost, currency: USD, amount: 750, days: 30, open: false, daily_avg: 25, baseline_periods: 3, baseline_daily_avg: 10, factor: 2.5 }
+  - { kind: trend, hierarchy: project, level: app, node: PRJ-SHOP > APP-CHK, project: PRJ-SHOP, app: APP-CHK, environment: "", feature_tag: "", period: 2026-09, metric: UnblendedCost, currency: USD, amount: 750, days: 30, open: false, daily_avg: 25, baseline_periods: 3, baseline_daily_avg: 10, factor: 2.5 }
+expect:
+  impacts:
+    - { hierarchy: cost, node: "/W > 200000000001", impact_level: 1, status: new, explained_by_change: true }
+    - { hierarchy: cost, node: "/W > 200000000003", impact_level: 1, status: new, explained_by_change: false }
+    - { hierarchy: project, node: PRJ-SHOP > APP-CHK, impact_level: 1, status: new, explained_by_change: true }

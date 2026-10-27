@@ -121,7 +121,7 @@ calls plain functions that take and return records (D-013).
 
 **Assignee:** open
 **Depends on:** WO-0103-A, WO-0105-A, WO-0107-A (dispatched after they merge, D-031)
-**Packages:** `record/`, `aws/orgapi.go`, `xops/sense/`, `xops/report/`, `finops/enrich/resolve.go`,
+**Packages:** `record/`, `record/schema/` (new), `aws/orgapi.go`, `xops/sense/`, `xops/report/`, `finops/enrich/resolve.go`,
 `docs/develop.md`, `README.md`, and any command package whose tests rely on the old pipe rule
 
 **Goal.** The D-030 pipe rule and the D-037 schema check in `record/`, plus the non-blocking
@@ -131,7 +131,8 @@ notes left from the WO-0102-A, WO-0104-A and WO-0106-A reviews.
 - `record/`: input assembly follows D-030 (*Inputs* above). Tests: no flag reads stdin; a
   `--from-<kind>` file and no `-` never reads stdin, even when stdin is an open pipe that never
   closes; `--from-<kind> -` reads stdin; the same kind from stdin and a file is still an error.
-- `record/`: one schema per record kind as a plain Go table (field, type, required), for every
+- `record/schema/` (new; `record/` already has the 5 non-test files `AGENTS.md` §5 allows): one
+  schema per record kind as a plain Go table (field, type, required), for every
   kind in a Work Item's Contracts (`ou`, `account`, `cost`, `project_tag_cost`, `allocation`,
   `change`, `finding`). The required fields are the ones the producing command always writes.
   Each command declares the kinds it reads; input assembly checks them (*Inputs* above). Tests:

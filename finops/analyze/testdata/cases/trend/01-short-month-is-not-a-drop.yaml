@@ -1,0 +1,21 @@
+name: short-month-is-not-a-drop
+why: >
+  Equal spend per day gives equal daily averages, so February's lower total (28 days) is not a
+  drop. January has no earlier period, so no baseline; later months average the earlier ones.
+args: { hierarchy: project, as_of: "2026-05-10" }
+records:
+  - { kind: cost, account_id: "200000000001", service: AmazonEC2, project: PRJ-SHOP, app: APP-CHK, environment: ENV-PROD, period: 2026-01, metric: UnblendedCost, currency: USD, amount: 310 }
+  - { kind: cost, account_id: "200000000001", service: AmazonEC2, project: PRJ-SHOP, app: APP-CHK, environment: ENV-PROD, period: 2026-02, metric: UnblendedCost, currency: USD, amount: 280 }
+  - { kind: cost, account_id: "200000000001", service: AmazonEC2, project: PRJ-SHOP, app: APP-CHK, environment: ENV-PROD, period: 2026-03, metric: UnblendedCost, currency: USD, amount: 310 }
+  - { kind: cost, account_id: "200000000001", service: AmazonEC2, project: PRJ-SHOP, app: APP-CHK, environment: ENV-PROD, period: 2026-04, metric: UnblendedCost, currency: USD, amount: 300 }
+expect:
+  trends:
+    - { level: environment, node: PRJ-SHOP > APP-CHK > ENV-PROD, metric: UnblendedCost, currency: USD, period: 2026-01,
+        amount: 310, days: 31, open: false, daily_avg: 10, baseline_periods: 0, baseline_daily_avg: null, factor: null }
+    - { level: environment, node: PRJ-SHOP > APP-CHK > ENV-PROD, metric: UnblendedCost, currency: USD, period: 2026-02,
+        amount: 280, days: 28, open: false, daily_avg: 10, baseline_periods: 1, baseline_daily_avg: 10, factor: 1 }
+    - { level: environment, node: PRJ-SHOP > APP-CHK > ENV-PROD, metric: UnblendedCost, currency: USD, period: 2026-04,
+        amount: 300, days: 30, open: false, daily_avg: 10, baseline_periods: 3, baseline_daily_avg: 10, factor: 1 }
+    - { level: project, node: PRJ-SHOP, metric: UnblendedCost, currency: USD, period: 2026-02,
+        amount: 280, days: 28, daily_avg: 10, factor: 1 }
+  findings: []

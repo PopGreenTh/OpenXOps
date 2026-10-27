@@ -1,0 +1,21 @@
+name: floor-factor-most-specific
+why: >
+  Floor and factor are chosen separately, each from the most specific entry that sets it.
+  PRJ-A > APP-A takes factor 3 from its own entry and floor 500 from PRJ-A's. PRJ-A > APP-B rises
+  450 a month, under the inherited floor 500. PRJ-B has no entry: defaults.
+args:
+  period: 2026-09
+  floor_factor: |
+    project:
+      - { project: PRJ-A, floor: 500 }
+      - { project: PRJ-A, app: APP-A, factor: 3 }
+records:
+  - { kind: trend, hierarchy: project, level: project, node: PRJ-A, project: PRJ-A, app: "", environment: "", feature_tag: "", period: 2026-09, metric: UnblendedCost, currency: USD, amount: 1650, days: 30, open: false, daily_avg: 55, baseline_periods: 3, baseline_daily_avg: 20, factor: 2.75 }
+  - { kind: trend, hierarchy: project, level: app, node: PRJ-A > APP-A, project: PRJ-A, app: APP-A, environment: "", feature_tag: "", period: 2026-09, metric: UnblendedCost, currency: USD, amount: 900, days: 30, open: false, daily_avg: 30, baseline_periods: 3, baseline_daily_avg: 10, factor: 3 }
+  - { kind: trend, hierarchy: project, level: app, node: PRJ-A > APP-B, project: PRJ-A, app: APP-B, environment: "", feature_tag: "", period: 2026-09, metric: UnblendedCost, currency: USD, amount: 750, days: 30, open: false, daily_avg: 25, baseline_periods: 3, baseline_daily_avg: 10, factor: 2.5 }
+  - { kind: trend, hierarchy: project, level: project, node: PRJ-B, project: PRJ-B, app: "", environment: "", feature_tag: "", period: 2026-09, metric: UnblendedCost, currency: USD, amount: 750, days: 30, open: false, daily_avg: 25, baseline_periods: 3, baseline_daily_avg: 10, factor: 2.5 }
+expect:
+  impacts:
+    - { hierarchy: project, node: PRJ-A, impact_level: 1, status: new, delta_monthly: 1050, floor: 500, base_factor: 2 }
+    - { hierarchy: project, node: PRJ-A > APP-A, impact_level: 1, status: new, delta_monthly: 600, floor: 500, base_factor: 3 }
+    - { hierarchy: project, node: PRJ-B, impact_level: 1, status: new, delta_monthly: 450, floor: 30, base_factor: 2 }
