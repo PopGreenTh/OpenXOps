@@ -41,6 +41,8 @@ with the cost that moved (D-021).
 
 **In scope.**
 - The command; a task and launch entry on two fixture `map` outputs.
+- Debug logging as WI-0101 requires (`record.LogStart`); deterministic output; unhandled kinds
+  passed through (`record.PassThrough`).
 - Table-driven tests: each `change` kind; a shared account gaining an App; with and without
   cost; two currencies.
 
@@ -48,7 +50,10 @@ with the cost that moved (D-021).
 
 **Done when.**
 - The tests above pass.
-- Two `map` runs of the mock with one account's OU link changed in the taxonomy give exactly
-  one `remapped` change for that account, with its cost (said in the PR).
+- Two `map` runs over `finops/enrich/testdata/demo-accounts.jsonl` plus a small cost fixture
+  (`finops/analyze/testdata/cost.jsonl`, written by this Work Order), the second run with the
+  Environment link of `/Workloads/Checkout/Prod` changed in a copy of the demo taxonomy, give
+  exactly one `remapped` change (`field` `environment`) for that OU's account, with its cost
+  (shown in the PR).
 
 **Verify.** `go run ./scripts/check`

@@ -51,13 +51,27 @@ activated for cost allocation.
 
 **Assignee:** open
 **Depends on:** WO-0104-A
-**Packages:** `finops/enrich/`, `Taskfile.yml`, `.vscode/launch.json`, `README.md`
+**Packages:** `finops/enrich/share/` (new), `finops/enrich/commands.go` (the `share` command
+only), `finops/enrich/share_test.go` (new), `finops/enrich/testdata/` (new fixtures only, not
+`cases/`), `Taskfile.yml`, `.vscode/launch.json`, `README.md`
+
+`finops/enrich/` already has the 5 non-test `.go` files `AGENTS.md` §5 allows. So the split
+itself (plain functions: records and the taxonomy's App codes in, records and findings out) goes
+in a new package, `finops/enrich/share/`, which does not import `finops/enrich`. The `share`
+command, its flags and taxonomy loading go in `finops/enrich/commands.go`, which calls
+`share`. The reference-case test lives in `finops/enrich/share_test.go`, so it reads
+`testdata/cases/share/` in place and can use the existing taxonomy loader.
 
 **Goal.** `share` as specified.
 
 **In scope.**
 - The command, the split, the remainder, the conservation check.
-- Task and launch entry on a fixture file of `map` output.
+- Task and launch entry on a fixture file of `map` output: `testdata/demo-map.jsonl`, the
+  demo accounts' `map` output plus hand-written `cost` records for the shared account that cover
+  every tag case (single App, `APP-CHK,APP-PAY`, lower case, a wrong App, an unknown value,
+  empty).
+- Debug logging as WI-0101 requires (`record.LogStart`); deterministic output; unhandled kinds
+  passed through (`record.PassThrough`).
 - Tests: every share reference case; the conservation check failing on a hand-broken split.
 - README: the share rules with an example.
 
@@ -65,8 +79,10 @@ activated for cost allocation.
 
 **Done when.**
 - Every `cases/share/` case passes, unchanged.
-- `… | finops enrich map … | finops enrich share --taxonomy …` on the mocks prints no `cost`
-  record with `shared` true and an empty `app`.
+- `finops enrich share --taxonomy finops/enrich/testdata/demo-taxonomy.yaml --from-cost
+  finops/enrich/testdata/demo-map.jsonl` prints no `cost` record with `shared` true and an empty
+  `app`. If WO-0103-A is on `main`, the PR also shows the same for the full mock pipeline
+  (`aws-accounts | map | share`, with `aws-cost --mock`).
 - The conservation-failure test passes.
 
 **Verify.** `go run ./scripts/check`
