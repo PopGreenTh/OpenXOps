@@ -314,3 +314,21 @@ repo owner's text was adjusted to fit the existing rules:
   Order's steps first.
 - **`Verify` still runs in full.** The 50-line cap is for targeted tests; the full `Verify`
   runs uncapped before the PR, and its output goes in the PR.
+
+## D-029
+
+**`AGENTS.md` in three parts; Antigravity can stand in as planner and reviewer** (repo owner,
+2026-10-27).
+
+- **One file, three parts**: A for everyone (§1–7), B for the planner and reviewer (§8), C for
+  implementers (§9). `CLAUDE.md`, `GEMINI.md` and `.cursor/rules/implementor.mdc` point to the
+  parts their agent needs. A real split into separate files waits until Part B or C passes about
+  100 lines. `.cursor/rules/implementor.mdc` becomes a summary of §9, which wins (amends D-028).
+- **Stand-in** (amends D-002): Antigravity (`agy-argon`) takes the planner and reviewer role
+  when the repo owner says so, for a named scope. While standing in, it follows Part B, writes
+  what Claude writes and writes no implementation code. It never reviews a PR it implemented,
+  and a Work Order it specified or dispatched is implemented by Cursor unless the owner says
+  otherwise. Its reviews, decisions and state records say it is standing in. Claude resumes from
+  `STATUS.md`, `DECISIONS.md` and the open issues and PRs, without re-reviewing unless asked.
+- *Planner's defaults, to confirm:* how a stand-in starts (the owner's word, in any channel),
+  the no-self-review rule, and Cursor implementing what the stand-in specified.
