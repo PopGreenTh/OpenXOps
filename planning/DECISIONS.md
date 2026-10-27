@@ -542,8 +542,8 @@ go-ahead.
 
 ## Q-007
 
-**Drop the stdin sort by kind?** (raised by Cursor, kept by the repo owner, 2026-10-27; blocks the
-Release 1 tag). WI-0101 *Inputs* says "Records from stdin are sorted by `kind`". As a result, a
+**Drop the stdin sort by kind?** (raised by Cursor, kept by the repo owner, 2026-10-27; blocked the
+Release 1 tag until WO-0101-C merged). WI-0101 *Inputs* said "Records from stdin are sorted by `kind`". As a result, a
 piped run passes records through in kind order and a file run in file order: the same records,
 in a different order. Dropping the sort would make piped and file runs byte-identical. **Closed** by [D-043](#d-043).
 
@@ -557,13 +557,15 @@ Options: point the check's mock runs at a temporary cache, or accept it. Open.
 
 **Records from stdin keep their input order** (repo owner, 2026-10-27; closes Q-007; amends
 D-030 and WI-0101 *Inputs*). The sort of stdin records by `kind` is dropped, so a piped run and
-the same steps run through files print the same bytes. Built by WO-0101-C. Q-007 blocked the
-Release 1 tag, so the tag waits for WO-0101-C.
+the same steps run through files print the same bytes. Built by WO-0101-C (#41, `0dbec3d`).
+Q-007 blocked the Release 1 tag until WO-0101-C merged; what the tag still waits on is in
+[D-044](#d-044).
 
 ## D-044
 
 **User and developer docs are part of Release 1, in English only** (repo owner, 2026-10-27).
 Implementers write them under a Work Order the planner specifies (`AGENTS.md` §2): WI-0108,
 with WO-0108-A (user docs and a doc check that keeps the references in step with the code) and
-WO-0108-B (developer and contributor docs). The Release 1 tag waits for both.
+WO-0108-B (developer and contributor docs). The Release 1 tag waits for both to merge and for
+Release 1 criterion 7 (`DELIVERABLE.md`), as well as criterion 6 (real-Organization run).
 

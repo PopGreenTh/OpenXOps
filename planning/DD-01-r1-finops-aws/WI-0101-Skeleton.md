@@ -197,7 +197,7 @@ as the same steps run through files.
 
 ## Delivered (as built)
 
-Built by WO-0101-A (#3, landed through #2, `c27018d`) and WO-0101-B (#33, `9da24f3`, two review rounds).
+Built by WO-0101-A (#3, landed through #2, `c27018d`), WO-0101-B (#33, `9da24f3`, two review rounds) and WO-0101-C (#41, `0dbec3d`).
 
 - `xops/` and `finops/` binaries, each with `version`. `record/` holds the reader, writer,
   `PassThrough`, `LogStart`, the `--from-<kind>` flags and `Assemble`. `record/schema/` holds
@@ -206,10 +206,10 @@ Built by WO-0101-A (#3, landed through #2, `c27018d`) and WO-0101-B (#33, `9da24
 - **Pipe rule (D-030) as built.** A command reads stdin only with no `--from-<kind>` flag, or
   with `FILE` `-`. A command whose inputs are all files never touches stdin, even when stdin is
   an open pipe. Every record in a file or on stdin is kept. Schema checks (D-037) and conflicts
-  apply only to the kinds a flag declares, and a path given to two flags is read once.
+  apply only to the kinds a flag declares, and a path given to two flags is read once. Records
+  from stdin keep their input order ([D-043](DECISIONS.md#d-043)), so a piped run and a run
+  through files print the same bytes.
 - `scripts/check` (build, vet, `gofmt -l`, tests); CI with a required Linux job and an optional
   Windows job (D-026); a Task and a VS Code launch entry for every command; `docs/develop.md`.
-- **Known differences.**
-  - WO-0101-C (#41, `0dbec3d`) dropped the sort of stdin records by kind
-    ([D-043](DECISIONS.md#d-043)), so a piped run and a run through files print the same bytes.
-  - `scripts/check` leaves a mock cache in `data/mock/` at the repo root. It is gitignored.
+- **Known differences.** `scripts/check` leaves a mock cache in `data/mock/` at the repo root.
+  It is gitignored ([Q-008](DECISIONS.md#q-008)).

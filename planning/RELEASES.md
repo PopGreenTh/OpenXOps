@@ -43,6 +43,7 @@ Project › App › Environment. Shared accounts are split by the App tag, unmap
 |---|---|---|
 | [WO-0101-A](DD-01-r1-finops-aws/WI-0101-Skeleton.md) | `xops`, `finops`, `record/`, `scripts/check`, CI, Task, VS Code, `docs/develop.md` | — |
 | [WO-0101-B](DD-01-r1-finops-aws/WI-0101-Skeleton.md) | D-030 pipe rule, D-037 schema checks, review follow-ups | 0103, 0105, 0107 |
+| [WO-0101-C](DD-01-r1-finops-aws/WI-0101-Skeleton.md) | D-043 stdin order (piped and file runs byte-identical) | 0101-B |
 | [WO-0102-A](DD-01-r1-finops-aws/WI-0102-Aws-Accounts.md) | `xops sense aws-accounts`, demo organization | 0101 |
 | [WO-0103-A](DD-01-r1-finops-aws/WI-0103-Aws-Cost.md) | `finops sense aws-cost`, two-level Cost Explorer, cache, mock | 0102 |
 | [WO-0104-A](DD-01-r1-finops-aws/WI-0104-Enrich-Map.md) | Taxonomy, `finops enrich validate` and `map` | 0101 |
@@ -62,11 +63,11 @@ flowchart LR
 ```
 
 Once WO-0101-A merges, three Work Orders can run at once: 0102, 0104 and 0106 touch different
-packages. Release 1 is done when the six
+packages. Release 1 is done when all seven
 [release criteria](DD-01-r1-finops-aws/DELIVERABLE.md#release-criteria) hold: a mock pipeline
 from a clean clone, every reference case passing unchanged, cost conserved after `share`, zero
-Cost Explorer calls on a cached rerun, and a run against the real Organization with read-only
-permissions.
+Cost Explorer calls on a cached rerun, the user and developer docs with a passing doc check
+(D-044, WI-0108), and a run against the real Organization with read-only permissions.
 
 **Not in Release 1:** DuckDB, FOCUS, trend, impact, Enforce, the history store,
 `--as-reported`, and any cloud but AWS.
