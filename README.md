@@ -44,4 +44,28 @@ go build -o bin/finops ./finops
 
 On Windows the binaries are `bin\xops.exe` and `bin\finops.exe`.
 
-Developer setup (Windows first, then Linux and macOS), debugging and how to add a command: [docs/develop.md](docs/develop.md).
+### `xops sense aws-accounts`
+
+Lists an AWS Organization as `ou` and `account` JSON Lines records (OUs first, then accounts,
+each sorted by `id`).
+
+```bash
+go run ./xops sense aws-accounts --mock
+task run:xops:sense-aws-accounts
+```
+
+Flags: `--mock` (embedded demo org), `--profile`, `--region` (default `us-east-1`), `--lz` with
+`--taxonomy` to stamp `lz` and verify the management account.
+
+Record kinds:
+
+| `kind` | Fields |
+|---|---|
+| `ou` | `id`, `name`, `parent_id`, `path`, `id_path`, `has_children`, plus `csp`, `org_id`, `management_account`, optional `lz` |
+| `account` | `id`, `name`, `email`, `status`, `parent_id`, `ou_path`, `ou_id_path`, plus shared org fields |
+
+Read-only IAM (management or delegated admin): `organizations:DescribeOrganization`,
+`organizations:ListRoots`, `organizations:ListOrganizationalUnitsForParent`,
+`organizations:ListAccountsForParent`.
+
+Developer setup (Linux first; see [docs/develop.md](docs/develop.md)), debugging and how to add a command.

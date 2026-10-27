@@ -34,6 +34,11 @@ tasks:
     cmds:
       - go run ./finops version
 
+  run:xops:sense-aws-accounts:
+    desc: Run xops sense aws-accounts on the demo organization
+    cmds:
+      - go run ./xops sense aws-accounts --mock
+
   clean:
     desc: Remove built binaries
     cmds:
