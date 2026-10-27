@@ -156,7 +156,7 @@ func TestAssembleMixFileAndStdinFlag(t *testing.T) {
 	}
 }
 
-func TestMixedPipeSortedByKind(t *testing.T) {
+func TestAssembleStdinPreservesInputOrder(t *testing.T) {
 	f, err := os.Open("testdata/mixed.jsonl")
 	if err != nil {
 		t.Fatal(err)
@@ -166,18 +166,14 @@ func TestMixedPipeSortedByKind(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := kindsOf(recs)
-	want := []string{"account", "cost", "cost", "ou"}
-	if len(got) != len(want) {
-		t.Fatalf("got %v, want %v", got, want)
+	wantIDs := []string{"c1", "a1", "c2", "o1"}
+	if len(recs) != len(wantIDs) {
+		t.Fatalf("got %d records, want %d", len(recs), len(wantIDs))
 	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Fatalf("got %v, want %v", got, want)
+	for i, id := range wantIDs {
+		if recs[i]["id"] != id {
+			t.Fatalf("record %d id = %v, want %q (order: %v)", i, recs[i]["id"], id, kindsOf(recs))
 		}
-	}
-	if recs[1]["id"] != "c1" || recs[2]["id"] != "c2" {
-		t.Fatalf("same-kind order should be stable: %v %v", recs[1]["id"], recs[2]["id"])
 	}
 }
 

@@ -79,7 +79,8 @@ go run ./finops enrich map --from-cost testdata\cost.jsonl --from-accounts testd
 
 **Pipe rule (D-030).** A command reads stdin only when it is given **no** `--from-<kind>` flag,
 or when a flag's `FILE` is `-`. File-only flags never read stdin, even if stdin is an open pipe
-(that would hang under cron). Stdin records are sorted by `kind`. The same kind from stdin and
+(that would hang under cron). Stdin records keep their input order, as file records do (D-043).
+The same kind from stdin and
 from a file is an error that names both flags.
 
 Mix pipe and files explicitly, for example:
