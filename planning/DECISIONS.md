@@ -334,3 +334,63 @@ or another); and when the CLA is set up.
   Windows job is marked `continue-on-error: true` and named `check (windows-latest, optional)`,
   so a Windows failure shows as a warning and never blocks a PR.
 - If branch protection lists required checks, only the Linux job is required.
+
+## D-027
+
+**One state protocol for every agent** (repo owner, 2026-10-27). `AGENTS.md` §7 is the rule. The
+repo owner's text was adjusted to fit the existing rules:
+
+- **Covers Cursor too.** The owner's text named Claude Code and Antigravity (`agy-argon`); Cursor
+  is an implementer (D-002), so it gets `agent` `cursor`.
+- **Doesn't change roles.** Claude logs its planning and review steps but still writes no
+  implementation code, and the issue claim still decides who builds a Work Order.
+- **Stale locks.** A `RUNNING` record from a crashed run would lock its files for good. The repo
+  owner releases it, or the same agent does with the owner's go-ahead, by appending `FAILED`
+  with `stale lock`.
+- **Local only.** `.state/tasks.jsonl` is never committed: a log shared through git would
+  conflict on every branch. So it locks within one checkout. Across machines, the issue claim
+  and the one-Work-Order-per-package rule remain the lock, and the issue, branch and PR remain
+  the record across sessions.
+- **Fixed field names**: `ts`, `task_id`, `agent`, `status`, `files`, `exit_code`, `hash`,
+  `error`.
+
+This replaces the first draft of D-027 (an implementer-only protocol), which was never merged.
+
+## D-028
+
+**A Cursor rule that holds Composer 2.5 to execution** (repo owner, 2026-10-27).
+`.cursor/rules/implementor.mdc` is applied to every Cursor request. It points to `AGENTS.md` §4
+and §7, which win, and narrows execution: no repository-wide search, minimal diffs, logged
+state, stop after each task. Claude writes `.cursor/rules/`; implementers don't edit it. The
+repo owner's text was adjusted to fit the existing rules:
+
+- **Agent names stay as in §7.** The owner's text used `cursor-composer-2.5` and
+  `agy-gemini-3.8-flash`. The rule uses `agent` `cursor` with `model` `composer-2.5` (§7 now
+  allows a `model` field). Every active lock counts, including another Cursor run's.
+- **The spec is always read.** Besides the task's files: `AGENTS.md`, the Work Order, its
+  Contracts and its reference cases.
+- **The issue claim comes first.** Logging `RUNNING` doesn't replace claiming the Work Order on
+  its GitHub issue (§4.2). If no `PENDING` task is logged yet, the implementer logs the Work
+  Order's steps first.
+- **`Verify` still runs in full.** The 50-line cap is for targeted tests; the full `Verify`
+  runs uncapped before the PR, and its output goes in the PR.
+
+## D-029
+
+**`AGENTS.md` in three parts; Antigravity can stand in as planner and reviewer** (repo owner,
+2026-10-27).
+
+- **One file, three parts**: A for everyone (§1–7), B for the planner and reviewer (§8), C for
+  implementers (§9). `CLAUDE.md`, `GEMINI.md` and `CURSOR.md` point to the
+  parts their agent needs. A real split into separate files waits until Part B or C passes about
+  100 lines. `CURSOR.md` holds the summary of §9 (which wins), and
+  `.cursor/rules/implementor.mdc`, the file Cursor applies to every request, only points to it
+  (amends D-028).
+- **Stand-in** (amends D-002): Antigravity (`agy-argon`) takes the planner and reviewer role
+  when the repo owner says so, for a named scope. While standing in, it follows Part B, writes
+  what Claude writes and writes no implementation code. It never reviews a PR it implemented,
+  and a Work Order it specified or dispatched is implemented by Cursor unless the owner says
+  otherwise. Its reviews, decisions and state records say it is standing in. Claude resumes from
+  `STATUS.md`, `DECISIONS.md` and the open issues and PRs, without re-reviewing unless asked.
+- *Planner's defaults, to confirm:* how a stand-in starts (the owner's word, in any channel),
+  the no-self-review rule, and Cursor implementing what the stand-in specified.

@@ -1,0 +1,9 @@
+---
+description: Deterministic implementor protocol for Cursor (Composer 2.5)
+globs: ["**/*"]
+alwaysApply: true
+---
+# Implementor execution constraints (Composer 2.5)
+
+Before anything else, read and follow [`CURSOR.md`](../../CURSOR.md) at the repository root. It
+points to `AGENTS.md` Parts A and C (§9 wins). You are an implementer: execution only.
