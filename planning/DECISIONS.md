@@ -7,7 +7,8 @@ agreed by the repo owner on 2026-10-27, in the session that closed OpenLZ.
 
 **OpenXOps is a fresh start.**
 
-- A standalone, single-tenant tool for cloud operations, open source.
+- A standalone, single-tenant tool for cloud operations, open source (changed to
+  source-available by D-023).
 - Nothing is carried over from OpenLZ: no code, no plans, no reference cases. OpenLZ is archived
   and read for intent only.
 - Go, embedded storage only (DuckDB allowed), no database servers.
@@ -274,6 +275,65 @@ Q-003).
 the Cost Explorer cache is JSON files under `data/cache/`. DuckDB, its CGO toolchain and the
 `no_duckdb_arrow` tag arrive with FOCUS in Release 2, so Release 1 builds with plain `go build`
 on Windows.
+
+## D-023
+
+**Free to use for every organization, closed to resale; the repo owner keeps the right to sell**
+(repo owner, 2026-10-27).
+
+- Anyone may contribute. Any person or company may use OpenXOps free of charge for their own
+  organization's clouds.
+- Nobody may sell OpenXOps, or offer it or a product built from it as a paid product or hosted
+  service, without the repo owner's permission.
+- The repo owner keeps the right to sell it in future (a hosted version, commercial licences),
+  so outside contributions will need a contributor licence agreement (CLA) before the first
+  one is merged.
+- This makes OpenXOps **source-available**, not open source in the OSI sense; it supersedes
+  D-001's "open source". The licence is D-024.
+
+## Q-004
+
+**Closed** by [D-024](#d-024). The licence (planner, 2026-10-27). BSL 1.1 parameters: Licensor, Additional Use Grant
+wording, Change Date (years until each version becomes open source), Change License (Apache 2.0
+or another); and when the CLA is set up.
+
+## D-024
+
+**Licence: Functional Source License 1.1, Apache 2.0 future licence (`FSL-1.1-Apache-2.0`)**
+(repo owner, 2026-10-27; answers Q-004).
+
+- Licensor: **Chanin Sainumkheaw**. Copyright line: `Copyright 2026 Chanin Sainumkheaw`.
+- Any purpose is permitted except a Competing Use (making OpenXOps, or something substantially
+  similar, available commercially as a product or service). Internal use and professional
+  services for a client (consultants) are permitted.
+- Each released version becomes Apache 2.0 two years after it is made available.
+- The repo owner adds `LICENSE` with the published FSL-1.1-Apache-2.0 text, unchanged except for
+  the licensor and year. The README says in one line: free for your own use; contact the
+  licensor for commercial use.
+- A contributor licence agreement is set up before the first outside contribution is merged
+  (D-023).
+
+## D-025
+
+**Linux first, developed with Cursor; Windows and the dev container are not required for now**
+(repo owner, 2026-10-27). Supersedes D-019's "Windows first" and D-020.
+
+- Development and debugging happen on Linux, with Cursor. A Work Order's `Verify` must pass on
+  Linux; CI keeps its Windows job as a free early warning, but nothing waits on a person
+  checking Windows.
+- No Done-when asks for a Windows walkthrough or a dev container run. Existing `.devcontainer/`
+  files may stay as an unverified extra.
+- VS Code debug entries, Task and `docs/develop.md` stay (D-013, D-019); `docs/develop.md`
+  covers Linux first.
+
+## D-026
+
+**The Windows CI job is optional** (repo owner, 2026-10-27; makes D-025 explicit in CI).
+
+- CI runs `scripts/check` on `ubuntu-latest` (required) and on `windows-latest` (optional): the
+  Windows job is marked `continue-on-error: true` and named `check (windows-latest, optional)`,
+  so a Windows failure shows as a warning and never blocks a PR.
+- If branch protection lists required checks, only the Linux job is required.
 
 ## D-027
 

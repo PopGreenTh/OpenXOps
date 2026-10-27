@@ -20,6 +20,11 @@ Every command is `<binary> <stage> <thing>` and belongs to one of five stages, i
 
 **Sense › Enrich › Analyze › Enforce › Report**
 
+**Licence:** Functional Source License 1.1, becoming Apache 2.0 two years after each release
+([D-024](planning/DECISIONS.md#d-024)): free for anyone's own use, closed to resale. Never add
+code under a licence that conflicts with it, and never copy code from elsewhere without its
+licence allowing it. Outside contributions need a signed CLA before they are merged.
+
 OpenXOps is a fresh start ([D-001](planning/DECISIONS.md#d-001)). The earlier project,
 `PopGreenTh/OpenLZ`, is archived: read it for intent only, never copy code or plans from it.
 
