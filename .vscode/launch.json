@@ -47,6 +47,15 @@
       "console": "integratedTerminal"
     },
     {
+      "name": "finops analyze changes (demo)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/finops",
+      "args": ["analyze", "changes", "--before", "${env:HOME}/openxops-map-before.jsonl", "--from-map", "${env:HOME}/openxops-map-now.jsonl"],
+      "console": "integratedTerminal"
+    },
+    {
       "name": "xops report table (mixed.jsonl)",
       "type": "go",
       "request": "launch",

@@ -49,6 +49,13 @@ tasks:
     cmds:
       - go run ./finops enrich share --taxonomy finops/enrich/testdata/demo-taxonomy.yaml --from-cost finops/enrich/testdata/demo-map.jsonl
 
+  run:finops:analyze-changes:
+    desc: Compare two demo map outputs (environment link change on Checkout/Prod)
+    cmds:
+      - go run ./finops enrich map --taxonomy finops/enrich/testdata/demo-taxonomy.yaml --from-accounts finops/enrich/testdata/demo-accounts.jsonl --from-cost finops/analyze/testdata/cost.jsonl > /tmp/openxops-map-before.jsonl
+      - go run ./finops enrich map --taxonomy finops/analyze/testdata/demo-taxonomy-env-changed.yaml --from-accounts finops/enrich/testdata/demo-accounts.jsonl --from-cost finops/analyze/testdata/cost.jsonl > /tmp/openxops-map-now.jsonl
+      - go run ./finops analyze changes --before /tmp/openxops-map-before.jsonl --from-map /tmp/openxops-map-now.jsonl
+
   run:xops:sense-aws-accounts:
     desc: Run xops sense aws-accounts on the demo organization
     cmds:
