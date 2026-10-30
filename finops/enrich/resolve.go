@@ -6,17 +6,22 @@ import (
 	"strings"
 
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/record/urn"
 )
 
+// System node ids (D-047): the reserved ids that stand for "no such node".
 const (
-	lzUnalloc  = "LZ-UNALLOC"
-	appUnalloc = "APP-UNALLOC"
-	envUnalloc = "ENV-UNALLOC"
-	envUnspec  = "ENV-UNSPEC"
-	prjUnalloc = "PRJ-UNALLOC"
-	buUnalloc  = "BU-UNALLOC"
-	ccUnalloc  = "CC-UNALLOC"
+	lzUnalloc  = "unalloc"
+	appUnalloc = "unalloc"
+	envUnalloc = "unalloc"
+	envUnspec  = "unspec"
+	prjUnalloc = "unalloc"
+	buUnalloc  = "unalloc"
+	ccUnalloc  = "unalloc"
 	cmdMap     = "finops enrich map"
+
+	// ouUnknown is the OU path of a cost row whose account is not in the inventory.
+	ouUnknown = "/unknown"
 )
 
 type ouInfo struct {
@@ -188,7 +193,7 @@ func resolveAccount(t Taxonomy, in inv, ac record.Record, ouEffects map[string]o
 			findings = append(findings, record.Finding("warning", "lz-unknown", org,
 				fmt.Sprintf("no LZ for management account %s", mgmt), cmdMap))
 		}
-		rec := allocationRecord(acctID, strID(ac["name"]), lzUnalloc, ouPath, prjUnalloc, appUnalloc, envUnalloc, buUnalloc, ccUnalloc, "unalloc", "unalloc", false)
+		rec := allocationRecord(t, acctID, strID(ac["name"]), lzUnalloc, ouPath, prjUnalloc, appUnalloc, envUnalloc, buUnalloc, ccUnalloc, "unalloc", "unalloc", false)
 		return []record.Record{rec}, findings
 	}
 
@@ -235,7 +240,7 @@ func resolveAccount(t Taxonomy, in inv, ac record.Record, ouEffects map[string]o
 				envRuleOut = "unspec"
 			}
 		}
-		allocs = append(allocs, allocationRecord(acctID, strID(ac["name"]), lz.Code, ouPath, project, appCode, envOut, bu, cc, appRule, envRuleOut, shared))
+		allocs = append(allocs, allocationRecord(t, acctID, strID(ac["name"]), lz.Code, ouPath, project, appCode, envOut, bu, cc, appRule, envRuleOut, shared))
 	}
 	return allocs, findings
 }
@@ -293,9 +298,10 @@ func deriveHierarchy(t Taxonomy, appCode string) (project, bu, cc string) {
 	return project, bu, cc
 }
 
-func allocationRecord(acctID, name, lz, ouPath, project, app, env, bu, cc, appRule, envRule string, shared bool) record.Record {
-	return record.Record{
+func allocationRecord(t Taxonomy, acctID, name, lz, ouPath, project, app, env, bu, cc, appRule, envRule string, shared bool) record.Record {
+	rec := record.Record{
 		"kind":             "allocation",
+		"tenant":           t.Tenant,
 		"account_id":       acctID,
 		"account_name":     name,
 		"lz":               lz,
@@ -309,11 +315,43 @@ func allocationRecord(acctID, name, lz, ouPath, project, app, env, bu, cc, appRu
 		"environment_rule": envRule,
 		"shared":           shared,
 	}
+	setURNs(rec, t, acctID, lz, ouPath, project, app, env, bu, cc)
+	return rec
+}
+
+// setURNs sets the eight URN fields of an allocation on rec (D-046, D-048). The cost center's
+// URN sits under the cost center's own business unit, which can differ from the project's.
+func setURNs(rec record.Record, t Taxonomy, acctID, lz, ouPath, project, app, env, bu, cc string) {
+	tnt := urn.Tenant(t.Tenant)
+	ccBU := buUnalloc
+	if c, ok := ccByCode(t, cc); ok && cc != ccUnalloc {
+		ccBU = c.BusinessUnit
+	}
+	prj := tnt.Child("prj", project)
+	appU := prj.Child("app", app)
+	ou := tnt.Child("lzc", lz).Child("org", urn.OUPath(ouPath))
+	rec["business_unit_urn"] = tnt.Child("bzu", bu).String()
+	rec["cost_center_urn"] = tnt.Child("bzu", ccBU).Child("cct", cc).String()
+	rec["project_urn"] = prj.String()
+	rec["app_urn"] = appU.String()
+	rec["environment_urn"] = appU.Child("env", env).String()
+	rec["lz_urn"] = tnt.Child("lzc", lz).String()
+	rec["ou_urn"] = ou.String()
+	rec["account_urn"] = ou.Child("acc", acctID).String()
+}
+
+// urnFields are the URN fields a cost row copies from its allocation.
+var urnFields = []string{"business_unit_urn", "cost_center_urn", "project_urn", "app_urn", "environment_urn", "lz_urn", "ou_urn", "account_urn"}
+
+// setServiceURN sets service_urn from the cost row's account_urn and service.
+func setServiceURN(cost record.Record) {
+	cost["service_urn"] = urn.URN(strID(cost["account_urn"])).Child("svc", urn.Slug(strID(cost["service"]))).String()
 }
 
 func enrichCost(t Taxonomy, in inv, cost record.Record, byAcct map[string][]record.Record) (record.Record, []record.Record) {
 	var findings []record.Record
 	out := copyRecord(cost)
+	out["tenant"] = t.Tenant
 	acctID := strID(cost["account_id"])
 	mgmt := strID(cost["management_account"])
 
@@ -332,6 +370,8 @@ func enrichCost(t Taxonomy, in inv, cost record.Record, byAcct map[string][]reco
 		out["app_rule"] = "unalloc"
 		out["environment_rule"] = "unalloc"
 		out["shared"] = false
+		setURNs(out, t, acctID, lzCode, ouUnknown, prjUnalloc, appUnalloc, envUnalloc, buUnalloc, ccUnalloc)
+		setServiceURN(out)
 		findings = append(findings, record.Finding("warning", "account-not-in-inventory", acctID,
 			fmt.Sprintf("cost for unknown account %s", acctID), cmdMap))
 		return out, findings
@@ -348,6 +388,10 @@ func enrichCost(t Taxonomy, in inv, cost record.Record, byAcct map[string][]reco
 		out["app_rule"] = a["app_rule"]
 		out["environment_rule"] = a["environment_rule"]
 		out["shared"] = false
+		for _, f := range urnFields {
+			out[f] = a[f]
+		}
+		setServiceURN(out)
 		return out, findings
 	}
 
@@ -361,6 +405,13 @@ func enrichCost(t Taxonomy, in inv, cost record.Record, byAcct map[string][]reco
 	out["business_unit"] = ""
 	out["cost_center"] = ""
 	out["app_rule"] = ""
+	for _, f := range []string{"lz_urn", "ou_urn", "account_urn"} {
+		out[f] = allocs[0][f]
+	}
+	for _, f := range []string{"project_urn", "app_urn", "environment_urn", "business_unit_urn", "cost_center_urn"} {
+		out[f] = "" // share fills these from the App each row lands on
+	}
+	setServiceURN(out)
 	return out, findings
 }
 

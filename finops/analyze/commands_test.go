@@ -2,6 +2,7 @@ package analyze
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,14 +11,16 @@ import (
 	"github.com/PopGreenTh/OpenXOps/record"
 )
 
-const (
-	beforeMap = `{"kind":"account","csp":"aws","email":"a@example.com","id":"200000000001","management_account":"111111111111","name":"a","org_id":"o-main","ou_id_path":"r-1","ou_path":"/","parent_id":"r-1","status":"ACTIVE","tenant":"testtnt"}
-{"kind":"allocation","account_id":"200000000001","account_name":"a","app":"APP-CHK","app_rule":"ou:/","business_unit":"BU-RETAIL","cost_center":"CC-ECOM","environment":"ENV-PROD","environment_rule":"ou:/","lz":"LZ-MAIN","ou_path":"/","project":"PRJ-SHOP","shared":false,"tenant":"testtnt"}
-`
-	nowMap = `{"kind":"account","csp":"aws","email":"a@example.com","id":"200000000001","management_account":"111111111111","name":"a","org_id":"o-main","ou_id_path":"r-1","ou_path":"/","parent_id":"r-1","status":"ACTIVE","tenant":"testtnt"}
-{"kind":"allocation","account_id":"200000000001","account_name":"a","app":"APP-CHK","app_rule":"ou:/","business_unit":"BU-RETAIL","cost_center":"CC-ECOM","environment":"ENV-NONPROD","environment_rule":"ou:/","lz":"LZ-MAIN","ou_path":"/","project":"PRJ-SHOP","shared":false,"tenant":"testtnt"}
-{"kind":"note","id":"n1"}
-`
+const accountLine = `{"kind":"account","csp":"aws","email":"a@example.com","id":"200000000001","management_account":"111111111111","name":"a","org_id":"o-main","ou_id_path":"r-1","ou_path":"/","parent_id":"r-1","status":"ACTIVE","tenant":"testtnt"}`
+
+// allocationLine is one dedicated allocation in environment env, written for tenant.
+func allocationLine(env, tenant string) string {
+	return fmt.Sprintf(`{"kind":"allocation","account_id":"200000000001","account_name":"a","account_urn":"urn:tnt:testtnt:lzc:main:org:root:acc:200000000001","app":"chk","app_rule":"ou:/","app_urn":"urn:tnt:testtnt:prj:shop:app:chk","business_unit":"retail","business_unit_urn":"urn:tnt:testtnt:bzu:retail","cost_center":"ecom","cost_center_urn":"urn:tnt:testtnt:bzu:retail:cct:ecom","environment":%q,"environment_rule":"ou:/","environment_urn":"urn:tnt:testtnt:prj:shop:app:chk:env:%s","lz":"main","lz_urn":"urn:tnt:testtnt:lzc:main","ou_path":"/","ou_urn":"urn:tnt:testtnt:lzc:main:org:root","project":"shop","project_urn":"urn:tnt:testtnt:prj:shop","shared":false,"tenant":%q}`, env, env, tenant)
+}
+
+var (
+	beforeMap = accountLine + "\n" + allocationLine("prod", "testtnt") + "\n"
+	nowMap    = accountLine + "\n" + allocationLine("nonprod", "testtnt") + "\n" + `{"kind":"note","id":"n1"}` + "\n"
 )
 
 func writeFile(t *testing.T, name, body string) string {
@@ -64,7 +67,7 @@ func TestChangesWithoutTenantFailsBeforeReading(t *testing.T) {
 func TestChangesRejectsRecordFromOtherTenant(t *testing.T) {
 	before := writeFile(t, "before.jsonl", beforeMap)
 	now := writeFile(t, "now.jsonl", nowMap)
-	otherBefore := writeFile(t, "other-before.jsonl", strings.Replace(beforeMap, `"ENV-PROD","environment_rule":"ou:/","lz":"LZ-MAIN","ou_path":"/","project":"PRJ-SHOP","shared":false,"tenant":"testtnt"`, `"ENV-PROD","environment_rule":"ou:/","lz":"LZ-MAIN","ou_path":"/","project":"PRJ-SHOP","shared":false,"tenant":"othertnt"`, 1))
+	otherBefore := writeFile(t, "other-before.jsonl", accountLine+"\n"+allocationLine("prod", "othertnt")+"\n")
 	otherNow := writeFile(t, "other-now.jsonl", strings.Replace(nowMap, `{"kind":"note","id":"n1"}`, `{"kind":"note","id":"n1","tenant":"othertnt"}`, 1))
 	cases := []struct {
 		name, want string

@@ -160,7 +160,7 @@ func TestChangesDemoEnvironmentRemapped(t *testing.T) {
 	if c["subject_type"] != "account" || c["subject"] != "200000000001" {
 		t.Fatalf("subject = %v / %v", c["subject_type"], c["subject"])
 	}
-	if c["old"] != "ENV-PROD" || c["new"] != "ENV-NONPROD" {
+	if c["old"] != "prod" || c["new"] != "nonprod" {
 		t.Fatalf("old/new = %v / %v", c["old"], c["new"])
 	}
 	if c["cost_moved"] != 42.5 || c["currency"] != "USD" {

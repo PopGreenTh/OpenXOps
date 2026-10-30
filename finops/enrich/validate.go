@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/record/urn"
 )
 
 const cmdValidate = "finops enrich validate"
@@ -19,6 +20,16 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 		findings = append(findings, record.Finding("warning", code, subject, msg, cmdValidate))
 	}
 
+	// checkID applies the id rule and the reserved ids to one code (D-047).
+	checkID := func(code, what string) {
+		switch {
+		case !urn.ValidID(code):
+			addErr("taxonomy-invalid-id", code, fmt.Sprintf("%s code is not an id (lowercase letters and digits, joined by single dashes)", what))
+		case reservedCode(code):
+			addErr("taxonomy-reserved-code", code, fmt.Sprintf("%s code is a reserved id", what))
+		}
+	}
+
 	buCodes := map[string]struct{}{}
 	for _, bu := range t.BusinessUnits {
 		if bu.Code == "" {
@@ -28,9 +39,7 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 		if bu.Name == "" {
 			addErr("taxonomy-missing-field", bu.Code, "business unit missing name")
 		}
-		if reservedCode(bu.Code) {
-			addErr("taxonomy-reserved-code", bu.Code, "reserved code suffix")
-		}
+		checkID(bu.Code, "business unit")
 		if _, dup := buCodes[bu.Code]; dup {
 			addErr("taxonomy-duplicate-code", bu.Code, "duplicate business unit code")
 		}
@@ -46,9 +55,7 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 		if cc.Name == "" || cc.BusinessUnit == "" {
 			addErr("taxonomy-missing-field", cc.Code, "cost center missing required field")
 		}
-		if reservedCode(cc.Code) {
-			addErr("taxonomy-reserved-code", cc.Code, "reserved code suffix")
-		}
+		checkID(cc.Code, "cost center")
 		if _, dup := ccCodes[cc.Code]; dup {
 			addErr("taxonomy-duplicate-code", cc.Code, "duplicate cost center code")
 		}
@@ -69,9 +76,7 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 		if pr.Name == "" || pr.BusinessUnit == "" {
 			addErr("taxonomy-missing-field", pr.Code, "project missing required field")
 		}
-		if reservedCode(pr.Code) {
-			addErr("taxonomy-reserved-code", pr.Code, "reserved code suffix")
-		}
+		checkID(pr.Code, "project")
 		if _, dup := prjCodes[pr.Code]; dup {
 			addErr("taxonomy-duplicate-code", pr.Code, "duplicate project code")
 		}
@@ -93,9 +98,7 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 		if app.Name == "" || app.Project == "" || app.CostCenter == "" {
 			addErr("taxonomy-missing-field", app.Code, "app missing required field")
 		}
-		if reservedCode(app.Code) {
-			addErr("taxonomy-reserved-code", app.Code, "reserved code suffix")
-		}
+		checkID(app.Code, "app")
 		if _, dup := appCodes[app.Code]; dup {
 			addErr("taxonomy-duplicate-code", app.Code, "duplicate app code")
 		}
@@ -116,9 +119,7 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 				addErr("taxonomy-missing-field", app.Code, "environment missing code")
 				continue
 			}
-			if reservedCode(env.Code) {
-				addErr("taxonomy-reserved-code", env.Code, "reserved environment code")
-			}
+			checkID(env.Code, "environment")
 			envSet[env.Code] = struct{}{}
 		}
 		appEnvs[app.Code] = envSet
@@ -133,9 +134,7 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 		if lz.Name == "" || lz.CSP == "" || lz.Currency == "" || lz.ManagementAccount == "" {
 			addErr("taxonomy-missing-field", lz.Code, "LZ missing required field")
 		}
-		if reservedCode(lz.Code) {
-			addErr("taxonomy-reserved-code", lz.Code, "reserved code suffix")
-		}
+		checkID(lz.Code, "LZ")
 		if _, dup := lzCodes[lz.Code]; dup {
 			addErr("taxonomy-duplicate-code", lz.Code, "duplicate LZ code")
 		}
@@ -168,10 +167,8 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 				addErr("taxonomy-unknown-reference", link.OU, fmt.Sprintf("unknown app %q", link.App))
 			}
 		}
-		if link.Environment != "" {
-			if reservedCode(link.Environment) {
-				addErr("taxonomy-reserved-code", link.Environment, "reserved environment code")
-			}
+		if reservedCode(link.Environment) {
+			addErr("taxonomy-reserved-code", link.Environment, "environment code is a reserved id")
 		}
 		k := ouKey{link.LZ, link.OU}
 		if link.App != "" {

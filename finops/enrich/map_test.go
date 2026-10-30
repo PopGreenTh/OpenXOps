@@ -28,6 +28,12 @@ type mapCaseFinding struct {
 	Subject string `yaml:"subject"`
 }
 
+// urnCaseFields are the URN fields a case may expect (D-048).
+var urnCaseFields = []string{
+	"business_unit_urn", "cost_center_urn", "project_urn", "app_urn", "environment_urn",
+	"lz_urn", "ou_urn", "account_urn", "service_urn",
+}
+
 func TestMapReferenceCases(t *testing.T) {
 	dir := filepath.Join("testdata", "cases", "map")
 	entries, err := os.ReadDir(dir)
@@ -59,14 +65,14 @@ func runMapCase(t *testing.T, path string) {
 	gotCost := filterKind(out, "cost")
 	gotFind := filterKind(out, "finding")
 
-	if !matchPartialRecords(gotAlloc, c.Expect.Allocations, []string{
-		"account_id", "lz", "ou_path", "project", "app", "environment", "business_unit", "cost_center", "app_rule", "environment_rule", "shared",
-	}) {
+	if !matchPartialRecords(gotAlloc, c.Expect.Allocations, append([]string{
+		"account_id", "lz", "ou_path", "project", "app", "environment", "business_unit", "cost_center", "app_rule", "environment_rule", "shared", "tenant",
+	}, urnCaseFields...)) {
 		t.Fatalf("allocations mismatch\ngot: %v\nwant: %v", gotAlloc, c.Expect.Allocations)
 	}
-	if len(c.Expect.Costs) > 0 && !matchPartialRecords(gotCost, c.Expect.Costs, []string{
-		"account_id", "lz", "project", "app", "environment", "business_unit", "cost_center", "app_rule", "environment_rule", "shared", "amount", "app_tag",
-	}) {
+	if len(c.Expect.Costs) > 0 && !matchPartialRecords(gotCost, c.Expect.Costs, append([]string{
+		"account_id", "lz", "project", "app", "environment", "business_unit", "cost_center", "app_rule", "environment_rule", "shared", "amount", "app_tag", "tenant",
+	}, urnCaseFields...)) {
 		t.Fatalf("costs mismatch\ngot: %v\nwant: %v", gotCost, c.Expect.Costs)
 	}
 	if !matchFindings(gotFind, c.Expect.Findings) {
