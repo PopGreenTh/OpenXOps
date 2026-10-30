@@ -10,7 +10,7 @@ later runs (`impact`, `--as-reported`) can compare against what was reported bef
 ### Store (D-034)
 
 ```
-data/history/<command>/<run timestamp>.jsonl     e.g. data/history/map/20261027T101500Z.jsonl
+data/history/<tenant>/<command>/<run timestamp>.jsonl     e.g. data/history/testtnt/map/20261027T101500Z.jsonl  (D-045)
 ```
 
 - `<command>` is the command's last word (`map`, `share`, `trend`, `impact`). The timestamp is the
@@ -54,7 +54,7 @@ Plain functions; the clock is passed in.
 
 **Done when.**
 - The tests above pass.
-- `map … --save` run twice leaves two files under `data/history/map/`, each equal to its run's
+- `map … --save` run twice leaves two files under `data/history/<tenant>/map/`, each equal to its run's
   stdout (shown in the PR).
 
 **Verify.** `go run -tags=no_duckdb_arrow ./scripts/check`

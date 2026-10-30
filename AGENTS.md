@@ -10,7 +10,7 @@ Change the rules here, never in a copy.
 
 ## 1. What OpenXOps is
 
-OpenXOps is a **standalone single-tenant** set of small command-line tools for cloud operations,
+OpenXOps is a **standalone, multi-tenant** set of small command-line tools for cloud operations,
 which chain with `|` ([D-004](planning/DECISIONS.md#d-004)):
 
 - `xops`: commands shared by every domain (`xops sense aws-accounts`, `xops report excel`);
@@ -82,8 +82,9 @@ and Contracts decide.
 
 ## 5. Engineering rules
 
-- **Go.** Several binaries, each built from its folder: `xops/`, `finops/` (D-004). Single
-  tenant: no tenant field, flag or file suffix anywhere.
+- **Go.** Several binaries, each built from its folder: `xops/`, `finops/` (D-004).
+- **Tenancy** (D-045). Every command but `version` takes a required `--tenant`, and every record
+  carries `tenant`. One taxonomy per tenant. Nodes are named by URN (D-046, D-047).
 - **Layout** (D-012). `<binary>/<stage>/` holds a stage's code, its commands and its
   `testdata/`; cloud clients and mocks live in `aws/` (later `azure/`, `gcp/`, `oci/`); the shared
   record reader, writer and stores live in `record/`. No `cmd/`, no `internal/`, no top-level

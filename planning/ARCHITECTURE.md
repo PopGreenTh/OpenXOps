@@ -170,7 +170,7 @@ non-test `.go` files. The CLI library is `spf13/cobra` (chosen in WO-0101-A).
 | Storage | Local and embedded only, under gitignored `data/`. No database servers. DuckDB arrives in Release 2 | [D-007](DECISIONS.md#d-007), [D-022](DECISIONS.md#d-022) |
 | Offline | Every cloud command has `--mock`, fed by deterministic fixtures embedded in the binary | [AGENTS.md §5](../AGENTS.md#5-engineering-rules) |
 | Determinism | The same input gives the same output, byte for byte (golden files) | [WI-0102](DD-01-r1-finops-aws/WI-0102-Aws-Accounts.md#records) |
-| Tenancy | Single tenant: no tenant field, flag or file suffix anywhere | [AGENTS.md §5](../AGENTS.md#5-engineering-rules) |
+| Tenancy | Multi-tenant: `--tenant` on every command, `tenant` on every record, one taxonomy per tenant; nodes named by URN | [D-045](DECISIONS.md#d-045), [D-046](DECISIONS.md#d-046) |
 | Platform | Linux first; Windows CI is an optional early warning | [D-025](DECISIONS.md#d-025), [D-026](DECISIONS.md#d-026) |
 | Licence | FSL-1.1-Apache-2.0; no code under a conflicting licence | [D-023](DECISIONS.md#d-023), [D-024](DECISIONS.md#d-024) |
 

@@ -570,3 +570,60 @@ WO-0108-B (developer and contributor docs). Built by WO-0108-A (#48, `816973f`) 
 (#49, `7802af5`); Release 1 criterion 7 passes on `main` at `7802af5`. The Release 1 tag now
 waits only on criterion 6 (real-Organization run).
 
+## D-045
+
+**OpenXOps is multi-tenant, one taxonomy per tenant** (repo owner, 2026-10-30; reverses the
+"single-tenant" of [D-001](#d-001) and `AGENTS.md` §1 and §5).
+
+- A tenant has an id (the id rule of [D-047](#d-047)) and its own taxonomy file, which starts
+  with `tenant: <id>`.
+- **Every command takes a required `--tenant ID`** (`version` aside). A command that reads a
+  taxonomy stops if the taxonomy's `tenant` differs from `--tenant`.
+- Every record a command writes carries a `tenant` field. A command stops, naming the file and
+  line, when a record it reads has a `tenant` other than `--tenant`.
+- Release 2's history is kept per tenant: `data/history/<tenant>/<command>/…`. The Cost Explorer
+  cache stays keyed by management account, since it holds the cloud's data.
+
+## D-046
+
+**Every node has a URN, in three hierarchies** (repo owner, 2026-10-30). A URN is `urn:tnt:<tenant>`
+followed by `:<type>:<id>` for each level down to the node. Types:
+
+| Hierarchy | Levels, top down |
+|---|---|
+| Business value | `tnt` Tenant › `bzu` BusinessUnit › `cct` CostCenter › `ont` OwnerTeam › `pdl` ProductLine › `cst` Customer |
+| Project component | `tnt` Tenant › `prj` Project › `app` App › `env` Environment › `ftr` Feature › `fnc` Function |
+| Cloud cost | `tnt` Tenant › `lzc` LZ or connection (one CSP, one billing currency) › `org` OU path › `acc` Account › `geo` Region or AZ › `svc` Service › `rsg` Resource or resource group › `sus` Usage type |
+
+Cross-references: a Project must name a BusinessUnit, an App must name a CostCenter; an
+Environment may name an OwnerTeam, a Feature a ProductLine, a Function a Customer. Example:
+`urn:tnt:testtnt:prj:testprj:app:billing:env:prod`.
+
+## D-047
+
+**Taxonomy codes become URN ids** (repo owner, 2026-10-30; amends [D-015](#d-015) and the
+WI-0104 Contracts).
+
+- An id is lowercase `[a-z0-9]` words joined by single `-` (`billing`, `online-shop`). Codes
+  such as `PRJ-SHOP` are replaced by ids such as `shop`.
+- System nodes use the reserved ids `unalloc`, `unspec` and `invalid` (today's `*-UNALLOC`,
+  `ENV-UNSPEC`, `APP-INVALID`). `validate` rejects them in the file.
+- Names from the cloud become ids by the **slug rule**: lowercase, every run of characters
+  outside `[a-z0-9]` becomes one `-`, trimmed at both ends. Account ids stay as digits.
+- An OU is one `org` segment holding its slugged path from the root, joined by `/`
+  (`org:workloads/checkout/prod`). The root itself is `org:root`.
+
+## D-048
+
+**Records keep their id fields and gain URN fields** (repo owner, 2026-10-30). The fields
+`project`, `app`, `environment`, `business_unit`, `cost_center` and `lz` keep their names and now
+hold ids. Each also gets a `<field>_urn` field, and the cloud levels get `ou_urn`, `account_urn`
+and, on `cost`, `service_urn`.
+
+## D-049
+
+**Release 1 builds tenancy and URNs for the levels it already has** (repo owner, 2026-10-30).
+These are `tnt`, `bzu`, `cct`, `prj`, `app`, `env`, `lzc`, `org`, `acc` and `svc`. OwnerTeam,
+ProductLine, Customer, Feature, Function, Region, Resource and Usage type, with their
+cross-references, come in Release 2 or later. The Release 1 tag waits for WI-0109.
+
