@@ -15,7 +15,7 @@ func TestAWSAccountsMockGolden(t *testing.T) {
 		t.Fatal(err)
 	}
 	root := filepath.Join("..", "..")
-	cmd := exec.Command("go", "run", "./xops", "sense", "aws-accounts", "--mock")
+	cmd := exec.Command("go", "run", "./xops", "sense", "aws-accounts", "--tenant", "testtnt", "--mock")
 	cmd.Dir = root
 	var out bytes.Buffer
 	cmd.Stdout = &out

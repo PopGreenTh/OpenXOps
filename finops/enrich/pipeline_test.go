@@ -17,23 +17,23 @@ func TestMixingPipelineMatchesFileSteps(t *testing.T) {
 	tmp := t.TempDir()
 
 	costOut := filepath.Join(tmp, "cost.jsonl")
-	run(t, repoRoot, costOut, "go", "run", "./finops", "sense", "aws-cost", "--mock")
+	run(t, repoRoot, costOut, "go", "run", "./finops", "sense", "aws-cost", "--tenant", "testtnt", "--mock")
 
 	mapFileOut := filepath.Join(tmp, "map-file.jsonl")
-	run(t, repoRoot, mapFileOut, "go", "run", "./finops", "enrich", "map",
+	run(t, repoRoot, mapFileOut, "go", "run", "./finops", "enrich", "map", "--tenant", "testtnt",
 		"--taxonomy", tax,
 		"--from-accounts", accounts,
 		"--from-cost", costOut,
 	)
 
 	shareFileOut := filepath.Join(tmp, "share-file.jsonl")
-	run(t, repoRoot, shareFileOut, "go", "run", "./finops", "enrich", "share",
+	run(t, repoRoot, shareFileOut, "go", "run", "./finops", "enrich", "share", "--tenant", "testtnt",
 		"--taxonomy", tax,
 		"--from-cost", mapFileOut,
 	)
 
 	var costBuf bytes.Buffer
-	cost := exec.Command("go", "run", "./finops", "sense", "aws-cost", "--mock")
+	cost := exec.Command("go", "run", "./finops", "sense", "aws-cost", "--tenant", "testtnt", "--mock")
 	cost.Dir = repoRoot
 	cost.Env = append(os.Environ(), "GOTOOLCHAIN=local")
 	cost.Stdout = &costBuf
@@ -42,7 +42,7 @@ func TestMixingPipelineMatchesFileSteps(t *testing.T) {
 		t.Fatalf("aws-cost --mock: %v", err)
 	}
 
-	mapPipe := exec.Command("go", "run", "./finops", "enrich", "map",
+	mapPipe := exec.Command("go", "run", "./finops", "enrich", "map", "--tenant", "testtnt",
 		"--taxonomy", tax,
 		"--from-accounts", accounts,
 		"--from-cost", "-",
@@ -57,7 +57,7 @@ func TestMixingPipelineMatchesFileSteps(t *testing.T) {
 		t.Fatalf("map mixed pipe: %v", err)
 	}
 
-	sharePipe := exec.Command("go", "run", "./finops", "enrich", "share",
+	sharePipe := exec.Command("go", "run", "./finops", "enrich", "share", "--tenant", "testtnt",
 		"--taxonomy", tax,
 		"--from-cost", "-",
 	)
@@ -157,11 +157,11 @@ func TestMapMixedPipeAndAccountsFile(t *testing.T) {
 	tax := filepath.Join(repoRoot, "finops", "enrich", "testdata", "demo-taxonomy.yaml")
 	accounts := filepath.Join(repoRoot, "finops", "enrich", "testdata", "demo-accounts.jsonl")
 
-	cost := exec.Command("go", "run", "./finops", "sense", "aws-cost", "--mock")
+	cost := exec.Command("go", "run", "./finops", "sense", "aws-cost", "--tenant", "testtnt", "--mock")
 	cost.Dir = repoRoot
 	cost.Env = append(os.Environ(), "GOTOOLCHAIN=local")
 
-	mapCmd := exec.Command("go", "run", "./finops", "enrich", "map",
+	mapCmd := exec.Command("go", "run", "./finops", "enrich", "map", "--tenant", "testtnt",
 		"--taxonomy", tax,
 		"--from-accounts", accounts,
 		"--from-cost", "-",

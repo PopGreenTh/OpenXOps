@@ -23,18 +23,19 @@ func Commands() []*cobra.Command {
 }
 
 func validateCommand() *cobra.Command {
-	var taxonomy string
+	var taxonomy, tenant string
 	cmd := &cobra.Command{
 		Use:   "validate",
 		Short: "Validate a taxonomy YAML file",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			record.LogStart("finops enrich validate", map[string]string{"taxonomy": taxonomy}, nil)
-			tax, err := LoadTaxonomy(taxonomy)
+			record.LogStart("finops enrich validate", map[string]string{"taxonomy": taxonomy}, map[string]string{"tenant": tenant})
+			tax, err := loadTaxonomy(taxonomy, tenant)
 			if err != nil {
 				return err
 			}
 			findings := ValidateTaxonomy(tax)
+			record.SetTenant(findings, tenant)
 			if err := record.Write(cmd.OutOrStdout(), findings); err != nil {
 				return err
 			}
@@ -44,13 +45,14 @@ func validateCommand() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&taxonomy, "taxonomy", "", "taxonomy YAML file")
+	record.AddTenantFlag(cmd, &tenant)
+	cmd.Flags().StringVar(&taxonomy, "taxonomy", "", "taxonomy YAML file (its tenant must be --tenant)")
 	_ = cmd.MarkFlagRequired("taxonomy")
 	return cmd
 }
 
 func mapCommand() *cobra.Command {
-	var taxonomy string
+	var taxonomy, tenant string
 	cmd := &cobra.Command{
 		Use:   "map",
 		Short: "Map accounts to apps using a taxonomy",
@@ -60,15 +62,15 @@ func mapCommand() *cobra.Command {
 				"taxonomy": taxonomy,
 				"accounts": accountsFrom.File,
 				"cost":     costFrom.File,
-			}, nil)
-			tax, err := LoadTaxonomy(taxonomy)
+			}, map[string]string{"tenant": tenant})
+			tax, err := loadTaxonomy(taxonomy, tenant)
 			if err != nil {
 				return err
 			}
 			if HasErrorSeverity(ValidateTaxonomy(tax)) {
 				return fmt.Errorf("taxonomy has validation errors; run finops enrich validate")
 			}
-			recs, err := record.Assemble(os.Stdin, []record.From{*accountsFrom, *costFrom})
+			recs, err := record.AssembleTenant(os.Stdin, tenant, []record.From{*accountsFrom, *costFrom})
 			if err != nil {
 				return err
 			}
@@ -76,10 +78,12 @@ func mapCommand() *cobra.Command {
 				return fmt.Errorf("--from-accounts is required (ou and account records)")
 			}
 			out := Map(tax, recs)
+			record.SetTenantOwn(recs, out, tenant)
 			return record.Write(cmd.OutOrStdout(), out)
 		},
 	}
-	cmd.Flags().StringVar(&taxonomy, "taxonomy", "", "taxonomy YAML file")
+	record.AddTenantFlag(cmd, &tenant)
+	cmd.Flags().StringVar(&taxonomy, "taxonomy", "", "taxonomy YAML file (its tenant must be --tenant)")
 	record.AddFromFlags(cmd, []*record.From{accountsFrom, costFrom})
 	_ = cmd.MarkFlagRequired("taxonomy")
 	return cmd
@@ -88,7 +92,7 @@ func mapCommand() *cobra.Command {
 var mapCostFrom = &record.From{Name: "cost", Kinds: []string{"allocation", "cost"}}
 
 func shareCommand() *cobra.Command {
-	var taxonomy string
+	var taxonomy, tenant string
 	cmd := &cobra.Command{
 		Use:   "share",
 		Short: "Split shared-account cost by App tag",
@@ -97,12 +101,12 @@ func shareCommand() *cobra.Command {
 			record.LogStart("finops enrich share", map[string]string{
 				"taxonomy": taxonomy,
 				"cost":     mapCostFrom.File,
-			}, nil)
-			tax, err := LoadTaxonomy(taxonomy)
+			}, map[string]string{"tenant": tenant})
+			tax, err := loadTaxonomy(taxonomy, tenant)
 			if err != nil {
 				return err
 			}
-			recs, err := record.Assemble(os.Stdin, []record.From{*mapCostFrom})
+			recs, err := record.AssembleTenant(os.Stdin, tenant, []record.From{*mapCostFrom})
 			if err != nil {
 				return err
 			}
@@ -110,13 +114,27 @@ func shareCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			record.SetTenantOwn(recs, out, tenant)
 			return record.Write(cmd.OutOrStdout(), out)
 		},
 	}
-	cmd.Flags().StringVar(&taxonomy, "taxonomy", "", "taxonomy YAML file")
+	record.AddTenantFlag(cmd, &tenant)
+	cmd.Flags().StringVar(&taxonomy, "taxonomy", "", "taxonomy YAML file (its tenant must be --tenant)")
 	record.AddFromFlags(cmd, []*record.From{mapCostFrom})
 	_ = cmd.MarkFlagRequired("taxonomy")
 	return cmd
+}
+
+// loadTaxonomy reads the taxonomy at path and stops unless it is for tenant.
+func loadTaxonomy(path, tenant string) (Taxonomy, error) {
+	tax, err := LoadTaxonomy(path)
+	if err != nil {
+		return Taxonomy{}, err
+	}
+	if err := record.CheckTaxonomyTenant(path, tax.Tenant, tenant); err != nil {
+		return Taxonomy{}, err
+	}
+	return tax, nil
 }
 
 func shareOptions(t Taxonomy) share.Options {

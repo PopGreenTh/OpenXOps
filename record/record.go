@@ -4,6 +4,9 @@ package record
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+
+	"github.com/PopGreenTh/OpenXOps/record/urn"
 )
 
 // Record is one flat JSON object. Values are strings, numbers, booleans or null.
@@ -28,6 +31,54 @@ func Finding(severity, code, subject, message, command string) Record {
 		"subject":  subject,
 		"message":  message,
 		"command":  command,
+	}
+}
+
+// CheckTenantID returns an error unless id is set and follows the id rule (D-045, D-047).
+func CheckTenantID(id string) error {
+	if id == "" {
+		return fmt.Errorf("--tenant is required")
+	}
+	if !urn.ValidID(id) {
+		return fmt.Errorf("invalid --tenant %q (want lowercase letters and digits, joined by single dashes)", id)
+	}
+	return nil
+}
+
+// CheckTaxonomyTenant returns an error unless the taxonomy at path declares tenant fileTenant
+// and it equals tenant (the --tenant flag). The error names both.
+func CheckTaxonomyTenant(path, fileTenant, tenant string) error {
+	if fileTenant == "" {
+		return fmt.Errorf("taxonomy %s: missing tenant (the file must start with `tenant: <id>`)", path)
+	}
+	if !urn.ValidID(fileTenant) {
+		return fmt.Errorf("taxonomy %s: invalid tenant %q (want lowercase letters and digits, joined by single dashes)", path, fileTenant)
+	}
+	if fileTenant != tenant {
+		return fmt.Errorf("taxonomy %s is for tenant %q, not --tenant %q", path, fileTenant, tenant)
+	}
+	return nil
+}
+
+// SetTenant sets tenant on every record in recs: for commands whose output is all their own.
+func SetTenant(recs []Record, tenant string) {
+	for _, r := range recs {
+		r["tenant"] = tenant
+	}
+}
+
+// SetTenantOwn sets tenant on every record in out that is not one of the records in in, so
+// records passed through from the input stay unchanged. Records are compared by identity.
+func SetTenantOwn(in, out []Record, tenant string) {
+	seen := make(map[uintptr]struct{}, len(in))
+	for _, r := range in {
+		seen[reflect.ValueOf(r).Pointer()] = struct{}{}
+	}
+	for _, r := range out {
+		if _, ok := seen[reflect.ValueOf(r).Pointer()]; ok {
+			continue
+		}
+		r["tenant"] = tenant
 	}
 }
 

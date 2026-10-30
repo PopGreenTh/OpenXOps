@@ -28,15 +28,16 @@ func Commands() []*cobra.Command {
 }
 
 func tableCommand() *cobra.Command {
-	var out, kinds string
+	var out, kinds, tenant string
 	froms := append([]record.From(nil), reportFroms...)
 	cmd := &cobra.Command{
 		Use:   "table",
 		Short: "Print aligned tables (optionally append to a text file)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runReport(cmd, kinds, out, "table", froms)
+			return runReport(cmd, tenant, kinds, out, "table", froms)
 		},
 	}
+	record.AddTenantFlag(cmd, &tenant)
 	cmd.Flags().StringVar(&out, "out", "", "append table text to FILE instead of stdout")
 	cmd.Flags().StringVar(&kinds, "kinds", "", "limit to comma-separated kinds")
 	record.AddFromFlags(cmd, fromPtrs(froms))
@@ -44,7 +45,7 @@ func tableCommand() *cobra.Command {
 }
 
 func csvCommand() *cobra.Command {
-	var out, kinds string
+	var out, kinds, tenant string
 	froms := append([]record.From(nil), reportFroms...)
 	cmd := &cobra.Command{
 		Use:   "csv",
@@ -53,9 +54,10 @@ func csvCommand() *cobra.Command {
 			if strings.TrimSpace(out) == "" {
 				return fmt.Errorf("--out is required (directory for CSV files)")
 			}
-			return runReport(cmd, kinds, out, "csv", froms)
+			return runReport(cmd, tenant, kinds, out, "csv", froms)
 		},
 	}
+	record.AddTenantFlag(cmd, &tenant)
 	cmd.Flags().StringVar(&out, "out", "", "directory for `<kind>.csv` files (required)")
 	cmd.Flags().StringVar(&kinds, "kinds", "", "limit to comma-separated kinds")
 	record.AddFromFlags(cmd, fromPtrs(froms))
@@ -63,7 +65,7 @@ func csvCommand() *cobra.Command {
 }
 
 func excelCommand() *cobra.Command {
-	var out, kinds string
+	var out, kinds, tenant string
 	froms := append([]record.From(nil), reportFroms...)
 	cmd := &cobra.Command{
 		Use:   "excel",
@@ -72,25 +74,26 @@ func excelCommand() *cobra.Command {
 			if strings.TrimSpace(out) == "" {
 				return fmt.Errorf("--out is required (path to .xlsx file)")
 			}
-			return runReport(cmd, kinds, out, "excel", froms)
+			return runReport(cmd, tenant, kinds, out, "excel", froms)
 		},
 	}
+	record.AddTenantFlag(cmd, &tenant)
 	cmd.Flags().StringVar(&out, "out", "", "workbook path (required)")
 	cmd.Flags().StringVar(&kinds, "kinds", "", "limit to comma-separated kinds")
 	record.AddFromFlags(cmd, fromPtrs(froms))
 	return cmd
 }
 
-func runReport(cmd *cobra.Command, kinds, out, format string, froms []record.From) error {
+func runReport(cmd *cobra.Command, tenant, kinds, out, format string, froms []record.From) error {
 	files := map[string]string{"out": out}
 	for _, f := range froms {
 		if f.File != "" {
 			files["from-"+f.Name] = f.File
 		}
 	}
-	record.LogStart("xops report "+format, files, map[string]string{"kinds": kinds})
+	record.LogStart("xops report "+format, files, map[string]string{"kinds": kinds, "tenant": tenant})
 
-	recs, err := record.Assemble(os.Stdin, froms)
+	recs, err := record.AssembleTenant(os.Stdin, tenant, froms)
 	if err != nil {
 		return err
 	}

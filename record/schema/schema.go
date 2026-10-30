@@ -66,6 +66,7 @@ var ouSchema = Schema{
 		{Name: "path", Type: TypeString, Required: true},
 		{Name: "id_path", Type: TypeString, Required: true},
 		{Name: "has_children", Type: TypeBool, Required: true},
+		{Name: "tenant", Type: TypeString, Required: true},
 	},
 }
 
@@ -83,6 +84,7 @@ var accountSchema = Schema{
 		{Name: "parent_id", Type: TypeString, Required: true},
 		{Name: "ou_path", Type: TypeString, Required: true},
 		{Name: "ou_id_path", Type: TypeString, Required: true},
+		{Name: "tenant", Type: TypeString, Required: true},
 	},
 }
 
@@ -101,6 +103,7 @@ var costSchema = Schema{
 		{Name: "account_id", Type: TypeString, Required: true},
 		{Name: "service", Type: TypeString, Required: true},
 		{Name: "app_tag", Type: TypeString, Required: true},
+		{Name: "tenant", Type: TypeString, Required: true},
 	},
 }
 
@@ -118,6 +121,7 @@ var projectTagCostSchema = Schema{
 		{Name: "estimated", Type: TypeBool, Required: true},
 		{Name: "account_id", Type: TypeString, Required: true},
 		{Name: "project_tag", Type: TypeString, Required: true},
+		{Name: "tenant", Type: TypeString, Required: true},
 	},
 }
 
@@ -137,6 +141,7 @@ var allocationSchema = Schema{
 		{Name: "app_rule", Type: TypeString, Required: true},
 		{Name: "environment_rule", Type: TypeString, Required: true},
 		{Name: "shared", Type: TypeBool, Required: true},
+		{Name: "tenant", Type: TypeString, Required: true},
 	},
 }
 
@@ -154,6 +159,7 @@ var changeSchema = Schema{
 		{Name: "currency", Type: TypeString, Required: true},
 		{Name: "period_from", Type: TypeString, Required: true},
 		{Name: "period_to", Type: TypeString, Required: true},
+		{Name: "tenant", Type: TypeString, Required: true},
 	},
 }
 
@@ -166,6 +172,7 @@ var findingSchema = Schema{
 		{Name: "subject", Type: TypeString, Required: true},
 		{Name: "message", Type: TypeString, Required: true},
 		{Name: "command", Type: TypeString, Required: true},
+		{Name: "tenant", Type: TypeString, Required: true},
 	},
 }
 

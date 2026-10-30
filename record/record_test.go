@@ -2,10 +2,13 @@ package record
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
 func TestNestedValueRejected(t *testing.T) {
@@ -67,7 +70,7 @@ func TestTwoFlagsSameKindError(t *testing.T) {
 }
 
 func TestPipePlusFlagSameKindError(t *testing.T) {
-	stdin := strings.NewReader(`{"kind":"cost","id":"pipe","csp":"aws","management_account":"111111111111","granularity":"monthly","period":"2026-09","metric":"UnblendedCost","amount":1,"currency":"USD","estimated":false,"account_id":"200000000001","service":"AmazonEC2","app_tag":""}` + "\n")
+	stdin := strings.NewReader(`{"kind":"cost","id":"pipe","csp":"aws","management_account":"111111111111","granularity":"monthly","period":"2026-09","metric":"UnblendedCost","amount":1,"currency":"USD","estimated":false,"account_id":"200000000001","service":"AmazonEC2","app_tag":"","tenant":"testtnt"}` + "\n")
 	_, err := Assemble(stdin, []From{
 		{Name: "pipe", Kinds: []string{"cost"}, File: "-"},
 		{Name: "file", Kinds: []string{"cost"}, File: "testdata/from-cost.jsonl"},
@@ -128,7 +131,7 @@ func TestAssembleIgnoresOpenPipeWhenOnlyFileFlags(t *testing.T) {
 }
 
 func TestAssembleMixFileAndStdinFlag(t *testing.T) {
-	stdin := strings.NewReader(`{"kind":"cost","id":"pipe-cost","csp":"aws","management_account":"111111111111","granularity":"monthly","period":"2026-09","metric":"UnblendedCost","amount":1,"currency":"USD","estimated":false,"account_id":"200000000001","service":"AmazonEC2","app_tag":""}` + "\n")
+	stdin := strings.NewReader(`{"kind":"cost","id":"pipe-cost","csp":"aws","management_account":"111111111111","granularity":"monthly","period":"2026-09","metric":"UnblendedCost","amount":1,"currency":"USD","estimated":false,"account_id":"200000000001","service":"AmazonEC2","app_tag":"","tenant":"testtnt"}` + "\n")
 	recs, err := Assemble(stdin, []From{
 		{Name: "accounts", Kinds: []string{"ou", "account"}, File: "testdata/mixed.jsonl"},
 		{Name: "cost", Kinds: []string{"cost"}, File: "-"},
@@ -221,4 +224,185 @@ func kindsOf(recs []Record) []string {
 		out[i] = r.Kind()
 	}
 	return out
+}
+
+func TestTenantIDRule(t *testing.T) {
+	cases := []struct {
+		id      string
+		wantErr string
+	}{
+		{"testtnt", ""},
+		{"acme-retail", ""},
+		{"", "--tenant is required"},
+		{"Acme", "invalid --tenant"},
+		{"acme_retail", "invalid --tenant"},
+		{"acme--retail", "invalid --tenant"},
+	}
+	for _, tc := range cases {
+		err := CheckTenantID(tc.id)
+		if tc.wantErr == "" {
+			if err != nil {
+				t.Errorf("CheckTenantID(%q) = %v, want nil", tc.id, err)
+			}
+			continue
+		}
+		if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+			t.Errorf("CheckTenantID(%q) = %v, want %q", tc.id, err, tc.wantErr)
+		}
+	}
+}
+
+func TestCheckTaxonomyTenant(t *testing.T) {
+	cases := []struct {
+		name, fileTenant string
+		want             []string
+	}{
+		{"same", "testtnt", nil},
+		{"missing", "", []string{"tax.yaml", "missing tenant"}},
+		{"malformed", "Test_Tnt", []string{"tax.yaml", "invalid tenant", "Test_Tnt"}},
+		{"other tenant", "othertnt", []string{"tax.yaml", `"othertnt"`, `"testtnt"`}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := CheckTaxonomyTenant("tax.yaml", tc.fileTenant, "testtnt")
+			if tc.want == nil {
+				if err != nil {
+					t.Fatal(err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			for _, w := range tc.want {
+				if !strings.Contains(err.Error(), w) {
+					t.Fatalf("error %q should contain %q", err, w)
+				}
+			}
+		})
+	}
+}
+
+func TestReadOtherTenantFails(t *testing.T) {
+	cases := []struct {
+		name  string
+		input string
+		froms func(path string) []From
+		want  []string
+	}{
+		{
+			name: "declared kind from file",
+			froms: func(path string) []From {
+				return []From{{Name: "cost", Kinds: []string{"cost"}, File: path}}
+			},
+			want: []string{"other-tenant.jsonl:2:", `"othertnt"`, `"testtnt"`},
+		},
+		{
+			name: "passed-through kind from file",
+			froms: func(path string) []From {
+				return []From{{Name: "accounts", Kinds: []string{"ou", "account"}, File: path}}
+			},
+			want: []string{"other-tenant.jsonl:2:", `"othertnt"`, `"testtnt"`},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := "testdata/other-tenant.jsonl"
+			_, err := AssembleTenant(nil, "testtnt", tc.froms(path))
+			if err == nil {
+				t.Fatal("expected tenant error")
+			}
+			var te *TenantError
+			if !errors.As(err, &te) {
+				t.Fatalf("error %v is not a TenantError", err)
+			}
+			for _, w := range tc.want {
+				if !strings.Contains(err.Error(), w) {
+					t.Fatalf("error %q should contain %q", err, w)
+				}
+			}
+		})
+	}
+}
+
+func TestReadOtherTenantFromStdin(t *testing.T) {
+	stdin := strings.NewReader(`{"kind":"note","tenant":"testtnt"}` + "\n" + `{"kind":"note","tenant":"othertnt"}` + "\n")
+	_, err := AssembleTenant(stdin, "testtnt", nil)
+	if err == nil {
+		t.Fatal("expected tenant error")
+	}
+	for _, w := range []string{"stdin:2:", `"othertnt"`, `"testtnt"`} {
+		if !strings.Contains(err.Error(), w) {
+			t.Fatalf("error %q should contain %q", err, w)
+		}
+	}
+}
+
+func TestReadWithoutTenantFieldPasses(t *testing.T) {
+	stdin := strings.NewReader(`{"kind":"note","id":"n1"}` + "\n")
+	recs, err := AssembleTenant(stdin, "testtnt", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) != 1 {
+		t.Fatalf("got %v", recs)
+	}
+}
+
+func TestSetTenantOwnLeavesPassThroughUnchanged(t *testing.T) {
+	in := []Record{
+		{"kind": "note", "id": "n1"},
+		{"kind": "cost", "id": "c1", "tenant": "testtnt"},
+	}
+	own := []Record{Finding("warning", "x", "s", "m", "cmd"), {"kind": "allocation", "id": "a1"}}
+	out := PassThrough(in, []string{"cost"}, own)
+	SetTenantOwn(in, out, "testtnt")
+	for _, r := range out {
+		switch r["id"] {
+		case "n1":
+			if _, ok := r["tenant"]; ok {
+				t.Fatalf("pass-through record was changed: %v", r)
+			}
+		default:
+			if r["tenant"] != "testtnt" {
+				t.Fatalf("own record without tenant: %v", r)
+			}
+		}
+	}
+}
+
+func TestTenantFlagStopsBeforeRun(t *testing.T) {
+	cases := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{"missing", nil, "tenant"},
+		{"malformed", []string{"--tenant", "Bad_Tenant"}, "invalid --tenant"},
+		{"empty", []string{"--tenant", ""}, "--tenant is required"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ran := false
+			var tenant string
+			cmd := &cobra.Command{
+				Use:           "x",
+				SilenceUsage:  true,
+				SilenceErrors: true,
+				RunE: func(cmd *cobra.Command, args []string) error {
+					ran = true
+					return nil
+				},
+			}
+			AddTenantFlag(cmd, &tenant)
+			cmd.SetArgs(tc.args)
+			err := cmd.Execute()
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("error = %v, want %q", err, tc.want)
+			}
+			if ran {
+				t.Fatal("RunE ran without a valid --tenant")
+			}
+		})
+	}
 }

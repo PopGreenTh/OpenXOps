@@ -29,7 +29,7 @@ func Commands() []*cobra.Command {
 
 func awsCostCommand() *cobra.Command {
 	var mock, refresh bool
-	var profile, region, lz, taxonomy, granularity, metric, from, to, appTag, projectTag string
+	var profile, region, lz, taxonomy, granularity, metric, from, to, appTag, projectTag, tenant string
 	cmd := &cobra.Command{
 		Use:   "aws-cost",
 		Short: "Read AWS Cost Explorer and emit cost records",
@@ -50,12 +50,18 @@ func awsCostCommand() *cobra.Command {
 				"app-tag":     appTag,
 				"project-tag": projectTag,
 				"refresh":     fmt.Sprintf("%t", refresh),
+				"tenant":      tenant,
 			})
 			if lz != "" && taxonomy == "" {
 				return fmt.Errorf("--lz requires --taxonomy")
 			}
 			if taxonomy != "" && lz == "" {
 				return fmt.Errorf("--taxonomy requires --lz")
+			}
+			if taxonomy != "" {
+				if err := checkTaxonomyTenant(taxonomy, tenant); err != nil {
+					return err
+				}
 			}
 			var api ce.API
 			if mock {
@@ -69,6 +75,7 @@ func awsCostCommand() *cobra.Command {
 			}
 			var calls int
 			return RunAwsCost(ctx, CostOptions{
+				Tenant:      tenant,
 				Mock:        mock,
 				Profile:     profile,
 				Region:      region,
@@ -87,12 +94,13 @@ func awsCostCommand() *cobra.Command {
 			})
 		},
 	}
+	record.AddTenantFlag(cmd, &tenant)
 	cmd.Flags().BoolVar(&mock, "mock", false, "use embedded deterministic Cost Explorer fixtures")
 	cmd.Flags().BoolVar(&refresh, "refresh", false, "refetch all periods in range (never overwrite closed cache files)")
 	cmd.Flags().StringVar(&profile, "profile", "", "AWS shared config profile")
 	cmd.Flags().StringVar(&region, "region", "", "AWS region (default us-east-1)")
 	cmd.Flags().StringVar(&lz, "lz", "", "landing zone code (requires --taxonomy)")
-	cmd.Flags().StringVar(&taxonomy, "taxonomy", "", "taxonomy YAML for --lz and default tag keys")
+	cmd.Flags().StringVar(&taxonomy, "taxonomy", "", "taxonomy YAML for --lz and default tag keys (its tenant must be --tenant)")
 	cmd.Flags().StringVar(&granularity, "granularity", "monthly", "monthly or daily")
 	cmd.Flags().StringVar(&metric, "metric", "", "Cost Explorer metric (default by granularity)")
 	cmd.Flags().StringVar(&from, "from", "", "start period inclusive")
@@ -100,6 +108,21 @@ func awsCostCommand() *cobra.Command {
 	cmd.Flags().StringVar(&appTag, "app-tag", "", "App cost allocation tag key")
 	cmd.Flags().StringVar(&projectTag, "project-tag", "", "Project cost allocation tag key")
 	return cmd
+}
+
+// checkTaxonomyTenant stops when the taxonomy at path is not for tenant.
+func checkTaxonomyTenant(path, tenant string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("read taxonomy %s: %w", path, err)
+	}
+	var doc struct {
+		Tenant string `yaml:"tenant"`
+	}
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return fmt.Errorf("parse taxonomy %s: %w", path, err)
+	}
+	return record.CheckTaxonomyTenant(path, doc.Tenant, tenant)
 }
 
 func resolveTags(opt CostOptions) (app, project string, err error) {

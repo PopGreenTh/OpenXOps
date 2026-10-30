@@ -48,6 +48,23 @@ func AddFromFlags(cmd *cobra.Command, froms []*From) {
 	}
 }
 
+// AddTenantFlag registers the required --tenant flag on cmd, bound to tenant. A missing or
+// malformed id stops the command before RunE, so before it reads anything.
+func AddTenantFlag(cmd *cobra.Command, tenant *string) {
+	cmd.Flags().StringVar(tenant, "tenant", "", "tenant id (required): lowercase letters and digits, joined by single dashes")
+	_ = cmd.MarkFlagRequired("tenant")
+	prev := cmd.PreRunE
+	cmd.PreRunE = func(c *cobra.Command, args []string) error {
+		if err := CheckTenantID(*tenant); err != nil {
+			return err
+		}
+		if prev != nil {
+			return prev(c, args)
+		}
+		return nil
+	}
+}
+
 // SetupLog configures slog text output on stderr. level is debug, info, warn or error.
 func SetupLog(level string) error {
 	var lvl slog.Level

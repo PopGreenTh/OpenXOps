@@ -1,12 +1,12 @@
 --- alpha ---
-name,score
-first,1.5
-second,3.25
+name,score,tenant
+first,1.5,testtnt
+second,3.25,testtnt
 --- beta ---
-code,qty
-b1,10
-b2,20
+code,qty,tenant
+b1,10,testtnt
+b2,20,testtnt
 --- gamma ---
-active,label
-TRUE,g1
-FALSE,g2
+active,label,tenant
+TRUE,g1,testtnt
+FALSE,g2,testtnt

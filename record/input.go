@@ -59,6 +59,12 @@ func CheckKindsFrom(froms []From) map[string]struct{} {
 // Every record from each file or stdin is kept; schema checks and kind conflicts apply only to
 // kinds declared on the flags. The same path is read once when two flags share it.
 func Assemble(stdin io.Reader, froms []From) ([]Record, error) {
+	return AssembleTenant(stdin, "", froms)
+}
+
+// AssembleTenant is Assemble, and when tenant is set every record read, of any kind, that has a
+// tenant field must equal tenant (see ReadTenant).
+func AssembleTenant(stdin io.Reader, tenant string, froms []From) ([]Record, error) {
 	checkKinds := CheckKindsFrom(froms)
 	var active []From
 	for _, f := range froms {
@@ -71,7 +77,7 @@ func Assemble(stdin io.Reader, froms []From) ([]Record, error) {
 		if stdin == nil || !isNonTTY(stdin) {
 			return nil, nil
 		}
-		return Read(stdin, "stdin", checkKinds)
+		return ReadTenant(stdin, "stdin", tenant, checkKinds)
 	}
 
 	stdinViaFlag := false
@@ -87,7 +93,7 @@ func Assemble(stdin io.Reader, froms []From) ([]Record, error) {
 		if stdin == nil {
 			return nil, fmt.Errorf("stdin: no input")
 		}
-		recs, err := Read(stdin, "stdin", checkKinds)
+		recs, err := ReadTenant(stdin, "stdin", tenant, checkKinds)
 		if err != nil {
 			return nil, err
 		}
@@ -111,7 +117,7 @@ func Assemble(stdin io.Reader, froms []From) ([]Record, error) {
 			if cached, ok := fileCache[f.File]; ok {
 				recs = cached
 			} else {
-				recs, err = ReadFile(f.File, checkKinds)
+				recs, err = ReadFileTenant(f.File, tenant, checkKinds)
 				if err != nil {
 					return nil, err
 				}

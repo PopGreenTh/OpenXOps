@@ -1,6 +1,8 @@
 # OpenXOps
 
-Standalone single-tenant command-line tools for cloud operations. Commands chain with `|`.
+Standalone multi-tenant command-line tools for cloud operations. Commands chain with `|`. Every
+command runs for one tenant, named with `--tenant`, and every record says which tenant it belongs
+to.
 
 **Licence:** FSL-1.1-Apache-2.0 — free for your own use; contact the licensor for commercial use.
 
@@ -18,13 +20,13 @@ Needs [Go 1.22+](https://go.dev/dl/). From the repo root:
 
 ```bash
 go run ./scripts/check
-go run ./xops sense aws-accounts --mock > accounts.jsonl
-go run ./finops sense aws-cost --mock > cost.jsonl
-go run ./finops enrich map --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
+go run ./xops sense aws-accounts --tenant testtnt --mock > accounts.jsonl
+go run ./finops sense aws-cost --tenant testtnt --mock > cost.jsonl
+go run ./finops enrich map --tenant testtnt --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
   --from-accounts accounts.jsonl --from-cost cost.jsonl > map.jsonl
-go run ./finops enrich share --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
+go run ./finops enrich share --tenant testtnt --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
   --from-cost map.jsonl > shared.jsonl
-go run ./xops report excel --from-cost shared.jsonl --out finops.xlsx
+go run ./xops report excel --tenant testtnt --from-cost shared.jsonl --out finops.xlsx
 ```
 
 ## Documentation
