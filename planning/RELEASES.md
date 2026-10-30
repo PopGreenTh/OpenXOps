@@ -25,7 +25,7 @@ release is direction, not a commitment.
 
 | Release | Deliverable | Theme | State |
 |---|---|---|---|
-| 1 | [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md) | AWS cost owned by Project › App › Environment, in Excel | Built; tenants and URNs (WI-0109) added; tag waits for WI-0109 and criterion 6 |
+| 1 | [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md) | AWS cost owned by Project › App › Environment, in Excel | Built; tenants and URNs (WI-0109) and account join time (WO-0102-B) added; tag waits for WI-0109, WO-0102-B and criterion 6 |
 | 2 | [DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md) | FOCUS, history, trend and impact | Specified; dispatch after Release 1 tag |
 | 3 | not written yet | Enforce | First rules decided (D-033) |
 | Later | — | More clouds, SecOps, CloudOps | Direction only |
@@ -45,6 +45,7 @@ Project › App › Environment. Shared accounts are split by the App tag, unmap
 | [WO-0101-B](DD-01-r1-finops-aws/WI-0101-Skeleton.md) | D-030 pipe rule, D-037 schema checks, review follow-ups | 0103, 0105, 0107 |
 | [WO-0101-C](DD-01-r1-finops-aws/WI-0101-Skeleton.md) | D-043 stdin order (piped and file runs byte-identical) | 0101-B |
 | [WO-0102-A](DD-01-r1-finops-aws/WI-0102-Aws-Accounts.md) | `xops sense aws-accounts`, demo organization | 0101 |
+| [WO-0102-B](DD-01-r1-finops-aws/WI-0102-Aws-Accounts.md) | Account `joined_at`, `joined_method` (D-051) | 0109-B |
 | [WO-0103-A](DD-01-r1-finops-aws/WI-0103-Aws-Cost.md) | `finops sense aws-cost`, two-level Cost Explorer, cache, mock | 0102 |
 | [WO-0104-A](DD-01-r1-finops-aws/WI-0104-Enrich-Map.md) | Taxonomy, `finops enrich validate` and `map` | 0101 |
 | [WO-0105-A](DD-01-r1-finops-aws/WI-0105-Enrich-Share.md) | `finops enrich share` | 0104 |

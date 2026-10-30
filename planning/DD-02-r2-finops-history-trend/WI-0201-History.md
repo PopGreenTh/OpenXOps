@@ -5,6 +5,10 @@
 Runs can be kept. `--save` writes a command's output to the history store as well as stdout, so
 later runs (`impact`, `--as-reported`) can compare against what was reported before (D-034, D-039).
 
+**To specify when Release 2 starts** ([D-051](../DECISIONS.md#d-051)): `first_seen` and
+`last_changed` on `ou` and `account` records, worked out from the saved runs. The grill decides
+which fields count as a change and which command writes them.
+
 ## Contracts
 
 ### Store (D-034)

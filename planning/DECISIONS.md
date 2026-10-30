@@ -641,3 +641,22 @@ implementer, logs as `claude-impl`, never edits planning files and never reviews
 - **No one reviews their own work** still holds: the planner session reviews, the implementer
   session builds.
 
+## D-051
+
+**Account join time now; OU and change times from history later** (repo owner, 2026-10-31;
+amends the WI-0102 Contracts). The repo owner asked for created and updated datetimes on `ou`
+and `account` records. AWS Organizations gives an account's `JoinedTimestamp` and
+`JoinedMethod` in the `ListAccountsForParent` response that `aws-accounts` already reads. It
+gives no timestamp for an OU, and no last-updated time for either.
+
+- **Release 1:** every `account` record gets `joined_at` (RFC 3339 UTC, seconds:
+  `2021-04-12T03:15:27Z`) and `joined_method` (`CREATED` or `INVITED`, as AWS gives it). For a
+  `CREATED` account, `joined_at` is when the account was created. These need no extra call or
+  permission. They are optional strings in `record/schema`, so older account files and the
+  reference cases stay valid; `aws-accounts` always writes them. Specified as WO-0102-B, and
+  the Release 1 tag waits for it.
+- **Release 2:** `ou` and `account` records get `first_seen` and `last_changed`, worked out by
+  OpenXOps from its own history store (WI-0201), not from AWS. Which fields count as a change
+  is decided when WI-0201 is grilled.
+- **Not done:** no CloudTrail lookups (90 days only, an extra permission, slow), and no
+  `collected_at` run time on records.
