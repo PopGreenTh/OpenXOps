@@ -4,22 +4,23 @@ why: >
   gets the LZ and Environment but no App, for share to split. A dedicated account's cost gets all
   of its allocation. Amounts never change.
 taxonomy:
-  business_units: [{ code: BU-RETAIL, name: Retail }]
-  cost_centers: [{ code: CC-ECOM, name: E-commerce, business_unit: BU-RETAIL }]
+  tenant: testtnt
+  business_units: [{ code: retail, name: Retail }]
+  cost_centers: [{ code: ecom, name: E-commerce, business_unit: retail }]
   projects:
-    - { code: PRJ-SHOP, name: Online shop, business_unit: BU-RETAIL }
-    - { code: PRJ-PAY, name: Payments, business_unit: BU-RETAIL }
+    - { code: shop, name: Online shop, business_unit: retail }
+    - { code: pay, name: Payments, business_unit: retail }
   apps:
-    - { code: APP-CHK, name: Checkout, project: PRJ-SHOP, cost_center: CC-ECOM,
-        environments: [{ code: ENV-PROD, name: Production }, { code: ENV-DEV, name: Development }] }
-    - { code: APP-PAY, name: Payments, project: PRJ-PAY, cost_center: CC-ECOM,
-        environments: [{ code: ENV-PROD, name: Production }, { code: ENV-DEV, name: Development }] }
-  lzs: [{ code: LZ-MAIN, name: Main, csp: aws, currency: USD, management_account: "111111111111" }]
+    - { code: chk, name: Checkout, project: shop, cost_center: ecom,
+        environments: [{ code: prod, name: Production }, { code: dev, name: Development }] }
+    - { code: pay, name: Payments, project: pay, cost_center: ecom,
+        environments: [{ code: prod, name: Production }, { code: dev, name: Development }] }
+  lzs: [{ code: main, name: Main, csp: aws, currency: USD, management_account: "111111111111" }]
   ou_links:
-    - { lz: LZ-MAIN, ou: /Workloads/Checkout, app: APP-CHK }
-    - { lz: LZ-MAIN, ou: /Workloads/Checkout/Prod, environment: ENV-PROD }
+    - { lz: main, ou: /Workloads/Checkout, app: chk }
+    - { lz: main, ou: /Workloads/Checkout/Prod, environment: prod }
   accounts:
-    - { account: "200000000002", apps: [APP-CHK, APP-PAY], environment: ENV-PROD }
+    - { account: "200000000002", apps: [chk, pay], environment: prod }
 records:
   - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: r-1, name: Root, parent_id: "", path: /, id_path: r-1, has_children: true }
   - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: ou-1, name: Workloads, parent_id: r-1, path: /Workloads, id_path: r-1/ou-1, has_children: true }
@@ -28,18 +29,28 @@ records:
   - { kind: account, csp: aws, org_id: o-main, management_account: "111111111111", id: "200000000001", name: chk-prod, email: chk-prod@example.com, status: ACTIVE, parent_id: ou-3, ou_path: /Workloads/Checkout/Prod, ou_id_path: r-1/ou-1/ou-2/ou-3 }
   - { kind: account, csp: aws, org_id: o-main, management_account: "111111111111", id: "200000000002", name: shared, email: shared@example.com, status: ACTIVE, parent_id: r-1, ou_path: /, ou_id_path: r-1 }
   - { kind: cost, csp: aws, management_account: "111111111111", account_id: "200000000001", granularity: monthly, period: 2026-09, metric: UnblendedCost, service: AmazonEC2, app_tag: "", amount: 100, currency: USD, estimated: false }
-  - { kind: cost, csp: aws, management_account: "111111111111", account_id: "200000000002", granularity: monthly, period: 2026-09, metric: UnblendedCost, service: AmazonEC2, app_tag: APP-PAY, amount: 40, currency: USD, estimated: false }
+  - { kind: cost, csp: aws, management_account: "111111111111", account_id: "200000000002", granularity: monthly, period: 2026-09, metric: UnblendedCost, service: AmazonEC2, app_tag: pay, amount: 40, currency: USD, estimated: false }
 expect:
   allocations:
-    - { account_id: "200000000001", lz: LZ-MAIN, app: APP-CHK, environment: ENV-PROD, shared: false }
-    - { account_id: "200000000002", lz: LZ-MAIN, project: PRJ-SHOP, app: APP-CHK, environment: ENV-PROD,
+    - { account_id: "200000000001", lz: main, app: chk, environment: prod, shared: false }
+    - { account_id: "200000000002", lz: main, project: shop, app: chk, environment: prod,
         app_rule: account, environment_rule: account, shared: true }
-    - { account_id: "200000000002", lz: LZ-MAIN, project: PRJ-PAY, app: APP-PAY, environment: ENV-PROD,
+    - { account_id: "200000000002", lz: main, project: pay, app: pay, environment: prod,
         app_rule: account, environment_rule: account, shared: true }
   costs:
-    - { account_id: "200000000001", lz: LZ-MAIN, project: PRJ-SHOP, app: APP-CHK, environment: ENV-PROD,
-        business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: "ou:/Workloads/Checkout",
-        environment_rule: "ou:/Workloads/Checkout/Prod", shared: false, amount: 100 }
-    - { account_id: "200000000002", lz: LZ-MAIN, project: "", app: "", environment: ENV-PROD,
-        app_rule: "", environment_rule: account, shared: true, app_tag: APP-PAY, amount: 40 }
+    - { account_id: "200000000001", lz: main, project: shop, app: chk, environment: prod,
+        business_unit: retail, cost_center: ecom, app_rule: "ou:/Workloads/Checkout",
+        environment_rule: "ou:/Workloads/Checkout/Prod", shared: false, amount: 100, tenant: testtnt,
+        project_urn: "urn:tnt:testtnt:prj:shop", app_urn: "urn:tnt:testtnt:prj:shop:app:chk",
+        environment_urn: "urn:tnt:testtnt:prj:shop:app:chk:env:prod",
+        business_unit_urn: "urn:tnt:testtnt:bzu:retail", cost_center_urn: "urn:tnt:testtnt:bzu:retail:cct:ecom",
+        lz_urn: "urn:tnt:testtnt:lzc:main", ou_urn: "urn:tnt:testtnt:lzc:main:org:workloads/checkout/prod",
+        account_urn: "urn:tnt:testtnt:lzc:main:org:workloads/checkout/prod:acc:200000000001",
+        service_urn: "urn:tnt:testtnt:lzc:main:org:workloads/checkout/prod:acc:200000000001:svc:amazonec2" }
+    - { account_id: "200000000002", lz: main, project: "", app: "", environment: prod,
+        app_rule: "", environment_rule: account, shared: true, app_tag: pay, amount: 40,
+        project_urn: "", app_urn: "", environment_urn: "", business_unit_urn: "", cost_center_urn: "",
+        lz_urn: "urn:tnt:testtnt:lzc:main", ou_urn: "urn:tnt:testtnt:lzc:main:org:root",
+        account_urn: "urn:tnt:testtnt:lzc:main:org:root:acc:200000000002",
+        service_urn: "urn:tnt:testtnt:lzc:main:org:root:acc:200000000002:svc:amazonec2" }
   findings: []
