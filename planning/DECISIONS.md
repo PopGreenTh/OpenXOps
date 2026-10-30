@@ -627,3 +627,17 @@ These are `tnt`, `bzu`, `cct`, `prj`, `app`, `env`, `lzc`, `org`, `acc` and `svc
 ProductLine, Customer, Feature, Function, Region, Resource and Usage type, with their
 cross-references, come in Release 2 or later. The Release 1 tag waits for WI-0109.
 
+## D-050
+
+**A Claude Code implementer session** (repo owner, 2026-10-30; amends `AGENTS.md` §2, §4, §7 and
+§9). When Antigravity and Cursor can't take work, the planner may start, on the repo owner's
+go-ahead, a separate Claude Code session as an implementer. It follows Part C like any
+implementer, logs as `claude-impl`, never edits planning files and never reviews.
+
+- **GitHub users.** The implementer works as `chaninsai`, and the planner should work as
+  `PopGreenTh`. A Claude session posts as the GitHub user its claude.ai account is connected
+  to. Today the planner's account is connected to `chaninsai` too, so its reviews are still
+  posted as `chaninsai` until the planner runs from an account connected to `PopGreenTh`.
+- **No one reviews their own work** still holds: the planner session reviews, the implementer
+  session builds.
+
