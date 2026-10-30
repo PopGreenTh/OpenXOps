@@ -4,6 +4,19 @@ Every command is `<binary> <stage> <thing>`. Stages: **Sense › Enrich › Anal
 All commands accept `--log-level` on stderr; records go to stdout (except `report table` without
 `--out`).
 
+**Tenant (D-045).** Every command except `version` takes a required `--tenant ID`: lowercase
+letters and digits, joined by single dashes (`^[a-z0-9]+(-[a-z0-9]+)*$`, for example `testtnt` or
+`acme-retail`). A missing or malformed id stops the command before it reads anything.
+
+- Every record a command writes has `tenant` set to `--tenant`. Records passed through are
+  unchanged.
+- Every record a command reads that has a `tenant` field must equal `--tenant`, whatever its
+  kind; otherwise the command stops with an error naming the file (or `stdin`), the line and both
+  tenants.
+- `validate`, `map`, `share` and `aws-cost --taxonomy` stop when the taxonomy's `tenant` differs
+  from `--tenant` ([taxonomy.md](taxonomy.md)).
+- The Cost Explorer cache stays keyed by management account, not by tenant.
+
 ## `xops version`
 
 Print version, commit and build date.
@@ -21,44 +34,45 @@ Same for the FinOps binary.
 List an AWS Organization as `ou` and `account` records (OUs first, then accounts, each sorted by
 `id`).
 
-**Flags:** `--mock`, `--profile`, `--region` (default `us-east-1`), `--lz` with `--taxonomy`.
+**Flags:** `--tenant ID` (required), `--mock`, `--profile`, `--region` (default `us-east-1`), `--lz` with `--taxonomy`.
 
 **Reads:** nothing (live AWS or mock).
 
 **Writes:** `ou`, `account`; may emit `finding` (`ou-path-ambiguous`).
 
-**Example:** `go run ./xops sense aws-accounts --mock > accounts.jsonl`
+**Example:** `go run ./xops sense aws-accounts --tenant testtnt --mock > accounts.jsonl`
 
 ## `finops sense aws-cost`
 
 Two-level Cost Explorer read: `project_tag_cost` then `cost` records.
 
-**Flags:** `--mock`, `--profile`, `--region`, `--granularity monthly|daily`, `--metric`,
-`--from` / `--to`, `--app-tag`, `--project-tag`, `--lz` with `--taxonomy`, `--refresh`.
+**Flags:** `--tenant ID` (required), `--mock`, `--profile`, `--region`, `--granularity monthly|daily`, `--metric`,
+`--from` / `--to`, `--app-tag`, `--project-tag`, `--lz` with `--taxonomy` (its `tenant` must be
+`--tenant`), `--refresh`.
 
 **Reads:** nothing (live AWS or mock).
 
 **Writes:** `project_tag_cost`, `cost`; may emit `finding` (`cost-history-short`).
 
-**Example:** `go run ./finops sense aws-cost --mock > cost.jsonl`
+**Example:** `go run ./finops sense aws-cost --tenant testtnt --mock > cost.jsonl`
 
 ## `finops enrich validate`
 
 Check a taxonomy YAML file and print `finding` records.
 
-**Flags:** `--taxonomy FILE` (required).
+**Flags:** `--tenant ID` (required), `--taxonomy FILE` (required).
 
 **Reads:** taxonomy file.
 
 **Writes:** `finding` (taxonomy codes); exits 1 on severity `error`.
 
-**Example:** `go run ./finops enrich validate --taxonomy finops/enrich/testdata/demo-taxonomy.yaml`
+**Example:** `go run ./finops enrich validate --tenant testtnt --taxonomy finops/enrich/testdata/demo-taxonomy.yaml`
 
 ## `finops enrich map`
 
 Apply taxonomy to accounts and optional cost; pass through inventory; write `allocation` rows.
 
-**Flags:** `--taxonomy FILE` (required), `--from-accounts`, `--from-cost`, `--from-finding`, …
+**Flags:** `--tenant ID` (required), `--taxonomy FILE` (required), `--from-accounts`, `--from-cost`, `--from-finding`, …
 
 **Reads:** `ou`, `account`, optional `cost`, optional upstream `finding`.
 
@@ -68,7 +82,7 @@ records.
 **Example:**
 
 ```bash
-go run ./finops enrich map --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
+go run ./finops enrich map --tenant testtnt --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
   --from-accounts finops/enrich/testdata/demo-accounts.jsonl \
   --from-cost finops/enrich/testdata/demo-cost.jsonl
 ```
@@ -77,7 +91,7 @@ go run ./finops enrich map --taxonomy finops/enrich/testdata/demo-taxonomy.yaml 
 
 Split shared-account `cost` by App tag using `allocation` rows from `map`.
 
-**Flags:** `--taxonomy FILE` (required), `--from-cost`, `--from-allocation`, …
+**Flags:** `--tenant ID` (required), `--taxonomy FILE` (required), `--from-cost`, `--from-allocation`, …
 
 **Reads:** `cost`, `allocation`, pass-through kinds from `map`.
 
@@ -86,7 +100,7 @@ Split shared-account `cost` by App tag using `allocation` rows from `map`.
 **Example:**
 
 ```bash
-go run ./finops enrich share --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
+go run ./finops enrich share --tenant testtnt --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
   --from-cost map.jsonl
 ```
 
@@ -94,47 +108,47 @@ go run ./finops enrich share --taxonomy finops/enrich/testdata/demo-taxonomy.yam
 
 Compare a previous map output to the current one; emit `change` records, then pass through input.
 
-**Flags:** `--before FILE` (required), `--from-map FILE` or stdin.
+**Flags:** `--tenant ID` (required), `--before FILE` (required), `--from-map FILE` or stdin.
 
 **Reads:** prior and current map (or share) output.
 
 **Writes:** `change`, then pass-through records from current input.
 
-**Example:** `go run ./finops analyze changes --before before.jsonl --from-map now.jsonl`
+**Example:** `go run ./finops analyze changes --tenant testtnt --before before.jsonl --from-map now.jsonl`
 
 ## `xops report table`
 
 Print aligned tables per record kind (stdout or append with `--out`).
 
-**Flags:** `--from-cost`, `--from-change`, `--from-allocation`, `--from-finding`,
+**Flags:** `--tenant ID` (required), `--from-cost`, `--from-change`, `--from-allocation`, `--from-finding`,
 `--from-accounts`, `--kinds`, `--out`.
 
 **Reads:** declared record kinds from files or stdin (pipe rule applies).
 
 **Writes:** text tables.
 
-**Example:** `go run ./xops report table --from-cost xops/report/testdata/mixed.jsonl`
+**Example:** `go run ./xops report table --tenant testtnt --from-cost xops/report/testdata/mixed.jsonl`
 
 ## `xops report csv`
 
 Write one CSV per kind under a directory.
 
-**Flags:** `--out DIR` (required), `--from-*`, `--kinds`.
+**Flags:** `--tenant ID` (required), `--out DIR` (required), `--from-*`, `--kinds`.
 
 **Reads:** same as `report table`.
 
 **Writes:** `DIR/<kind>.csv`.
 
-**Example:** `go run ./xops report csv --out /tmp/report --from-cost xops/report/testdata/mixed.jsonl`
+**Example:** `go run ./xops report csv --tenant testtnt --out /tmp/report --from-cost xops/report/testdata/mixed.jsonl`
 
 ## `xops report excel`
 
 Write one sheet per kind to an `.xlsx` file.
 
-**Flags:** `--out FILE.xlsx` (required), `--from-*`, `--kinds`.
+**Flags:** `--tenant ID` (required), `--out FILE.xlsx` (required), `--from-*`, `--kinds`.
 
 **Reads:** same as `report table`.
 
 **Writes:** Excel workbook.
 
-**Example:** `go run ./xops report excel --out finops.xlsx --from-cost shared.jsonl`
+**Example:** `go run ./xops report excel --tenant testtnt --out finops.xlsx --from-cost shared.jsonl`

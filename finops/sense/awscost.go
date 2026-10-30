@@ -17,6 +17,8 @@ import (
 
 // CostOptions configures aws-cost.
 type CostOptions struct {
+	// Tenant is written on every record (D-045); the command checks it first.
+	Tenant      string
 	Mock        bool
 	Profile     string
 	Region      string
@@ -140,6 +142,7 @@ func RunAwsCost(ctx context.Context, opt CostOptions) error {
 		}
 	}
 	out := append(findings, recs...)
+	record.SetTenant(out, opt.Tenant)
 	if err := record.Write(opt.Out, out); err != nil {
 		return err
 	}

@@ -37,49 +37,49 @@ tasks:
   run:finops:sense-aws-cost:
     desc: Run finops sense aws-cost with mock Cost Explorer data
     cmds:
-      - go run ./finops sense aws-cost --mock
+      - go run ./finops sense aws-cost --tenant testtnt --mock
 
   run:finops:enrich-validate:
     desc: Validate the demo taxonomy
     cmds:
-      - go run ./finops enrich validate --taxonomy finops/enrich/testdata/demo-taxonomy.yaml
+      - go run ./finops enrich validate --tenant testtnt --taxonomy finops/enrich/testdata/demo-taxonomy.yaml
 
   run:finops:enrich-map:
     desc: Map demo accounts with the demo taxonomy
     cmds:
-      - go run ./finops enrich map --taxonomy finops/enrich/testdata/demo-taxonomy.yaml --from-accounts finops/enrich/testdata/demo-accounts.jsonl
+      - go run ./finops enrich map --tenant testtnt --taxonomy finops/enrich/testdata/demo-taxonomy.yaml --from-accounts finops/enrich/testdata/demo-accounts.jsonl
 
   run:finops:enrich-share:
     desc: Share demo map fixture (shared account tag cases)
     cmds:
-      - go run ./finops enrich share --taxonomy finops/enrich/testdata/demo-taxonomy.yaml --from-cost finops/enrich/testdata/demo-map.jsonl
+      - go run ./finops enrich share --tenant testtnt --taxonomy finops/enrich/testdata/demo-taxonomy.yaml --from-cost finops/enrich/testdata/demo-map.jsonl
 
   run:finops:analyze-changes:
     desc: Compare two demo map outputs (environment link change on Checkout/Prod)
     cmds:
-      - go run ./finops enrich map --taxonomy finops/enrich/testdata/demo-taxonomy.yaml --from-accounts finops/enrich/testdata/demo-accounts.jsonl --from-cost finops/analyze/testdata/cost.jsonl > /tmp/openxops-map-before.jsonl
-      - go run ./finops enrich map --taxonomy finops/analyze/testdata/demo-taxonomy-env-changed.yaml --from-accounts finops/enrich/testdata/demo-accounts.jsonl --from-cost finops/analyze/testdata/cost.jsonl > /tmp/openxops-map-now.jsonl
-      - go run ./finops analyze changes --before /tmp/openxops-map-before.jsonl --from-map /tmp/openxops-map-now.jsonl
+      - go run ./finops enrich map --tenant testtnt --taxonomy finops/enrich/testdata/demo-taxonomy.yaml --from-accounts finops/enrich/testdata/demo-accounts.jsonl --from-cost finops/analyze/testdata/cost.jsonl > /tmp/openxops-map-before.jsonl
+      - go run ./finops enrich map --tenant testtnt --taxonomy finops/analyze/testdata/demo-taxonomy-env-changed.yaml --from-accounts finops/enrich/testdata/demo-accounts.jsonl --from-cost finops/analyze/testdata/cost.jsonl > /tmp/openxops-map-now.jsonl
+      - go run ./finops analyze changes --tenant testtnt --before /tmp/openxops-map-before.jsonl --from-map /tmp/openxops-map-now.jsonl
 
   run:xops:sense-aws-accounts:
     desc: Run xops sense aws-accounts on the demo organization
     cmds:
-      - go run ./xops sense aws-accounts --mock
+      - go run ./xops sense aws-accounts --tenant testtnt --mock
 
   run:xops:report-table:
     desc: Print report tables from mixed fixture
     cmds:
-      - go run ./xops report table --from-cost xops/report/testdata/mixed.jsonl
+      - go run ./xops report table --tenant testtnt --from-cost xops/report/testdata/mixed.jsonl
 
   run:xops:report-csv:
     desc: Write CSV report from mixed fixture
     cmds:
-      - go run ./xops report csv --out /tmp/xops-report-csv --from-cost xops/report/testdata/mixed.jsonl
+      - go run ./xops report csv --tenant testtnt --out /tmp/xops-report-csv --from-cost xops/report/testdata/mixed.jsonl
 
   run:xops:report-excel:
     desc: Write Excel report from mixed fixture
     cmds:
-      - go run ./xops report excel --out /tmp/xops-report.xlsx --from-cost xops/report/testdata/mixed.jsonl
+      - go run ./xops report excel --tenant testtnt --out /tmp/xops-report.xlsx --from-cost xops/report/testdata/mixed.jsonl
 
   clean:
     desc: Remove built binaries

@@ -11,6 +11,7 @@ import (
 
 	"github.com/PopGreenTh/OpenXOps/aws/ce"
 	"github.com/PopGreenTh/OpenXOps/record"
+	awssdk "github.com/aws/aws-sdk-go-v2/aws"
 )
 
 func testNow() time.Time {
@@ -303,5 +304,113 @@ func TestCostHistoryShortFinding(t *testing.T) {
 	subj, _ := finding["subject"].(string)
 	if subj != firstCostPeriod {
 		t.Fatalf("subject = %q, want first period returned %q", subj, firstCostPeriod)
+	}
+}
+
+func runCostCommand(t *testing.T, args ...string) ([]byte, error) {
+	t.Helper()
+	var out bytes.Buffer
+	cmd := awsCostCommand()
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = true
+	cmd.SetContext(context.Background())
+	cmd.SetOut(&out)
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs(args)
+	err := cmd.Execute()
+	return out.Bytes(), err
+}
+
+func TestAwsCostCommandWithoutTenantFailsBeforeReading(t *testing.T) {
+	old := newCEClient
+	t.Cleanup(func() { newCEClient = old })
+	called := false
+	newCEClient = func(cfg awssdk.Config) ce.API {
+		called = true
+		return ce.NewMock()
+	}
+	for _, args := range [][]string{
+		{"--mock"},
+		{"--region", "us-east-1"},
+		{"--tenant", "-bad", "--mock"},
+	} {
+		out, err := runCostCommand(t, args...)
+		if err == nil || !strings.Contains(err.Error(), "tenant") {
+			t.Fatalf("args %v: error = %v, want a --tenant error", args, err)
+		}
+		if called || len(out) != 0 {
+			t.Fatalf("args %v: command called Cost Explorer or wrote %q", args, out)
+		}
+	}
+}
+
+func TestAwsCostCommandTaxonomyTenant(t *testing.T) {
+	defer setupTestClock(t)()
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(wd) })
+	write := func(name, tenant string) string {
+		body := "tenant: " + tenant + "\nlzs:\n  - { code: LZ-MAIN, name: Main, csp: aws, currency: USD, management_account: \"111111111111\" }\n"
+		if err := os.WriteFile(name, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return name
+	}
+	other := write("other.yaml", "othertnt")
+	_, err = runCostCommand(t, "--tenant", "testtnt", "--mock", "--lz", "LZ-MAIN", "--taxonomy", other)
+	if err == nil {
+		t.Fatal("expected a taxonomy tenant error")
+	}
+	for _, w := range []string{"other.yaml", `"othertnt"`, `"testtnt"`} {
+		if !strings.Contains(err.Error(), w) {
+			t.Fatalf("error %q should contain %q", err, w)
+		}
+	}
+
+	same := write("same.yaml", "testtnt")
+	out, err := runCostCommand(t, "--tenant", "testtnt", "--mock", "--lz", "LZ-MAIN", "--taxonomy", same)
+	if err != nil {
+		t.Fatal(err)
+	}
+	recs, err := record.Read(bytes.NewReader(out), "stdout", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) == 0 {
+		t.Fatal("no records")
+	}
+	kinds := map[string]bool{}
+	for i, r := range recs {
+		kinds[r.Kind()] = true
+		if r["tenant"] != "testtnt" {
+			t.Fatalf("record %d has tenant %v: %v", i+1, r["tenant"], r)
+		}
+	}
+	if !kinds["cost"] || !kinds["project_tag_cost"] {
+		t.Fatalf("kinds = %v", kinds)
+	}
+}
+
+func TestEveryAwsCostRecordHasTenant(t *testing.T) {
+	defer setupTestClock(t)()
+	recs := runCost(t, CostOptions{
+		Tenant: "testtnt", Mock: true, CE: ce.NewMock(),
+		From: "2020-01", To: "2026-10",
+		CacheRoot: testCacheDir(t),
+	})
+	kinds := map[string]bool{}
+	for i, r := range recs {
+		kinds[r.Kind()] = true
+		if r["tenant"] != "testtnt" {
+			t.Fatalf("record %d has tenant %v: %v", i+1, r["tenant"], r)
+		}
+	}
+	if !kinds["cost"] || !kinds["project_tag_cost"] || !kinds["finding"] {
+		t.Fatalf("kinds = %v, want cost, project_tag_cost and finding", kinds)
 	}
 }

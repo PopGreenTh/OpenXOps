@@ -17,6 +17,32 @@ func TestEveryContractKindHasSchema(t *testing.T) {
 	}
 }
 
+func TestEverySchemaRequiresTenant(t *testing.T) {
+	for kind, sch := range ByKind {
+		found := false
+		for _, f := range sch.Fields {
+			if f.Name == "tenant" {
+				found = true
+				if f.Type != TypeString || !f.Required {
+					t.Errorf("kind %q: tenant must be a required string", kind)
+				}
+			}
+		}
+		if !found {
+			t.Errorf("kind %q: no tenant field", kind)
+		}
+	}
+}
+
+func TestValidateMissingTenant(t *testing.T) {
+	rec := map[string]any{"kind": "finding", "severity": "warning", "code": "x", "subject": "s", "message": "m", "command": "c"}
+	check := map[string]struct{}{"finding": {}}
+	err := Validate("f.jsonl", 3, rec, check)
+	if err == nil || !strings.Contains(err.Error(), "f.jsonl:3:") || !strings.Contains(err.Error(), `"tenant"`) {
+		t.Fatalf("error = %v, want missing tenant at f.jsonl:3", err)
+	}
+}
+
 func TestValidateMissingField(t *testing.T) {
 	rec := map[string]any{"kind": "finding", "severity": "warning", "code": "x", "subject": "s", "message": "m"}
 	check := map[string]struct{}{"finding": {}}
@@ -48,7 +74,7 @@ func TestValidateWrongType(t *testing.T) {
 func TestValidateExtraFieldPasses(t *testing.T) {
 	rec := map[string]any{
 		"kind": "finding", "severity": "warning", "code": "c", "subject": "s", "message": "m",
-		"command": "cmd", "extra": "allowed",
+		"command": "cmd", "tenant": "testtnt", "extra": "allowed",
 	}
 	check := map[string]struct{}{"finding": {}}
 	if err := Validate("stdin", 1, rec, check); err != nil {

@@ -18,19 +18,21 @@ Or with [Task](https://taskfile.dev/): `task check` and `task build`.
 ## Mock pipeline
 
 These commands use embedded fixtures only (no AWS credentials). They write intermediate files in
-the current directory and finish with `finops.xlsx`.
+the current directory and finish with `finops.xlsx`. Every command runs for one tenant, named with
+`--tenant`; the demo taxonomy belongs to tenant `testtnt`, and every record written carries
+`"tenant":"testtnt"`.
 
 ```bash
-go run ./xops sense aws-accounts --mock > accounts.jsonl
-go run ./finops sense aws-cost --mock > cost.jsonl
-go run ./finops enrich map \
+go run ./xops sense aws-accounts --tenant testtnt --mock > accounts.jsonl
+go run ./finops sense aws-cost --tenant testtnt --mock > cost.jsonl
+go run ./finops enrich map --tenant testtnt \
   --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
   --from-accounts accounts.jsonl \
   --from-cost cost.jsonl > map.jsonl
-go run ./finops enrich share \
+go run ./finops enrich share --tenant testtnt \
   --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
   --from-cost map.jsonl > shared.jsonl
-go run ./xops report excel --from-cost shared.jsonl --out finops.xlsx
+go run ./xops report excel --tenant testtnt --from-cost shared.jsonl --out finops.xlsx
 ```
 
 Open `finops.xlsx`: each sheet is one record kind from the shared cost file.
@@ -40,17 +42,18 @@ Optional: compare two map runs with `finops analyze changes` (see [commands.md](
 ## Real Organization
 
 1. Configure AWS credentials with read-only access described in [aws-setup.md](aws-setup.md).
-2. Prepare a taxonomy YAML for your organization (see [taxonomy.md](taxonomy.md)).
+2. Prepare a taxonomy YAML for your organization (see [taxonomy.md](taxonomy.md)). Its first line
+   names your tenant (`tenant: testtnt` below); pass the same id as `--tenant` to every command.
 3. Replace `--mock` with live calls and add `--lz` / `--taxonomy` where your landing zone
    requires it:
 
 ```bash
-go run ./xops sense aws-accounts > accounts.jsonl
-go run ./finops sense aws-cost --lz LZ-MAIN --taxonomy taxonomy.yaml > cost.jsonl
-go run ./finops enrich map --taxonomy taxonomy.yaml \
+go run ./xops sense aws-accounts --tenant testtnt > accounts.jsonl
+go run ./finops sense aws-cost --tenant testtnt --lz LZ-MAIN --taxonomy taxonomy.yaml > cost.jsonl
+go run ./finops enrich map --tenant testtnt --taxonomy taxonomy.yaml \
   --from-accounts accounts.jsonl --from-cost cost.jsonl > map.jsonl
-go run ./finops enrich share --taxonomy taxonomy.yaml --from-cost map.jsonl > shared.jsonl
-go run ./xops report excel --from-cost shared.jsonl --out finops.xlsx
+go run ./finops enrich share --tenant testtnt --taxonomy taxonomy.yaml --from-cost map.jsonl > shared.jsonl
+go run ./xops report excel --tenant testtnt --from-cost shared.jsonl --out finops.xlsx
 ```
 
 The second `aws-cost` run over the same closed months should make no new Cost Explorer calls

@@ -11,6 +11,8 @@ import (
 
 // Taxonomy is the landing-zone and allocation configuration file.
 type Taxonomy struct {
+	// Tenant is the tenant id the file belongs to; it must equal --tenant (D-045).
+	Tenant        string         `yaml:"tenant"`
 	BusinessUnits []BusinessUnit `yaml:"business_units"`
 	CostCenters   []CostCenter   `yaml:"cost_centers"`
 	Projects      []Project      `yaml:"projects"`

@@ -5,9 +5,11 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/PopGreenTh/OpenXOps/aws"
+	"github.com/PopGreenTh/OpenXOps/record"
 	awssdk "github.com/aws/aws-sdk-go-v2/aws"
 )
 
@@ -46,7 +48,7 @@ func TestAWSAccountsCommandDiscoveryError(t *testing.T) {
 	cmd.SetContext(context.Background())
 	cmd.SetOut(&out)
 	cmd.SetErr(&bytes.Buffer{})
-	cmd.SetArgs([]string{"--region", "us-east-1"})
+	cmd.SetArgs([]string{"--tenant", "testtnt", "--region", "us-east-1"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected discovery error")
@@ -66,9 +68,64 @@ func TestAWSAccountsCommandLoadConfigMissingProfile(t *testing.T) {
 	cmd.SetContext(context.Background())
 	cmd.SetOut(os.Stdout)
 	cmd.SetErr(os.Stderr)
-	cmd.SetArgs([]string{"--profile", "openxops-no-such-profile-7589"})
+	cmd.SetArgs([]string{"--tenant", "testtnt", "--profile", "openxops-no-such-profile-7589"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for missing profile")
+	}
+}
+
+func TestAWSAccountsCommandWithoutTenantFailsBeforeReading(t *testing.T) {
+	old := newOrgAPI
+	t.Cleanup(func() { newOrgAPI = old })
+	called := false
+	newOrgAPI = func(cfg awssdk.Config) aws.OrgAPI {
+		called = true
+		return listRootsErrOrg{}
+	}
+	for _, args := range [][]string{
+		{"--mock"},
+		{"--region", "us-east-1"},
+		{"--tenant", "Not_Valid", "--mock"},
+	} {
+		var out bytes.Buffer
+		cmd := awsAccountsCommand()
+		cmd.SilenceUsage = true
+		cmd.SilenceErrors = true
+		cmd.SetContext(context.Background())
+		cmd.SetOut(&out)
+		cmd.SetErr(&bytes.Buffer{})
+		cmd.SetArgs(args)
+		err := cmd.Execute()
+		if err == nil || !strings.Contains(err.Error(), "tenant") {
+			t.Fatalf("args %v: error = %v, want a --tenant error", args, err)
+		}
+		if called || out.Len() != 0 {
+			t.Fatalf("args %v: command read the organization or wrote %q", args, out.String())
+		}
+	}
+}
+
+func TestAWSAccountsMockEveryRecordHasTenant(t *testing.T) {
+	var out bytes.Buffer
+	cmd := awsAccountsCommand()
+	cmd.SetContext(context.Background())
+	cmd.SetOut(&out)
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs([]string{"--tenant", "testtnt", "--mock"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	recs, err := record.Read(&out, "stdout", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs) == 0 {
+		t.Fatal("no records")
+	}
+	for i, r := range recs {
+		if r["tenant"] != "testtnt" {
+			t.Fatalf("record %d has tenant %v: %v", i+1, r["tenant"], r)
+		}
 	}
 }
