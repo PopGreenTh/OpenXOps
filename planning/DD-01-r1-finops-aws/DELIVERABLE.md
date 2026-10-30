@@ -22,7 +22,7 @@ xops   report excel --from-cost shared.jsonl --from-change changes.jsonl --out f
 | Work Item | Capability | Work Order |
 |---|---|---|
 | [WI-0101](WI-0101-Skeleton.md) | `xops` and `finops` binaries, `record/`, check, CI; developer setup (D-013, D-019, D-020) | A |
-| [WI-0102](WI-0102-Aws-Accounts.md) | `xops sense aws-accounts`, demo organization | A |
+| [WI-0102](WI-0102-Aws-Accounts.md) | `xops sense aws-accounts`, demo organization; account join time (D-051) | A, B |
 | [WI-0103](WI-0103-Aws-Cost.md) | `finops sense aws-cost`: two-level Cost Explorer, cache, mock cost (D-008) | A |
 | [WI-0104](WI-0104-Enrich-Map.md) | Taxonomy, `finops enrich validate` and `map` (D-015), 11 reference cases | A |
 | [WI-0105](WI-0105-Enrich-Share.md) | `finops enrich share` (D-016, D-021), 6 reference cases | A |
