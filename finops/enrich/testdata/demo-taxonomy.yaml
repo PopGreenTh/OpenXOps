@@ -1,3 +1,4 @@
+tenant: testtnt
 business_units:
   - { code: BU-RETAIL, name: Retail }
   - { code: BU-DIGITAL, name: Digital }
