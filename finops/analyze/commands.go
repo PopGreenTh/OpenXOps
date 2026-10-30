@@ -19,7 +19,7 @@ func Commands() []*cobra.Command {
 }
 
 func changesCommand() *cobra.Command {
-	var before string
+	var before, tenant string
 	mapFrom := &record.From{Name: "map", Kinds: []string{"account", "allocation", "cost"}}
 	cmd := &cobra.Command{
 		Use:   "changes",
@@ -29,13 +29,13 @@ func changesCommand() *cobra.Command {
 			record.LogStart("finops analyze changes", map[string]string{
 				"before": before,
 				"map":    mapFrom.File,
-			}, nil)
+			}, map[string]string{"tenant": tenant})
 			check := record.CheckKindsFrom([]record.From{*mapFrom})
-			beforeRecs, err := record.ReadFile(before, check)
+			beforeRecs, err := record.ReadFileTenant(before, tenant, check)
 			if err != nil {
 				return err
 			}
-			nowRecs, err := record.Assemble(os.Stdin, []record.From{*mapFrom})
+			nowRecs, err := record.AssembleTenant(os.Stdin, tenant, []record.From{*mapFrom})
 			if err != nil {
 				return err
 			}
@@ -43,12 +43,14 @@ func changesCommand() *cobra.Command {
 				return fmt.Errorf("--from-map or pipe input is required")
 			}
 			changes := CompareChanges(beforeRecs, nowRecs)
+			record.SetTenant(changes, tenant)
 			var out []record.Record
 			out = append(out, changes...)
 			out = append(out, nowRecs...)
 			return record.Write(cmd.OutOrStdout(), out)
 		},
 	}
+	record.AddTenantFlag(cmd, &tenant)
 	cmd.Flags().StringVar(&before, "before", "", "earlier map or share output file")
 	record.AddFromFlags(cmd, []*record.From{mapFrom})
 	_ = cmd.MarkFlagRequired("before")

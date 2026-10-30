@@ -1,14 +1,14 @@
 --- alpha ---
-name    score
-first   1.50
-second  3.25
+name    score  tenant
+first   1.50   testtnt
+second  3.25   testtnt
 
 --- beta ---
-code  qty
-b1    10.00
-b2    20.00
+code  qty    tenant
+b1    10.00  testtnt
+b2    20.00  testtnt
 
 --- gamma ---
-active  label
-true    g1
-false   g2
+active  label  tenant
+true    g1     testtnt
+false   g2     testtnt
