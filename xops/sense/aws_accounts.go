@@ -18,7 +18,7 @@ var newOrgAPI = func(cfg awssdk.Config) aws.OrgAPI {
 
 func awsAccountsCommand() *cobra.Command {
 	var mock bool
-	var profile, region, lz, taxonomy string
+	var profile, region, lz, taxonomy, tenant string
 	cmd := &cobra.Command{
 		Use:   "aws-accounts",
 		Short: "List AWS Organization OUs and accounts",
@@ -32,6 +32,7 @@ func awsAccountsCommand() *cobra.Command {
 				"profile": profile,
 				"region":  region,
 				"lz":      lz,
+				"tenant":  tenant,
 			})
 			lzCode, err := resolveLZ(lz, taxonomy)
 			if err != nil {
@@ -60,9 +61,11 @@ func awsAccountsCommand() *cobra.Command {
 				}
 			}
 			recs := BuildRecords(snap, lzCode)
+			record.SetTenant(recs, tenant)
 			return record.Write(cmd.OutOrStdout(), recs)
 		},
 	}
+	record.AddTenantFlag(cmd, &tenant)
 	cmd.Flags().BoolVar(&mock, "mock", false, "read the embedded demo organization")
 	cmd.Flags().StringVar(&profile, "profile", "", "AWS shared config profile")
 	cmd.Flags().StringVar(&region, "region", "", "AWS region (default us-east-1)")
