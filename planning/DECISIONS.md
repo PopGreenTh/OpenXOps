@@ -641,3 +641,61 @@ implementer, logs as `claude-impl`, never edits planning files and never reviews
 - **No one reviews their own work** still holds: the planner session reviews, the implementer
   session builds.
 
+## D-051
+
+**Account join time now; OU and change times from history later** (repo owner, 2026-10-31;
+amends the WI-0102 Contracts). The repo owner asked for created and updated datetimes on `ou`
+and `account` records. AWS Organizations gives an account's `JoinedTimestamp` and
+`JoinedMethod` in the `ListAccountsForParent` response that `aws-accounts` already reads. It
+gives no timestamp for an OU, and no last-updated time for either.
+
+- **Release 1:** every `account` record gets `joined_at` (RFC 3339 UTC, seconds:
+  `2021-04-12T03:15:27Z`) and `joined_method` (`CREATED` or `INVITED`, as AWS gives it). For a
+  `CREATED` account, `joined_at` is when the account was created. These need no extra call or
+  permission. They are optional strings in `record/schema`, so older account files and the
+  reference cases stay valid; `aws-accounts` always writes them. Specified as WO-0102-B, and
+  the Release 1 tag waits for it.
+- **Release 2:** `ou` and `account` records get `first_seen` and `last_changed`, worked out by
+  OpenXOps from its own history store (WI-0201), not from AWS. Which fields count as a change
+  is decided when WI-0201 is grilled.
+- **Not done:** no CloudTrail lookups (90 days only, an extra permission, slow), and no
+  `collected_at` run time on records.
+
+## D-052
+
+**One LZ per tenant** (repo owner, 2026-10-31; amends [D-015](#d-015) and the WI-0104
+Contracts). A tenant's taxonomy has exactly one entry under `lzs`; `validate` rejects any other
+count with `taxonomy-lz-count` (error). With `--taxonomy`, `--lz` becomes optional on
+`aws-accounts` and `aws-cost`: the LZ is the taxonomy's one LZ, and a `--lz` that names another
+code is an error. The key stays `lzs`, a list, so files keep their shape.
+
+## D-053
+
+**The slug rule splits CamelCase** (repo owner, 2026-10-31; amends [D-047](#d-047)). Before the
+D-047 slug rule runs, a word break is put:
+
+- between a lowercase letter or a digit and the uppercase letter after it (`SharedServices` →
+  `shared-services`, `NonProd` → `non-prod`, `Ec2Prod` → `ec2-prod`);
+- between two uppercase letters when the second is followed by a lowercase letter
+  (`AWSConfig` → `aws-config`, `AmazonEC2` → `amazon-ec2`).
+
+A letter followed by a digit is not split (`Hub2` → `hub2`). The rule applies to every slug: OU
+names and services alike. Names that are already lowercase are unchanged (`Spoke-SIT` →
+`spoke-sit`).
+
+## D-054
+
+**The cloud tree is its own command, and a report renders it as YAML** (repo owner,
+2026-10-31). As FOCUS is read and then converted into usable cost, `xops sense aws-accounts`
+stays raw and a second command, `xops enrich lz-tree`, turns its `ou` and `account` records
+into the tenant's cloud tree. It writes one flat `node` record per node: the LZ, every OU and
+every account, each with its URN and its parent's URN. `xops report tree` writes those records
+as a nested YAML file that people can read (D-006: only Report writes other formats). `map`
+keeps building its own URNs with `record/urn`; it doesn't read the tree.
+
+## Q-009
+
+**Two OUs whose names slug to the same id would share one URN** (raised by the planner,
+2026-10-31; parked by the repo owner to revise later). `ou-path-ambiguous` catches only identical
+sibling names, not `Hub-SIT` next to `Hub SIT`. A finding such as `ou-urn-collision` in
+`lz-tree` is one option. The repo owner's real Organization has no collision today. Open.

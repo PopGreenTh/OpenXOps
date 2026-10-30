@@ -42,10 +42,29 @@ These amend the Contracts of WI-0101 to WI-0107. Where they disagree, this file 
   | `ENV-UNSPEC` | `unspec` |
   | `APP-INVALID` | `invalid` |
 
-- **Slug rule** (for names from the cloud): lowercase, every run of characters outside
-  `[a-z0-9]` becomes one `-`, trimmed at both ends. An empty result is `unknown`.
+- **Slug rule** (for names from the cloud): first split CamelCase (D-053, from WO-0109-C):
+  put a word break between a lowercase letter or digit and the uppercase letter after it, and
+  between two uppercase letters when the second is followed by a lowercase letter. Then
+  lowercase, turn every run of characters outside `[a-z0-9]` into one `-`, and trim at both
+  ends. An empty result is `unknown`.
+
+  | Name | Slug |
+  |---|---|
+  | `SharedServices` | `shared-services` |
+  | `NonProd` | `non-prod` |
+  | `AWSConfig` | `aws-config` |
+  | `AmazonEC2` | `amazon-ec2` |
+  | `Ec2Prod` | `ec2-prod` |
+  | `Hub2` | `hub2` |
+  | `Spoke-SIT` | `spoke-sit` |
+  | `Amazon Elastic Compute Cloud - Compute` | `amazon-elastic-compute-cloud-compute` |
+  | `---` | `unknown` |
 - An **OU path** becomes its segments, each slugged, joined by `/`, without the leading `/`
   (`/Workloads/Checkout/Prod` → `workloads/checkout/prod`). The root `/` is `root`.
+- **One LZ per tenant** (D-052, from WO-0109-C): the taxonomy's `lzs` has exactly one entry;
+  `validate` reports any other count as `taxonomy-lz-count` (error, subject `lzs`). With
+  `--taxonomy`, `--lz` is optional on `aws-accounts` and `aws-cost` and defaults to that LZ; a
+  `--lz` naming another code is an error that names both codes.
 
 ### URNs (D-046)
 
@@ -152,6 +171,51 @@ OU path rule, and a URN builder) for WO-0109-B to use.
 - On the mock pipeline, every `cost` record after `share` has all nine URN fields non-empty, and
   every URN starts with `urn:tnt:testtnt:` (shown in the PR).
 - Release criteria 1 to 5 and 7 still hold on the branch.
+- `go run ./scripts/check` all PASS, with `docs PASS`.
+
+**Verify.** `go run ./scripts/check`
+
+## WO-0109-C — CamelCase slugs and one LZ per tenant
+
+**Assignee:** open
+**Depends on:** WO-0109-B and WO-0102-B (they touch the same packages)
+**Packages:**
+- `record/urn/`;
+- `finops/enrich/` (`validate.go`, `commands.go`) and `finops/enrich/testdata/` (fixtures, and
+  the cases merged from `claude/cases-slug`);
+- `xops/sense/` and `finops/sense/` (`--lz` defaults, and their golden files);
+- every other fixture and golden file whose slugs change;
+- `docs/`, `README.md`, `Taskfile.yml` and `.vscode/launch.json`.
+
+**Reference cases.** Before dispatch, the planner updates the cases whose slugs change (today,
+the two `svc:amazonec2`, which become `svc:amazon-ec2`) on the branch `claude/cases-slug`. Merge
+that branch into yours with a merge commit, and don't edit any file under `testdata/cases/`.
+
+**Goal.** The D-053 slug rule and the D-052 one-LZ rule, everywhere they apply.
+
+**In scope.**
+- `urn.Slug` splits CamelCase as in the table under *Ids*; table-tested with every row.
+- `validate`: `taxonomy-lz-count` when `lzs` has other than one entry. Document it in
+  `findings.md`.
+- `aws-accounts` and `aws-cost`: `--lz` optional with `--taxonomy`, defaulting to its LZ; a
+  `--lz` naming another code stops the command, naming both codes. `--lz` without `--taxonomy`
+  is still an error.
+- Fixtures, golden files, Tasks, launch entries and doc examples follow the new slugs (the demo
+  organization's `NonProd` OUs become `non-prod` in every URN). Drop `--lz` from examples where
+  `--taxonomy` now supplies it.
+- `taxonomy.md` and `commands.md`: one LZ per tenant, the `--lz` default and the slug rule with
+  its examples.
+
+**Out of scope.** The cloud tree (WI-0110). OU URN collisions (Q-009).
+
+**Done when.**
+- Every case under `finops/enrich/testdata/cases/` passes, unchanged from `claude/cases-slug`.
+- Tests: the slug table; `taxonomy-lz-count` for zero and for two LZs; `--lz` defaulting from
+  `--taxonomy`, and a `--lz` that differs from it stopping with both codes.
+- On the mock pipeline with `--tenant testtnt`, no URN contains an uppercase letter, and the
+  `NonProd` accounts' `ou_urn` ends in `:org:workloads/checkout/non-prod` or
+  `:org:workloads/payments/non-prod` (shown in the PR).
+- Release criteria 1 to 5, 7 and 8 still hold on the branch.
 - `go run ./scripts/check` all PASS, with `docs PASS`.
 
 **Verify.** `go run ./scripts/check`

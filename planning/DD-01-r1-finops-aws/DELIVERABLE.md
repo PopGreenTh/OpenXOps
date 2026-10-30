@@ -22,14 +22,15 @@ xops   report excel --from-cost shared.jsonl --from-change changes.jsonl --out f
 | Work Item | Capability | Work Order |
 |---|---|---|
 | [WI-0101](WI-0101-Skeleton.md) | `xops` and `finops` binaries, `record/`, check, CI; developer setup (D-013, D-019, D-020) | A |
-| [WI-0102](WI-0102-Aws-Accounts.md) | `xops sense aws-accounts`, demo organization | A |
+| [WI-0102](WI-0102-Aws-Accounts.md) | `xops sense aws-accounts`, demo organization; account join time (D-051) | A, B |
 | [WI-0103](WI-0103-Aws-Cost.md) | `finops sense aws-cost`: two-level Cost Explorer, cache, mock cost (D-008) | A |
 | [WI-0104](WI-0104-Enrich-Map.md) | Taxonomy, `finops enrich validate` and `map` (D-015), 11 reference cases | A |
 | [WI-0105](WI-0105-Enrich-Share.md) | `finops enrich share` (D-016, D-021), 6 reference cases | A |
 | [WI-0106](WI-0106-Report.md) | `xops report table\|csv\|excel`, appending (D-011) | A |
 | [WI-0107](WI-0107-Analyze-Changes.md) | `finops analyze changes` (D-021) | A |
 | [WI-0108](WI-0108-Docs.md) | User and developer docs, doc check (D-044) | A, B |
-| [WI-0109](WI-0109-Tenant-Urn.md) | Tenants, ids and URNs (D-045 to D-049) | A, B |
+| [WI-0109](WI-0109-Tenant-Urn.md) | Tenants, ids and URNs (D-045 to D-049); CamelCase slugs, one LZ per tenant (D-052, D-053) | A, B, C |
+| [WI-0110](WI-0110-Lz-Tree.md) | The cloud tree: `xops enrich lz-tree`, `xops report tree` YAML (D-054) | A |
 
 ## Order
 
