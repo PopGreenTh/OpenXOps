@@ -49,7 +49,7 @@ Optional: compare two map runs with `finops analyze changes` (see [commands.md](
 
 ```bash
 go run ./xops sense aws-accounts --tenant testtnt > accounts.jsonl
-go run ./finops sense aws-cost --tenant testtnt --lz LZ-MAIN --taxonomy taxonomy.yaml > cost.jsonl
+go run ./finops sense aws-cost --tenant testtnt --lz main --taxonomy taxonomy.yaml > cost.jsonl
 go run ./finops enrich map --tenant testtnt --taxonomy taxonomy.yaml \
   --from-accounts accounts.jsonl --from-cost cost.jsonl > map.jsonl
 go run ./finops enrich share --tenant testtnt --taxonomy taxonomy.yaml --from-cost map.jsonl > shared.jsonl

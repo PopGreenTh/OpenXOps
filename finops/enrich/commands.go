@@ -146,7 +146,11 @@ func shareOptions(t Taxonomy) share.Options {
 	for _, a := range t.Apps {
 		codes = append(codes, a.Code)
 	}
-	return share.Options{AppTagKey: key, AppCodes: codes}
+	ccBU := make(map[string]string, len(t.CostCenters))
+	for _, c := range t.CostCenters {
+		ccBU[c.Code] = c.BusinessUnit
+	}
+	return share.Options{Tenant: t.Tenant, AppTagKey: key, AppCodes: codes, CostCenterBU: ccBU}
 }
 
 func hasInventory(recs []record.Record) bool {

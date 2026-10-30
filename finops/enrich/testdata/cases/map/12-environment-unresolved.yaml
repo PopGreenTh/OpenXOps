@@ -1,23 +1,24 @@
 name: environment-unresolved
 why: >
   When the App resolves but no Environment is found (no account entry, OU link, LZ default or
-  global default sets one), the Environment is ENV-UNSPEC with finding environment-unresolved
+  global default sets one), the Environment is unspec with finding environment-unresolved
   (subject: account ID). This holds for a shared account too: its Apps resolved through its
-  account entry, so its Environment is ENV-UNSPEC, not ENV-UNALLOC.
+  account entry, so its Environment is unspec, not unalloc.
 taxonomy:
-  business_units: [{ code: BU-RETAIL, name: Retail }]
-  cost_centers: [{ code: CC-ECOM, name: E-commerce, business_unit: BU-RETAIL }]
-  projects: [{ code: PRJ-SHOP, name: Online shop, business_unit: BU-RETAIL }]
+  tenant: testtnt
+  business_units: [{ code: retail, name: Retail }]
+  cost_centers: [{ code: ecom, name: E-commerce, business_unit: retail }]
+  projects: [{ code: shop, name: Online shop, business_unit: retail }]
   apps:
-    - { code: APP-CHK, name: Checkout, project: PRJ-SHOP, cost_center: CC-ECOM,
-        environments: [{ code: ENV-PROD, name: Production }] }
-    - { code: APP-PAY, name: Payments, project: PRJ-SHOP, cost_center: CC-ECOM,
-        environments: [{ code: ENV-PROD, name: Production }] }
-  lzs: [{ code: LZ-MAIN, name: Main, csp: aws, currency: USD, management_account: "111111111111" }]
+    - { code: chk, name: Checkout, project: shop, cost_center: ecom,
+        environments: [{ code: prod, name: Production }] }
+    - { code: pay, name: Payments, project: shop, cost_center: ecom,
+        environments: [{ code: prod, name: Production }] }
+  lzs: [{ code: main, name: Main, csp: aws, currency: USD, management_account: "111111111111" }]
   ou_links:
-    - { lz: LZ-MAIN, ou: /Workloads, app: APP-CHK }
+    - { lz: main, ou: /Workloads, app: chk }
   accounts:
-    - { account: "200000000002", apps: [APP-CHK, APP-PAY] }
+    - { account: "200000000002", apps: [chk, pay] }
 records:
   - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: r-1, name: Root, parent_id: "", path: /, id_path: r-1, has_children: true }
   - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: ou-1, name: Workloads, parent_id: r-1, path: /Workloads, id_path: r-1/ou-1, has_children: true }
@@ -26,11 +27,13 @@ records:
   - { kind: account, csp: aws, org_id: o-main, management_account: "111111111111", id: "200000000002", name: shared, email: shared@example.com, status: ACTIVE, parent_id: r-1, ou_path: /, ou_id_path: r-1 }
 expect:
   allocations:
-    - { account_id: "200000000001", lz: LZ-MAIN, app: APP-CHK, environment: ENV-UNSPEC, app_rule: "ou:/Workloads",
-        environment_rule: unspec, shared: false }
-    - { account_id: "200000000002", lz: LZ-MAIN, app: APP-CHK, environment: ENV-UNSPEC, app_rule: account,
+    - { account_id: "200000000001", lz: main, app: chk, environment: unspec, app_rule: "ou:/Workloads",
+        environment_rule: unspec, shared: false,
+        environment_urn: "urn:tnt:testtnt:prj:shop:app:chk:env:unspec",
+        ou_urn: "urn:tnt:testtnt:lzc:main:org:workloads/team" }
+    - { account_id: "200000000002", lz: main, app: chk, environment: unspec, app_rule: account,
         environment_rule: unspec, shared: true }
-    - { account_id: "200000000002", lz: LZ-MAIN, app: APP-PAY, environment: ENV-UNSPEC, app_rule: account,
+    - { account_id: "200000000002", lz: main, app: pay, environment: unspec, app_rule: account,
         environment_rule: unspec, shared: true }
   findings:
     - { code: environment-unresolved, subject: "200000000001" }

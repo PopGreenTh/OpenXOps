@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -106,8 +105,9 @@ func LoadTaxonomy(path string) (Taxonomy, error) {
 	return tax, nil
 }
 
+// reservedCode reports whether code is one of the reserved system ids (D-047).
 func reservedCode(code string) bool {
-	return strings.HasSuffix(code, "-UNALLOC") || strings.HasSuffix(code, "-UNSPEC") || strings.HasSuffix(code, "-INVALID")
+	return code == "unalloc" || code == "unspec" || code == "invalid"
 }
 
 func strID(v any) string {

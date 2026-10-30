@@ -80,7 +80,7 @@ func matchShareCosts(got, want []record.Record) bool {
 	if len(got) != len(want) {
 		return false
 	}
-	fields := []string{"account_id", "app", "project", "business_unit", "cost_center", "environment", "app_rule", "currency", "share_rule"}
+	fields := append([]string{"account_id", "app", "project", "business_unit", "cost_center", "environment", "app_rule", "currency", "share_rule", "tenant"}, urnCaseFields...)
 	for i := range want {
 		for _, f := range fields {
 			if want[i][f] == nil {

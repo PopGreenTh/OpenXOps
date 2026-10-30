@@ -104,6 +104,15 @@ var costSchema = Schema{
 		{Name: "service", Type: TypeString, Required: true},
 		{Name: "app_tag", Type: TypeString, Required: true},
 		{Name: "tenant", Type: TypeString, Required: true},
+		{Name: "business_unit_urn", Type: TypeString},
+		{Name: "cost_center_urn", Type: TypeString},
+		{Name: "project_urn", Type: TypeString},
+		{Name: "app_urn", Type: TypeString},
+		{Name: "environment_urn", Type: TypeString},
+		{Name: "lz_urn", Type: TypeString},
+		{Name: "ou_urn", Type: TypeString},
+		{Name: "account_urn", Type: TypeString},
+		{Name: "service_urn", Type: TypeString},
 	},
 }
 
@@ -142,6 +151,14 @@ var allocationSchema = Schema{
 		{Name: "environment_rule", Type: TypeString, Required: true},
 		{Name: "shared", Type: TypeBool, Required: true},
 		{Name: "tenant", Type: TypeString, Required: true},
+		{Name: "business_unit_urn", Type: TypeString, Required: true},
+		{Name: "cost_center_urn", Type: TypeString, Required: true},
+		{Name: "project_urn", Type: TypeString, Required: true},
+		{Name: "app_urn", Type: TypeString, Required: true},
+		{Name: "environment_urn", Type: TypeString, Required: true},
+		{Name: "lz_urn", Type: TypeString, Required: true},
+		{Name: "ou_urn", Type: TypeString, Required: true},
+		{Name: "account_urn", Type: TypeString, Required: true},
 	},
 }
 

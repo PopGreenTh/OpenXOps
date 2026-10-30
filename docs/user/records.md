@@ -84,11 +84,20 @@ Service and App tag cost from Cost Explorer (level 2), or enriched after `map` /
 | `service` | string | yes | AWS service name. |
 | `app_tag` | string | yes | App tag value on the row (`""` = untagged). |
 | `lz` | string | no | Landing zone code when `--lz` is used. |
-| `app` | string | no | Resolved App code after `map` / `share`. |
+| `app` | string | no | Resolved App id after `map` / `share` (`unalloc`, or `invalid` for a tag that names no App the account serves). |
 | `project` | string | no | Resolved Project code. |
 | `environment` | string | no | Resolved Environment code. |
 | `business_unit` | string | no | Business unit code. |
 | `cost_center` | string | no | Cost center code. |
+| `business_unit_urn` | string | no | URN of the Business unit, `urn:tnt:<tenant>:bzu:<id>`. `""` on a shared account's row until `share`. |
+| `cost_center_urn` | string | no | URN of the Cost center, under the cost center's own Business unit: `urn:tnt:<tenant>:bzu:<id>:cct:<id>`. `""` on a shared account's row until `share`. |
+| `project_urn` | string | no | URN of the Project, `urn:tnt:<tenant>:prj:<id>`. `""` on a shared account's row until `share`. |
+| `app_urn` | string | no | URN of the App, `urn:tnt:<tenant>:prj:<id>:app:<id>`. `""` on a shared account's row until `share`. |
+| `environment_urn` | string | no | URN of the Environment under its App, `…:app:<id>:env:<id>`. `""` on a shared account's row until `share`. |
+| `lz_urn` | string | no | URN of the landing zone, `urn:tnt:<tenant>:lzc:<id>`. |
+| `ou_urn` | string | no | URN of the OU, `…:lzc:<id>:org:<OU path>`. The path is slugged and has no leading `/` (`/Workloads/Checkout` is `workloads/checkout`); the root is `root`; an account missing from the inventory is `unknown`. |
+| `account_urn` | string | no | URN of the account, `<ou_urn>:acc:<account_id>`. |
+| `service_urn` | string | no | URN of the service in that account, `<account_urn>:svc:<slug of service>`. |
 
 ## `allocation`
 
@@ -103,10 +112,18 @@ One row per account (and App) after `map`: who owns cost in that account.
 | `lz` | string | yes | Landing zone code. |
 | `ou_path` | string | yes | OU path for the account. |
 | `project` | string | yes | Project code. |
-| `app` | string | yes | App code (`APP-UNALLOC`, `APP-UNSPEC`, …). |
-| `environment` | string | yes | Environment code (`ENV-UNALLOC`, …). |
+| `app` | string | yes | App id (`unalloc` when no App rule matched). |
+| `environment` | string | yes | Environment id (`unalloc`, or `unspec` when the account is known but no Environment rule matched). |
 | `business_unit` | string | yes | Business unit code. |
 | `cost_center` | string | yes | Cost center code. |
+| `business_unit_urn` | string | yes | URN of the Business unit, `urn:tnt:<tenant>:bzu:<id>`. |
+| `cost_center_urn` | string | yes | URN of the Cost center, under the cost center's own Business unit: `urn:tnt:<tenant>:bzu:<id>:cct:<id>`. |
+| `project_urn` | string | yes | URN of the Project, `urn:tnt:<tenant>:prj:<id>`. |
+| `app_urn` | string | yes | URN of the App, `urn:tnt:<tenant>:prj:<id>:app:<id>`. |
+| `environment_urn` | string | yes | URN of the Environment under its App, `…:app:<id>:env:<id>`. |
+| `lz_urn` | string | yes | URN of the landing zone, `urn:tnt:<tenant>:lzc:<id>`. |
+| `ou_urn` | string | yes | URN of the OU, `…:lzc:<id>:org:<OU path>`. The path is slugged and has no leading `/`; the root is `root`. |
+| `account_urn` | string | yes | URN of the account, `<ou_urn>:acc:<account_id>`. |
 | `app_rule` | string | yes | How App was resolved (rule name). |
 | `environment_rule` | string | yes | How Environment was resolved. |
 | `shared` | bool | yes | Whether the account is treated as shared. |

@@ -3,21 +3,22 @@ why: >
   An App link on an OU with no child OUs is ignored with a finding; the same link's Environment
   still applies. The App then falls to the LZ default.
 taxonomy:
-  business_units: [{ code: BU-RETAIL, name: Retail }]
-  cost_centers: [{ code: CC-ECOM, name: E-commerce, business_unit: BU-RETAIL }]
+  tenant: testtnt
+  business_units: [{ code: retail, name: Retail }]
+  cost_centers: [{ code: ecom, name: E-commerce, business_unit: retail }]
   projects:
-    - { code: PRJ-SHOP, name: Online shop, business_unit: BU-RETAIL }
-    - { code: PRJ-PAY, name: Payments, business_unit: BU-RETAIL }
+    - { code: shop, name: Online shop, business_unit: retail }
+    - { code: pay, name: Payments, business_unit: retail }
   apps:
-    - { code: APP-CHK, name: Checkout, project: PRJ-SHOP, cost_center: CC-ECOM,
-        environments: [{ code: ENV-PROD, name: Production }, { code: ENV-DEV, name: Development }] }
-    - { code: APP-PAY, name: Payments, project: PRJ-PAY, cost_center: CC-ECOM,
-        environments: [{ code: ENV-PROD, name: Production }, { code: ENV-DEV, name: Development }] }
+    - { code: chk, name: Checkout, project: shop, cost_center: ecom,
+        environments: [{ code: prod, name: Production }, { code: dev, name: Development }] }
+    - { code: pay, name: Payments, project: pay, cost_center: ecom,
+        environments: [{ code: prod, name: Production }, { code: dev, name: Development }] }
   lzs:
-    - { code: LZ-MAIN, name: Main, csp: aws, currency: USD, management_account: "111111111111",
-        default: { app: APP-CHK } }
+    - { code: main, name: Main, csp: aws, currency: USD, management_account: "111111111111",
+        default: { app: chk } }
   ou_links:
-    - { lz: LZ-MAIN, ou: /Workloads/Checkout/Prod, app: APP-PAY, environment: ENV-PROD }
+    - { lz: main, ou: /Workloads/Checkout/Prod, app: pay, environment: prod }
 records:
   - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: r-1, name: Root, parent_id: "", path: /, id_path: r-1, has_children: true }
   - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: ou-1, name: Workloads, parent_id: r-1, path: /Workloads, id_path: r-1/ou-1, has_children: true }
@@ -26,7 +27,7 @@ records:
   - { kind: account, csp: aws, org_id: o-main, management_account: "111111111111", id: "200000000001", name: chk-prod, email: chk-prod@example.com, status: ACTIVE, parent_id: ou-3, ou_path: /Workloads/Checkout/Prod, ou_id_path: r-1/ou-1/ou-2/ou-3 }
 expect:
   allocations:
-    - { account_id: "200000000001", lz: LZ-MAIN, app: APP-CHK, environment: ENV-PROD, app_rule: lz-default,
+    - { account_id: "200000000001", lz: main, app: chk, environment: prod, app_rule: lz-default,
         environment_rule: "ou:/Workloads/Checkout/Prod", shared: false }
   findings:
     - { code: app-on-leaf-ou, subject: /Workloads/Checkout/Prod }

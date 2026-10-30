@@ -89,3 +89,67 @@ func TestValidateUndeclaredKindSkipped(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+var urnFields = []string{"business_unit_urn", "cost_center_urn", "project_urn", "app_urn", "environment_urn", "lz_urn", "ou_urn", "account_urn"}
+
+func fieldOf(kind, name string) (Field, bool) {
+	for _, f := range ByKind[kind].Fields {
+		if f.Name == name {
+			return f, true
+		}
+	}
+	return Field{}, false
+}
+
+func TestURNFieldsRequiredOnAllocationOptionalOnCost(t *testing.T) {
+	for _, name := range urnFields {
+		f, ok := fieldOf("allocation", name)
+		if !ok || f.Type != TypeString || !f.Required {
+			t.Errorf("allocation.%s = %+v, want a required string", name, f)
+		}
+		f, ok = fieldOf("cost", name)
+		if !ok || f.Type != TypeString || f.Required {
+			t.Errorf("cost.%s = %+v, want an optional string", name, f)
+		}
+	}
+	if f, ok := fieldOf("cost", "service_urn"); !ok || f.Required || f.Type != TypeString {
+		t.Errorf("cost.service_urn = %+v, want an optional string", f)
+	}
+	if _, ok := fieldOf("allocation", "service_urn"); ok {
+		t.Error("allocation must not have service_urn")
+	}
+}
+
+func TestValidateAllocationMissingURN(t *testing.T) {
+	rec := map[string]any{
+		"kind": "allocation", "account_id": "1", "account_name": "a", "lz": "main", "ou_path": "/", "project": "p",
+		"app": "a", "environment": "e", "business_unit": "b", "cost_center": "c", "app_rule": "r", "environment_rule": "r",
+		"shared": false, "tenant": "testtnt",
+	}
+	check := map[string]struct{}{"allocation": {}}
+	err := Validate("m.jsonl", 4, rec, check)
+	if err == nil || !strings.Contains(err.Error(), "m.jsonl:4:") || !strings.Contains(err.Error(), "_urn") {
+		t.Fatalf("error = %v, want a missing URN field at m.jsonl:4", err)
+	}
+	for _, name := range urnFields {
+		rec[name] = "urn:tnt:testtnt"
+	}
+	if err := Validate("m.jsonl", 4, rec, check); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestValidateCostWithoutURNsPasses(t *testing.T) {
+	rec := map[string]any{
+		"kind": "cost", "csp": "aws", "management_account": "1", "granularity": "monthly", "period": "2026-01",
+		"metric": "UnblendedCost", "amount": 1.0, "currency": "USD", "estimated": false, "account_id": "1",
+		"service": "s", "app_tag": "", "tenant": "testtnt",
+	}
+	if err := Validate("c.jsonl", 1, rec, map[string]struct{}{"cost": {}}); err != nil {
+		t.Fatal(err)
+	}
+	rec["lz_urn"] = 5.0
+	if err := Validate("c.jsonl", 1, rec, map[string]struct{}{"cost": {}}); err == nil {
+		t.Fatal("a non-string URN must be rejected")
+	}
+}

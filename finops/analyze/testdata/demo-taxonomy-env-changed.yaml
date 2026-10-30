@@ -1,41 +1,41 @@
 tenant: testtnt
 business_units:
-  - { code: BU-RETAIL, name: Retail }
-  - { code: BU-DIGITAL, name: Digital }
+  - { code: retail, name: Retail }
+  - { code: digital, name: Digital }
 cost_centers:
-  - { code: CC-ECOM, name: E-commerce, business_unit: BU-RETAIL }
-  - { code: CC-PAY, name: Payments, business_unit: BU-DIGITAL }
+  - { code: ecom, name: E-commerce, business_unit: retail }
+  - { code: pay, name: Payments, business_unit: digital }
 projects:
-  - { code: PRJ-SHOP, name: Online shop, business_unit: BU-RETAIL }
-  - { code: PRJ-PAY, name: Payments platform, business_unit: BU-DIGITAL }
+  - { code: shop, name: Online shop, business_unit: retail }
+  - { code: pay, name: Payments platform, business_unit: digital }
 apps:
-  - code: APP-CHK
+  - code: chk
     name: Checkout
-    project: PRJ-SHOP
-    cost_center: CC-ECOM
+    project: shop
+    cost_center: ecom
     environments:
-      - { code: ENV-PROD, name: Production }
-      - { code: ENV-NONPROD, name: Non-production }
-  - code: APP-PAY
+      - { code: prod, name: Production }
+      - { code: nonprod, name: Non-production }
+  - code: pay
     name: Payments
-    project: PRJ-PAY
-    cost_center: CC-PAY
+    project: pay
+    cost_center: pay
     environments:
-      - { code: ENV-PROD, name: Production }
-      - { code: ENV-NONPROD, name: Non-production }
+      - { code: prod, name: Production }
+      - { code: nonprod, name: Non-production }
 lzs:
-  - code: LZ-MAIN
+  - code: main
     name: Main
     csp: aws
     currency: USD
     management_account: "111111111111"
 ou_links:
-  - { lz: LZ-MAIN, ou: /Workloads/Checkout, app: APP-CHK }
-  - { lz: LZ-MAIN, ou: /Workloads/Checkout/Prod, environment: ENV-NONPROD }
-  - { lz: LZ-MAIN, ou: /Workloads/Checkout/NonProd, environment: ENV-NONPROD }
-  - { lz: LZ-MAIN, ou: /Workloads/Payments, app: APP-PAY }
-  - { lz: LZ-MAIN, ou: /Workloads/Payments/Prod, environment: ENV-PROD }
-  - { lz: LZ-MAIN, ou: /Workloads/Payments/NonProd, environment: ENV-NONPROD }
+  - { lz: main, ou: /Workloads/Checkout, app: chk }
+  - { lz: main, ou: /Workloads/Checkout/Prod, environment: nonprod }
+  - { lz: main, ou: /Workloads/Checkout/NonProd, environment: nonprod }
+  - { lz: main, ou: /Workloads/Payments, app: pay }
+  - { lz: main, ou: /Workloads/Payments/Prod, environment: prod }
+  - { lz: main, ou: /Workloads/Payments/NonProd, environment: nonprod }
 accounts:
-  - { account: "200000000002", apps: [APP-CHK, APP-PAY], environment: ENV-PROD }
+  - { account: "200000000002", apps: [chk, pay], environment: prod }
 tags: { app: App, project: Project }

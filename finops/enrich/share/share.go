@@ -7,21 +7,26 @@ import (
 	"strings"
 
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/record/urn"
 )
 
 const (
 	cmdShare      = "finops enrich share"
-	appInvalid    = "APP-INVALID"
-	prjUnalloc    = "PRJ-UNALLOC"
-	buUnalloc     = "BU-UNALLOC"
-	ccUnalloc     = "CC-UNALLOC"
+	appInvalid    = "invalid"
+	prjUnalloc    = "unalloc"
+	buUnalloc     = "unalloc"
+	ccUnalloc     = "unalloc"
 	conservationE = 1e-6
 )
 
 // Options holds taxonomy fields the split needs without importing finops/enrich.
 type Options struct {
+	// Tenant is the taxonomy's tenant, used to build the URNs of the invalid App (D-048).
+	Tenant    string
 	AppTagKey string
 	AppCodes  []string
+	// CostCenterBU maps a cost center id to its business unit id, for the cost center's URN.
+	CostCenterBU map[string]string
 }
 
 // Split shared-account cost rows by App tag; other records pass through unchanged.
@@ -61,7 +66,7 @@ func Split(recs []record.Record, opt Options) ([]record.Record, error) {
 		if tag != "" {
 			sharedSawTag = true
 		}
-		split, f, err := splitSharedCost(c, allocs[strID(c["account_id"])], appCodes, tag)
+		split, f, err := splitSharedCost(c, allocs[strID(c["account_id"])], appCodes, tag, opt)
 		if err != nil {
 			return nil, err
 		}
@@ -114,7 +119,7 @@ func CheckConservation(in, out []record.Record) error {
 	return nil
 }
 
-func splitSharedCost(cost record.Record, allocs []record.Record, appCodes map[string]struct{}, tag string) ([]record.Record, []record.Record, error) {
+func splitSharedCost(cost record.Record, allocs []record.Record, appCodes map[string]struct{}, tag string, opt Options) ([]record.Record, []record.Record, error) {
 	acctID := strID(cost["account_id"])
 	period := strID(cost["period"])
 	amount, _ := toFloat(cost["amount"])
@@ -173,7 +178,7 @@ func splitSharedCost(cost record.Record, allocs []record.Record, appCodes map[st
 		rec["source_amount"] = amount
 		rec["share"] = tg.share
 		rec["share_rule"] = tg.rule
-		fillFromAllocation(rec, tg.app, allocs)
+		fillFromAllocation(rec, tg.app, allocs, opt)
 		out = append(out, rec)
 	}
 	return out, findings, nil
@@ -219,7 +224,10 @@ func accountApps(allocs []record.Record) []string {
 	return apps
 }
 
-func fillFromAllocation(cost record.Record, app string, allocs []record.Record) {
+// fillFromAllocation sets the App-level fields of a split cost row, including its URN fields,
+// from the allocation of the App it lands on. The invalid App has no allocation: it sits under
+// Project unalloc (D-048).
+func fillFromAllocation(cost record.Record, app string, allocs []record.Record, opt Options) {
 	if app == appInvalid {
 		cost["app"] = appInvalid
 		cost["project"] = prjUnalloc
@@ -229,6 +237,7 @@ func fillFromAllocation(cost record.Record, app string, allocs []record.Record) 
 		if len(allocs) > 0 {
 			cost["environment"] = allocs[0]["environment"]
 		}
+		setAppURNs(cost, opt, prjUnalloc, appInvalid, strID(cost["environment"]), buUnalloc, ccUnalloc)
 		return
 	}
 	for _, a := range allocs {
@@ -239,9 +248,32 @@ func fillFromAllocation(cost record.Record, app string, allocs []record.Record) 
 			cost["cost_center"] = a["cost_center"]
 			cost["app_rule"] = a["app_rule"]
 			cost["environment"] = a["environment"]
+			setAppURNs(cost, opt, strID(a["project"]), app, strID(a["environment"]), strID(a["business_unit"]), strID(a["cost_center"]))
 			return
 		}
 	}
+}
+
+// setAppURNs sets the five App-level URN fields of a cost row. The cost center sits under its
+// own business unit, which can differ from the project's.
+func setAppURNs(cost record.Record, opt Options, project, app, env, bu, cc string) {
+	tnt := urn.Tenant(opt.Tenant)
+	ccBU := bu
+	if cc == ccUnalloc {
+		ccBU = buUnalloc
+	} else if b, ok := opt.CostCenterBU[cc]; ok {
+		ccBU = b
+	}
+	prj := tnt.Child("prj", project)
+	appU := prj.Child("app", app)
+	cost["project_urn"] = prj.String()
+	cost["app_urn"] = appU.String()
+	cost["environment_urn"] = ""
+	if env != "" {
+		cost["environment_urn"] = appU.Child("env", env).String()
+	}
+	cost["business_unit_urn"] = tnt.Child("bzu", bu).String()
+	cost["cost_center_urn"] = tnt.Child("bzu", ccBU).Child("cct", cc).String()
 }
 
 func sortShareCosts(costs []record.Record) {

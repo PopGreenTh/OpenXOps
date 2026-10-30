@@ -1,14 +1,16 @@
 # Finding codes
 
 Commands emit `finding` records on stdout. Severity `error` makes `finops enrich validate` exit 1;
-warnings do not stop other commands.
+warnings do not stop other commands. Subjects that name a taxonomy node use its id (`chk`, not
+`APP-CHK`).
 
 ## Taxonomy validation (`finops enrich validate`)
 
 | Code | Severity | Command | Subject | Meaning | What to do |
 |---|---|---|---|---|---|
 | `taxonomy-missing-field` | error | `finops enrich validate` | Section or code | A required field is empty in the taxonomy YAML. | Fill in the missing field. |
-| `taxonomy-reserved-code` | error | `finops enrich validate` | Code | Code uses a reserved suffix (`-UNALLOC`, `-UNSPEC`, `-INVALID`). | Rename the code. |
+| `taxonomy-invalid-id` | error | `finops enrich validate` | Code | A `code` is not an id: ids are lowercase letters and digits joined by single dashes (`^[a-z0-9]+(-[a-z0-9]+)*$`). | Rename the code (`BU-RETAIL` becomes `retail`). |
+| `taxonomy-reserved-code` | error | `finops enrich validate` | Code | A `code` is a reserved id: `unalloc`, `unspec` or `invalid`. | Rename the code. |
 | `taxonomy-duplicate-code` | error | `finops enrich validate` | Code | The same code appears twice in a section. | Remove or rename the duplicate. |
 | `taxonomy-unknown-reference` | error | `finops enrich validate` | Code or path | A reference points to a code that does not exist (for example unknown `business_unit`). | Fix the reference or add the target. |
 | `taxonomy-duplicate-ou-link` | error | `finops enrich validate` | OU path | Two `ou_links` rows set the same App or Environment for one LZ and OU. | Keep one link per OU and field. |
@@ -31,6 +33,6 @@ warnings do not stop other commands.
 | `ou-not-found` | warning | `finops enrich map` | OU path | `ou_link` path not found in inventory. | Fix path spelling or refresh accounts. |
 | `ou-path-ambiguous` | warning | `xops sense aws-accounts` | OU path | Two sibling OUs share the same name under one parent. | Rename OUs in AWS Organizations. |
 | `project-tag-mismatch` | warning | `finops enrich map` | Account and tag value | A `project_tag_cost` row has a non-empty Project tag value that is not the account's Project (or one of them on a shared account). | Align Project tags with taxonomy or fix the taxonomy. |
-| `shared-tag-unknown` | warning | `finops enrich share` | Account and tag part | Tag part matches no App in the taxonomy; cost goes to `APP-INVALID`. | Fix App tag values on shared cost. |
-| `shared-tag-wrong-app` | warning | `finops enrich share` | Account and tag part | Tag part is a known App the account does not serve; cost goes to `APP-INVALID`. | Align tags with mapped Apps or taxonomy. |
+| `shared-tag-unknown` | warning | `finops enrich share` | Account and tag part | Tag part matches no App in the taxonomy; cost goes to the `invalid` App. | Fix App tag values on shared cost. |
+| `shared-tag-wrong-app` | warning | `finops enrich share` | Account and tag part | Tag part is a known App the account does not serve; cost goes to the `invalid` App. | Align tags with mapped Apps or taxonomy. |
 | `shared-untagged` | warning | `finops enrich share` | Account and period | Shared account row had empty App tag; cost split equally across account Apps. | Add App tags or accept the split. |
