@@ -77,7 +77,8 @@ Apply taxonomy to accounts and optional cost; pass through inventory; write `all
 **Reads:** `ou`, `account`, optional `cost`, optional upstream `finding`.
 
 **Writes:** pass-through inventory, `allocation`, enriched optional `cost`, mapping `finding`
-records.
+records. `allocation` and `cost` carry the node ids and the `*_urn` fields ([taxonomy.md](taxonomy.md#urns-d-046),
+[records.md](records.md)); a shared account's `cost` leaves the App-level URNs `""` for `share`.
 
 **Example:**
 
@@ -95,7 +96,8 @@ Split shared-account `cost` by App tag using `allocation` rows from `map`.
 
 **Reads:** `cost`, `allocation`, pass-through kinds from `map`.
 
-**Writes:** updated `cost` rows with `app` / `project` / `environment`; share `finding` records.
+**Writes:** updated `cost` rows with `app` / `project` / `environment` and every `*_urn` field
+filled from the App each row lands on; share `finding` records.
 
 **Example:**
 
