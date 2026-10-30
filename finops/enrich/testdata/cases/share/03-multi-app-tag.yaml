@@ -2,36 +2,37 @@ name: multi-app-tag
 why: >
   A tag may list several Apps separated by "," or "__" (D-016). The row is split equally between
   the listed parts and each part is judged alone (D-021): a part naming a real App the account
-  doesn't serve goes to APP-INVALID. Empty parts are dropped, so ",APP-B," is a single App.
+  doesn't serve goes to invalid. Empty parts are dropped, so ",b," is a single App.
 taxonomy:
-  business_units: [{ code: BU-RETAIL, name: Retail }]
-  cost_centers: [{ code: CC-ECOM, name: E-commerce, business_unit: BU-RETAIL }]
-  projects: [{ code: PRJ-SHOP, name: Online shop, business_unit: BU-RETAIL }]
+  tenant: testtnt
+  business_units: [{ code: retail, name: Retail }]
+  cost_centers: [{ code: ecom, name: E-commerce, business_unit: retail }]
+  projects: [{ code: shop, name: Online shop, business_unit: retail }]
   apps:
-    - { code: APP-A, name: A, project: PRJ-SHOP, cost_center: CC-ECOM, environments: [{ code: ENV-PROD, name: Production }] }
-    - { code: APP-B, name: B, project: PRJ-SHOP, cost_center: CC-ECOM, environments: [{ code: ENV-PROD, name: Production }] }
-    - { code: APP-C, name: C, project: PRJ-SHOP, cost_center: CC-ECOM, environments: [{ code: ENV-PROD, name: Production }] }
-  lzs: [{ code: LZ-MAIN, name: Main, csp: aws, currency: USD, management_account: "111111111111" }]
+    - { code: a, name: A, project: shop, cost_center: ecom, environments: [{ code: prod, name: Production }] }
+    - { code: b, name: B, project: shop, cost_center: ecom, environments: [{ code: prod, name: Production }] }
+    - { code: c, name: C, project: shop, cost_center: ecom, environments: [{ code: prod, name: Production }] }
+  lzs: [{ code: main, name: Main, csp: aws, currency: USD, management_account: "111111111111" }]
   accounts:
-    - { account: "200000000001", apps: [APP-A, APP-B], environment: ENV-PROD }
-    - { account: "200000000002", apps: [APP-C], environment: ENV-PROD }
-    - { account: "200000000003", apps: [APP-A, APP-B, APP-C], environment: ENV-PROD }
+    - { account: "200000000001", apps: [a, b], environment: prod }
+    - { account: "200000000002", apps: [c], environment: prod }
+    - { account: "200000000003", apps: [a, b, c], environment: prod }
 records:
-  - { kind: allocation, account_id: "200000000001", account_name: acct-200000000001, lz: LZ-MAIN, ou_path: /, project: PRJ-SHOP, app: APP-A, environment: ENV-PROD, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, environment_rule: account, shared: true }
-  - { kind: allocation, account_id: "200000000001", account_name: acct-200000000001, lz: LZ-MAIN, ou_path: /, project: PRJ-SHOP, app: APP-B, environment: ENV-PROD, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, environment_rule: account, shared: true }
-  - { kind: allocation, account_id: "200000000002", account_name: acct-200000000002, lz: LZ-MAIN, ou_path: /, project: PRJ-SHOP, app: APP-C, environment: ENV-PROD, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, environment_rule: account, shared: false }
-  - { kind: allocation, account_id: "200000000003", account_name: acct-200000000003, lz: LZ-MAIN, ou_path: /, project: PRJ-SHOP, app: APP-A, environment: ENV-PROD, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, environment_rule: account, shared: true }
-  - { kind: allocation, account_id: "200000000003", account_name: acct-200000000003, lz: LZ-MAIN, ou_path: /, project: PRJ-SHOP, app: APP-B, environment: ENV-PROD, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, environment_rule: account, shared: true }
-  - { kind: allocation, account_id: "200000000003", account_name: acct-200000000003, lz: LZ-MAIN, ou_path: /, project: PRJ-SHOP, app: APP-C, environment: ENV-PROD, business_unit: BU-RETAIL, cost_center: CC-ECOM, app_rule: account, environment_rule: account, shared: true }
-  - { kind: cost, csp: aws, management_account: "111111111111", account_id: "200000000001", granularity: monthly, period: 2026-09, metric: UnblendedCost, service: AmazonEC2, app_tag: "APP-A,APP-B", amount: 80, currency: USD, estimated: false, lz: LZ-MAIN, environment: ENV-PROD, environment_rule: account, shared: true, project: "", app: "", business_unit: "", cost_center: "", app_rule: "" }
-  - { kind: cost, csp: aws, management_account: "111111111111", account_id: "200000000001", granularity: monthly, period: 2026-09, metric: UnblendedCost, service: AmazonEC2, app_tag: "app-a__APP-C", amount: 20, currency: USD, estimated: false, lz: LZ-MAIN, environment: ENV-PROD, environment_rule: account, shared: true, project: "", app: "", business_unit: "", cost_center: "", app_rule: "" }
-  - { kind: cost, csp: aws, management_account: "111111111111", account_id: "200000000001", granularity: monthly, period: 2026-09, metric: UnblendedCost, service: AmazonEC2, app_tag: ",APP-B,", amount: 30, currency: USD, estimated: false, lz: LZ-MAIN, environment: ENV-PROD, environment_rule: account, shared: true, project: "", app: "", business_unit: "", cost_center: "", app_rule: "" }
+  - { kind: allocation, account_id: "200000000001", account_name: acct-200000000001, lz: main, ou_path: /, project: shop, app: a, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: true }
+  - { kind: allocation, account_id: "200000000001", account_name: acct-200000000001, lz: main, ou_path: /, project: shop, app: b, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: true }
+  - { kind: allocation, account_id: "200000000002", account_name: acct-200000000002, lz: main, ou_path: /, project: shop, app: c, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: false }
+  - { kind: allocation, account_id: "200000000003", account_name: acct-200000000003, lz: main, ou_path: /, project: shop, app: a, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: true }
+  - { kind: allocation, account_id: "200000000003", account_name: acct-200000000003, lz: main, ou_path: /, project: shop, app: b, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: true }
+  - { kind: allocation, account_id: "200000000003", account_name: acct-200000000003, lz: main, ou_path: /, project: shop, app: c, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: true }
+  - { kind: cost, csp: aws, management_account: "111111111111", account_id: "200000000001", granularity: monthly, period: 2026-09, metric: UnblendedCost, service: AmazonEC2, app_tag: "a,b", amount: 80, currency: USD, estimated: false, lz: main, environment: prod, environment_rule: account, shared: true, project: "", app: "", business_unit: "", cost_center: "", app_rule: "" }
+  - { kind: cost, csp: aws, management_account: "111111111111", account_id: "200000000001", granularity: monthly, period: 2026-09, metric: UnblendedCost, service: AmazonEC2, app_tag: "A__c", amount: 20, currency: USD, estimated: false, lz: main, environment: prod, environment_rule: account, shared: true, project: "", app: "", business_unit: "", cost_center: "", app_rule: "" }
+  - { kind: cost, csp: aws, management_account: "111111111111", account_id: "200000000001", granularity: monthly, period: 2026-09, metric: UnblendedCost, service: AmazonEC2, app_tag: ",b,", amount: 30, currency: USD, estimated: false, lz: main, environment: prod, environment_rule: account, shared: true, project: "", app: "", business_unit: "", cost_center: "", app_rule: "" }
 expect:
   costs:
-    - { account_id: "200000000001", app: APP-A, amount: 10, source_amount: 20, share: 0.5, share_rule: tag-multi }
-    - { account_id: "200000000001", app: APP-A, amount: 40, source_amount: 80, share: 0.5, share_rule: tag-multi }
-    - { account_id: "200000000001", app: APP-B, amount: 30, source_amount: 30, share: 1, share_rule: tag }
-    - { account_id: "200000000001", app: APP-B, amount: 40, source_amount: 80, share: 0.5, share_rule: tag-multi }
-    - { account_id: "200000000001", app: APP-INVALID, project: PRJ-UNALLOC, business_unit: BU-UNALLOC, cost_center: CC-UNALLOC, environment: ENV-PROD, app_rule: invalid, amount: 10, source_amount: 20, share: 0.5, share_rule: tag-multi }
+    - { account_id: "200000000001", app: a, amount: 10, source_amount: 20, share: 0.5, share_rule: tag-multi }
+    - { account_id: "200000000001", app: a, amount: 40, source_amount: 80, share: 0.5, share_rule: tag-multi }
+    - { account_id: "200000000001", app: b, amount: 30, source_amount: 30, share: 1, share_rule: tag }
+    - { account_id: "200000000001", app: b, amount: 40, source_amount: 80, share: 0.5, share_rule: tag-multi }
+    - { account_id: "200000000001", app: invalid, project: unalloc, business_unit: unalloc, cost_center: unalloc, environment: prod, app_rule: invalid, amount: 10, source_amount: 20, share: 0.5, share_rule: tag-multi }
   findings:
-    - { code: shared-tag-wrong-app, subject: 200000000001/APP-C }
+    - { code: shared-tag-wrong-app, subject: 200000000001/c }
