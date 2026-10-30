@@ -36,6 +36,7 @@ OpenXOps is a fresh start ([D-001](planning/DECISIONS.md#d-001)). The earlier pr
 | **Claude Code** | Planner and reviewer (Part B) | `planning/`, reference cases, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `CURSOR.md`, `.cursor/rules/`. **Never implementation code** |
 | **Antigravity** (`agy-argon`) | Implementer (Part C). **Stands in as planner and reviewer** when the repo owner says so (§8) | Implementing: source, tests, CI and docs inside the claimed Work Order's scope. Standing in: what Claude writes |
 | **Cursor** | Implementer (Part C) | Source, tests, CI and docs inside the claimed Work Order's scope |
+| **Claude Code, implementer session** (`claude-impl`) | Implementer (Part C), a separate session started by the planner on the repo owner's go-ahead ([D-050](planning/DECISIONS.md#d-050)). GitHub user `chaninsai` | Source, tests, CI and docs inside the claimed Work Order's scope. **Never** planning files, and never reviews |
 
 "The planner" and "the reviewer" below mean Claude Code, or Antigravity while it stands in.
 Implementers never edit `planning/`, reference cases, `CURSOR.md`, `.cursor/rules/` or this file, except
@@ -63,7 +64,7 @@ and Contracts decide.
 1. **Dispatch.** On the repo owner's go-ahead, the planner opens a GitHub issue `WO-NNNN-X: <title>`
    with the Work Order's spec, its `Assignee:` and its `Verify:` line. `Assignee:` is **`open`**
    by default: no agent is named, and the issue doesn't address one.
-2. **Claim.** The implementer comments `Claimed by <Antigravity|Cursor> on branch <branch>`.
+2. **Claim.** The implementer comments `Claimed by <Antigravity|Cursor|Claude Code (implementer session)> on branch <branch>`.
    **The first claim wins.** If the issue is already claimed, or a PR for it is open, **stop**.
    If `Assignee:` names someone else, don't start.
 3. **Build** only what *In scope* says, in the packages the Work Order names. Touching a file
@@ -72,7 +73,7 @@ and Contracts decide.
    and report; **never change a test or a reference case to make it pass.**
 5. **PR.** The PR description starts with exactly these two lines:
    ```
-   Implementer: <Antigravity | Cursor>
+   Implementer: <Antigravity | Cursor | Claude Code (implementer session)>
    Resolves #<issue>
    ```
    then the `Verify` output, and any implementation note worth keeping.
@@ -130,7 +131,7 @@ issue claim still decides who builds a Work Order, and `Verify` still runs befor
   and any locks.
 
 **Records.** Every line has `ts` (RFC 3339 UTC), `task_id`, `agent` and `status`.
-- `agent`: `claude-code`, `agy-argon` or `cursor`. Add `model` when it helps
+- `agent`: `claude-code`, `agy-argon`, `cursor` or `claude-impl` (the Claude Code implementer session). Add `model` when it helps
   (`"model":"composer-2.5"`); locks follow `files`, whatever the agent or model. Add
   `"role":"planner"` while Antigravity stands in (§8).
 - `task_id`: the Work Order ID, plus a step for implementers (`WO-0102-A/discovery`), or a short
@@ -202,11 +203,11 @@ something; it writes or amends the Work Order instead. It also:
 
 ## 9. Implementer rules
 
-For Antigravity and Cursor while they build a claimed Work Order. They add to §4 and §7.
+For Antigravity, Cursor and the Claude Code implementer session while they build a claimed Work Order. They add to §4 and §7.
 
 1. **Claim first.** Claim the Work Order on its GitHub issue (§4.2), then log its steps in
    `.state/tasks.jsonl` and claim each step with `RUNNING` before starting it (§7). Log as
-   `agy-argon`, or as `cursor` with your `model`.
+   `agy-argon`, as `cursor` with your `model`, or as `claude-impl`.
 2. **Narrow working set.** Never search the whole repository. Read the end of
    `.state/tasks.jsonl`; then open only `AGENTS.md`, the Work Order, its Work Item's
    **Contracts**, the reference cases it names, and the files in your step's `files`, inside the

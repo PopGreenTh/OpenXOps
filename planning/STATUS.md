@@ -70,6 +70,8 @@ PR #48 (WO-0108-A) and PR #49 (WO-0108-B, stacked on #48) reviewed 2026-10-27, c
 
 Tenants and URNs added to Release 1 on 2026-10-30 (D-045 to D-049). OpenXOps becomes multi-tenant, with one taxonomy per tenant and a required `--tenant` on every command. Taxonomy codes become lowercase ids, and every node down to Service gets a URN in one of three hierarchies. WI-0109 is specified with two Work Orders in sequence, and release criterion 8 was added. The planner converts the map and share reference cases on the branch `claude/cases-urn`; DD-02's trend and impact cases are converted when Release 2 starts. The Release 1 tag waits for WI-0109 and criterion 6. WO-0109-A (#53) and WO-0109-B (#54) were dispatched 2026-10-30 on the repo owner's go-ahead. B waits for A.
 
+Antigravity and Cursor hit their usage limits on 2026-10-30. On the repo owner's go-ahead, D-050 adds a Claude Code implementer session (`claude-impl`, GitHub `chaninsai`), and the planner started one on WO-0109-A (#53).
+
 WI-0107 Contracts clarified 2026-10-27 during PR #24's review: `environment` and `lz` changes are account changes, and an allocation's `cost_moved` counts only cost records with its own `app`.
 
 ## DD-02 — Release 2: FOCUS, history, trend and impact
