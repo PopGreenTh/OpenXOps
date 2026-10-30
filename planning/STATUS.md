@@ -14,6 +14,7 @@ Written by Claude only. Status values: see [README.md](README.md#status-values).
 | [Q-006](DECISIONS.md#q-006): DD-02 planner defaults | — | closed by D-042 |
 | [Q-007](DECISIONS.md#q-007): drop stdin kind-sort so piped and file runs are byte-identical | — | closed by D-043 |
 | [Q-008](DECISIONS.md#q-008): `scripts/check` leaves gitignored mock cache under `data/mock/` | — | open |
+| [Q-009](DECISIONS.md#q-009): two OUs whose names slug to the same id share one URN | — | open, parked to revise later |
 
 ## DD-01 — Release 1: AWS cost owned by Project › App › Environment
 
@@ -34,6 +35,8 @@ Written by Claude only. Status values: see [README.md](README.md#status-values).
 | [WO-0108-B](DD-01-r1-finops-aws/WI-0108-Docs.md#wo-0108-b--developer-and-contributor-docs) | Cursor (claimed in PR) | WO-0101-C | merged | [#46](https://github.com/PopGreenTh/OpenXOps/issues/46) | [#49](https://github.com/PopGreenTh/OpenXOps/pull/49) | `cursor/wo-0108-b-contrib-7589` | 1 |
 | [WO-0109-A](DD-01-r1-finops-aws/WI-0109-Tenant-Urn.md#wo-0109-a--tenant) | Claude Code implementer session (claimed on issue) | WO-0108-B | merged | [#53](https://github.com/PopGreenTh/OpenXOps/issues/53) | [#57](https://github.com/PopGreenTh/OpenXOps/pull/57) | `claude-impl/wo-0109-a-tenant` | 0 |
 | [WO-0109-B](DD-01-r1-finops-aws/WI-0109-Tenant-Urn.md#wo-0109-b--ids-and-urns) | open | WO-0109-A | to do | [#54](https://github.com/PopGreenTh/OpenXOps/issues/54) | — | — | 0 |
+| [WO-0109-C](DD-01-r1-finops-aws/WI-0109-Tenant-Urn.md#wo-0109-c--camelcase-slugs-and-one-lz-per-tenant) | open | WO-0109-B, WO-0102-B | not started | — | — | — | 0 |
+| [WO-0110-A](DD-01-r1-finops-aws/WI-0110-Lz-Tree.md#wo-0110-a--lz-tree-and-the-yaml-tree-report) | open | WO-0109-C | not started | — | — | — | 0 |
 
 WO-0101-A dispatched 2026-10-27 (#1); PR #3 reviewed 2026-10-27: changes requested, then approved once D-025 dropped the Windows and dev container checks; one CI change asked for D-026 (Windows job optional), done in `104d92c` and approved. `main` created from the plan branch on 2026-10-27. WO-0101-A merged 2026-10-27 through #2 (`c27018d`), whose branch carried #3; #3 closed. WO-0102-A (#6), WO-0104-A (#7) and WO-0106-A (#8) dispatched 2026-10-27 on the repo owner's go-ahead, to run in parallel. Before dispatch, `go.mod`/`go.sum` were added to WO-0102-A's and WO-0104-A's packages, WO-0104-A's *Done when* now reads the demo organization from its own fixture instead of waiting on WO-0102-A, and WO-0106-A's *Done when* follows D-026. PR #10 (WO-0102-A, Cursor) reviewed 2026-10-27: changes requested (live errors swallowed by a shadowed `err`, paging test missing, `aws/` over the 5-file limit, breakpoint not confirmed).
 
@@ -81,6 +84,8 @@ PR #57 (WO-0109-A, Claude Code implementer session) reviewed 2026-10-30 as `PopG
 PR #59 (WO-0109-B, Claude Code implementer session) reviewed 2026-10-30: every *Done when* item met, verified by the planner. The approval is left to the repo owner, because Claude may not approve another Claude session's code.
 
 Account and OU datetimes decided 2026-10-31 ([D-051](DECISIONS.md#d-051)), after the repo owner checked sample `ou` and `account` records from the real Organization. Release 1 gets `joined_at` and `joined_method` on `account` (WO-0102-B, after WO-0109-B). OUs get no datetime from AWS; `first_seen` and `last_changed` come from the history store in Release 2 (WI-0201). The Release 1 tag now also waits for WO-0102-B. D-051 and WO-0102-B merged 2026-10-31 (#60, `07072f7`); WO-0102-B dispatched the same day as #61 on the repo owner's go-ahead, to start after WO-0109-B merges.
+
+The real-Organization check on 2026-10-31 found the full tree (16 accounts, 19 OUs) once `aws-accounts` ran with the management account's profile; an earlier run had used stale `[default]` credentials. With the repo owner, the cloud tree became its own step (D-054, WI-0110, WO-0110-A), the slug rule now splits CamelCase (D-053), and a taxonomy holds one LZ per tenant (D-052); both rules are WO-0109-C. OU URN collisions are parked as Q-009. The Release 1 tag now also waits for WO-0109-C and WO-0110-A. Before WO-0109-C is dispatched, the planner updates the two `svc:amazonec2` case lines on `claude/cases-slug`, after WO-0109-B merges.
 
 WI-0107 Contracts clarified 2026-10-27 during PR #24's review: `environment` and `lz` changes are account changes, and an allocation's `cost_moved` counts only cost records with its own `app`.
 
