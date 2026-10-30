@@ -29,7 +29,8 @@ xops   report excel --from-cost shared.jsonl --from-change changes.jsonl --out f
 | [WI-0106](WI-0106-Report.md) | `xops report table\|csv\|excel`, appending (D-011) | A |
 | [WI-0107](WI-0107-Analyze-Changes.md) | `finops analyze changes` (D-021) | A |
 | [WI-0108](WI-0108-Docs.md) | User and developer docs, doc check (D-044) | A, B |
-| [WI-0109](WI-0109-Tenant-Urn.md) | Tenants, ids and URNs (D-045 to D-049) | A, B |
+| [WI-0109](WI-0109-Tenant-Urn.md) | Tenants, ids and URNs (D-045 to D-049); CamelCase slugs, one LZ per tenant (D-052, D-053) | A, B, C |
+| [WI-0110](WI-0110-Lz-Tree.md) | The cloud tree: `xops enrich lz-tree`, `xops report tree` YAML (D-054) | A |
 
 ## Order
 

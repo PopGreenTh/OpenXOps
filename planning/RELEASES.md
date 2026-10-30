@@ -25,7 +25,7 @@ release is direction, not a commitment.
 
 | Release | Deliverable | Theme | State |
 |---|---|---|---|
-| 1 | [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md) | AWS cost owned by Project › App › Environment, in Excel | Built; tenants and URNs (WI-0109) and account join time (WO-0102-B) added; tag waits for WI-0109, WO-0102-B and criterion 6 |
+| 1 | [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md) | AWS cost owned by Project › App › Environment, in Excel | Built; tenants and URNs (WI-0109) account join time (WO-0102-B) and the cloud tree (WI-0110) added; tag waits for WI-0109, WO-0102-B, WI-0110 and criterion 6 |
 | 2 | [DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md) | FOCUS, history, trend and impact | Specified; dispatch after Release 1 tag |
 | 3 | not written yet | Enforce | First rules decided (D-033) |
 | Later | — | More clouds, SecOps, CloudOps | Direction only |
@@ -56,6 +56,8 @@ Project › App › Environment. Shared accounts are split by the App tag, unmap
 | [WO-0108-B](DD-01-r1-finops-aws/WI-0108-Docs.md) | Developer and contributor docs (D-044) | 0101-C |
 | [WO-0109-A](DD-01-r1-finops-aws/WI-0109-Tenant-Urn.md) | Tenant: `--tenant`, `tenant` on every record (D-045) | 0108-B |
 | [WO-0109-B](DD-01-r1-finops-aws/WI-0109-Tenant-Urn.md) | Taxonomy ids and URN fields (D-046 to D-049) | 0109-A |
+| [WO-0109-C](DD-01-r1-finops-aws/WI-0109-Tenant-Urn.md) | CamelCase slugs, one LZ per tenant (D-052, D-053) | 0109-B, 0102-B |
+| [WO-0110-A](DD-01-r1-finops-aws/WI-0110-Lz-Tree.md) | `xops enrich lz-tree`, `xops report tree` YAML (D-054) | 0109-C |
 
 ```mermaid
 flowchart LR
