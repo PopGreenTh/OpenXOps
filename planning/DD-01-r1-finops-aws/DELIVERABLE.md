@@ -29,6 +29,7 @@ xops   report excel --from-cost shared.jsonl --from-change changes.jsonl --out f
 | [WI-0106](WI-0106-Report.md) | `xops report table\|csv\|excel`, appending (D-011) | A |
 | [WI-0107](WI-0107-Analyze-Changes.md) | `finops analyze changes` (D-021) | A |
 | [WI-0108](WI-0108-Docs.md) | User and developer docs, doc check (D-044) | A, B |
+| [WI-0109](WI-0109-Tenant-Urn.md) | Tenants, ids and URNs (D-045 to D-049) | A, B |
 
 ## Order
 
@@ -56,6 +57,9 @@ packages.
    permissions listed in `docs/user/aws-setup.md`.
 7. The docs (D-044): `scripts/check` prints `docs PASS`, and `docs/user/getting-started.md`'s
    `--mock` walkthrough runs as written on a clean clone.
+8. Tenants and URNs (D-045 to D-049): on the mock pipeline run with `--tenant testtnt`, every
+   record has `tenant: testtnt`, and every `cost` record after `share` has all nine URN fields,
+   each starting `urn:tnt:testtnt:`.
 
 **Checked 2026-10-27** on a clean clone of `main` at `9da24f3` with no AWS credentials:
 
@@ -68,6 +72,7 @@ packages.
 | 5 | A second `aws-cost` run over closed months makes zero calls | ✅ 10 calls, then 0 |
 | 6 | The pipeline completes against the real Organization, read-only | ⏳ for the repo owner to run |
 | 7 | Docs: `docs PASS`; the getting-started walkthrough runs on a clean clone | ✅ checked 2026-10-27 at `7802af5`: `docs PASS`, `finops.xlsx` written |
+| 8 | Tenants and URNs on the mock pipeline | ⏳ after WI-0109 (added 2026-10-30, D-049) |
 
 **Release 2:** FOCUS (`aws-focus`, `focus-cost`), `analyze trend` and `impact`, Enforce, the
 history store and `--as-reported`.
