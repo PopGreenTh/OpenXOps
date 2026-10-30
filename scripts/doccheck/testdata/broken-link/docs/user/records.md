@@ -11,6 +11,7 @@ Organizational unit in an AWS Organization.
 | Field | Type | Required | Meaning |
 |---|---|---|---|
 | `kind` | string | yes | Always `ou`. |
+| `tenant` | string | yes | Tenant id, the `--tenant` of the command that wrote the record (D-045). |
 | `csp` | string | yes | Cloud provider (`aws`). |
 | `org_id` | string | yes | Organization ID. |
 | `management_account` | string | yes | Management account ID. |
@@ -29,6 +30,7 @@ Member account in an AWS Organization.
 | Field | Type | Required | Meaning |
 |---|---|---|---|
 | `kind` | string | yes | Always `account`. |
+| `tenant` | string | yes | Tenant id, the `--tenant` of the command that wrote the record (D-045). |
 | `csp` | string | yes | Cloud provider (`aws`). |
 | `org_id` | string | yes | Organization ID. |
 | `management_account` | string | yes | Management account ID. |
@@ -48,6 +50,7 @@ Project tag total from Cost Explorer (level 1).
 | Field | Type | Required | Meaning |
 |---|---|---|---|
 | `kind` | string | yes | Always `project_tag_cost`. |
+| `tenant` | string | yes | Tenant id, the `--tenant` of the command that wrote the record (D-045). |
 | `csp` | string | yes | Cloud provider (`aws`). |
 | `management_account` | string | yes | Management account ID. |
 | `granularity` | string | yes | `monthly` or `daily`. |
@@ -67,6 +70,7 @@ Service and App tag cost from Cost Explorer (level 2), or enriched after `map` /
 | Field | Type | Required | Meaning |
 |---|---|---|---|
 | `kind` | string | yes | Always `cost`. |
+| `tenant` | string | yes | Tenant id, the `--tenant` of the command that wrote the record (D-045). |
 | `csp` | string | yes | Cloud provider (`aws`). |
 | `management_account` | string | yes | Management account ID. |
 | `granularity` | string | yes | `monthly` or `daily`. |
@@ -92,6 +96,7 @@ One row per account (and App) after `map`: who owns cost in that account.
 | Field | Type | Required | Meaning |
 |---|---|---|---|
 | `kind` | string | yes | Always `allocation`. |
+| `tenant` | string | yes | Tenant id, the `--tenant` of the command that wrote the record (D-045). |
 | `account_id` | string | yes | Account ID. |
 | `account_name` | string | yes | Account name. |
 | `lz` | string | yes | Landing zone code. |
@@ -112,6 +117,7 @@ Month-on-month mapping change from `finops analyze changes`.
 | Field | Type | Required | Meaning |
 |---|---|---|---|
 | `kind` | string | yes | Always `change`. |
+| `tenant` | string | yes | Tenant id, the `--tenant` of the command that wrote the record (D-045). |
 | `subject_type` | string | yes | `account` or `allocation`. |
 | `subject` | string | yes | Subject identifier. |
 | `change` | string | yes | Change type (`added`, `removed`, …). |
@@ -130,6 +136,7 @@ Validation or mapping issue emitted as a record (stdout); severity `error` makes
 | Field | Type | Required | Meaning |
 |---|---|---|---|
 | `kind` | string | yes | Always `finding`. |
+| `tenant` | string | yes | Tenant id, the `--tenant` of the command that wrote the record (D-045). |
 | `severity` | string | yes | `error` or `warning`. |
 | `code` | string | yes | Stable code (see [findings.md](findings.md)). |
 | `subject` | string | yes | What the finding refers to. |

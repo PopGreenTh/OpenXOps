@@ -1,6 +1,7 @@
 # Taxonomy file
 
-The taxonomy is a YAML file read by `finops enrich validate`, `map`, and `share`. It describes
+The taxonomy is a YAML file read by `finops enrich validate`, `map`, and `share` (and by
+`finops sense aws-cost --taxonomy`). It belongs to one tenant and describes
 business structure, landing zones, how OUs and accounts map to Apps and Environments, and which
 tag keys to use for cost.
 
@@ -10,6 +11,7 @@ See `finops/enrich/testdata/demo-taxonomy.yaml` for a working example.
 
 | Section | Purpose |
 |---|---|
+| `tenant` | Required, first line of the file: the tenant id (`tenant: testtnt`). It must equal `--tenant`, or `validate`, `map`, `share` and `aws-cost --taxonomy` stop with an error naming both. Same id rule as `--tenant`: lowercase letters and digits, joined by single dashes. |
 | `business_units` | List of `{ code, name }` business units. |
 | `cost_centers` | `{ code, name, business_unit }` — cost center rolls up to a business unit. |
 | `projects` | `{ code, name, business_unit }` — project for reporting. |
@@ -47,7 +49,7 @@ cost by the App tag on each `cost` row.
 ## Validate first
 
 ```bash
-go run ./finops enrich validate --taxonomy finops/enrich/testdata/demo-taxonomy.yaml
+go run ./finops enrich validate --tenant testtnt --taxonomy finops/enrich/testdata/demo-taxonomy.yaml
 ```
 
 Fix severity `error` findings before running `map` on live data. Every `taxonomy-*` code is listed

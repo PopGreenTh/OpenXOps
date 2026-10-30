@@ -67,8 +67,8 @@ Every command can start from `--from-<kind> FILE` and/or `--mock` with no pipe a
 ```bash
 go run ./xops version
 go run ./finops version --log-level debug
-go run ./xops sense aws-accounts --mock
-go run ./finops enrich map --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
+go run ./xops sense aws-accounts --tenant testtnt --mock
+go run ./finops enrich map --tenant testtnt --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
   --from-accounts finops/enrich/testdata/demo-accounts.jsonl
 task run:xops:sense-aws-accounts
 ```
@@ -82,7 +82,7 @@ from a file is an error that names both flags.
 Mix pipe and files explicitly, for example:
 
 ```powershell
-go run ./finops sense aws-cost --mock | go run ./finops enrich map --taxonomy finops/enrich/testdata/demo-taxonomy.yaml --from-accounts finops/enrich/testdata/demo-accounts.jsonl --from-cost -
+go run ./finops sense aws-cost --tenant testtnt --mock | go run ./finops enrich map --tenant testtnt --taxonomy finops/enrich/testdata/demo-taxonomy.yaml --from-accounts finops/enrich/testdata/demo-accounts.jsonl --from-cost -
 ```
 
 `--from-<kind> -` reads stdin; `--from-accounts` reads only `ou` and `account` from its file.

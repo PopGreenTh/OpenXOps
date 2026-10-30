@@ -25,7 +25,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}/finops",
-      "args": ["enrich", "validate", "--taxonomy", "finops/enrich/testdata/demo-taxonomy.yaml"],
+      "args": ["enrich", "validate", "--tenant", "testtnt", "--taxonomy", "finops/enrich/testdata/demo-taxonomy.yaml"],
       "console": "integratedTerminal"
     },
     {
@@ -34,7 +34,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}/finops",
-      "args": ["enrich", "map", "--taxonomy", "finops/enrich/testdata/demo-taxonomy.yaml", "--from-accounts", "finops/enrich/testdata/demo-accounts.jsonl"],
+      "args": ["enrich", "map", "--tenant", "testtnt", "--taxonomy", "finops/enrich/testdata/demo-taxonomy.yaml", "--from-accounts", "finops/enrich/testdata/demo-accounts.jsonl"],
       "console": "integratedTerminal"
     },
     {
@@ -43,7 +43,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}/finops",
-      "args": ["enrich", "share", "--taxonomy", "finops/enrich/testdata/demo-taxonomy.yaml", "--from-cost", "finops/enrich/testdata/demo-map.jsonl"],
+      "args": ["enrich", "share", "--tenant", "testtnt", "--taxonomy", "finops/enrich/testdata/demo-taxonomy.yaml", "--from-cost", "finops/enrich/testdata/demo-map.jsonl"],
       "console": "integratedTerminal"
     },
     {
@@ -52,7 +52,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}/finops",
-      "args": ["analyze", "changes", "--before", "${env:HOME}/openxops-map-before.jsonl", "--from-map", "${env:HOME}/openxops-map-now.jsonl"],
+      "args": ["analyze", "changes", "--tenant", "testtnt", "--before", "${env:HOME}/openxops-map-before.jsonl", "--from-map", "${env:HOME}/openxops-map-now.jsonl"],
       "console": "integratedTerminal"
     },
     {
@@ -61,7 +61,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}/xops",
-      "args": ["report", "table", "--from-cost", "${workspaceFolder}/xops/report/testdata/mixed.jsonl"],
+      "args": ["report", "table", "--tenant", "testtnt", "--from-cost", "${workspaceFolder}/xops/report/testdata/mixed.jsonl"],
       "console": "integratedTerminal"
     },
     {
@@ -70,7 +70,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}/xops",
-      "args": ["report", "csv", "--out", "${env:HOME}/xops-report-csv", "--from-cost", "${workspaceFolder}/xops/report/testdata/mixed.jsonl"],
+      "args": ["report", "csv", "--tenant", "testtnt", "--out", "${env:HOME}/xops-report-csv", "--from-cost", "${workspaceFolder}/xops/report/testdata/mixed.jsonl"],
       "console": "integratedTerminal"
     },
     {
@@ -79,7 +79,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}/xops",
-      "args": ["report", "excel", "--out", "${env:HOME}/xops-report.xlsx", "--from-cost", "${workspaceFolder}/xops/report/testdata/mixed.jsonl"],
+      "args": ["report", "excel", "--tenant", "testtnt", "--out", "${env:HOME}/xops-report.xlsx", "--from-cost", "${workspaceFolder}/xops/report/testdata/mixed.jsonl"],
       "console": "integratedTerminal"
     },
     {
@@ -88,7 +88,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}/finops",
-      "args": ["sense", "aws-cost", "--mock"],
+      "args": ["sense", "aws-cost", "--tenant", "testtnt", "--mock"],
       "console": "integratedTerminal"
     },
     {
@@ -97,7 +97,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}/xops",
-      "args": ["sense", "aws-accounts", "--mock"],
+      "args": ["sense", "aws-accounts", "--tenant", "testtnt", "--mock"],
       "console": "integratedTerminal"
     },
     {
