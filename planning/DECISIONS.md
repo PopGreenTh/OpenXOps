@@ -699,3 +699,12 @@ keeps building its own URNs with `record/urn`; it doesn't read the tree.
 2026-10-31; parked by the repo owner to revise later). `ou-path-ambiguous` catches only identical
 sibling names, not `Hub-SIT` next to `Hub SIT`. A finding such as `ou-urn-collision` in
 `lz-tree` is one option. The repo owner's real Organization has no collision today. Open.
+
+## D-055
+
+**Account nodes carry their join time** (repo owner, 2026-11-01; amends [D-054](#d-054) and the
+WI-0110 Contracts). Reviewing the real tree, the repo owner asked that each account show its
+name and join datetime. The `node` record gains `joined_at` and `joined_method`, copied from the
+account's record (D-051), `""` on LZ and OU nodes and when the account record has none. The YAML
+tree shows them on accounts and leaves them out when empty. Built in WO-0110-A before PR #71
+merges, not as a new Work Order.

@@ -48,6 +48,8 @@ xops report tree --tenant cvd --from-node tree.jsonl --out cvd-tree.yaml
 | `source_id` | string | the LZ's `management_account` | the AWS OU or root id (`ou-6ibz-…`, `r-6ibz`) | the account id |
 | `path` | string | `""` | the OU's `path` (`/Platform/Hub/Hub-SIT`) | the account's `ou_path` |
 | `status` | string | `""` | `""` | the account's `status` |
+| `joined_at` | string | `""` | `""` | the account's `joined_at`, or `""` when the record has none ([D-055](../DECISIONS.md#d-055)) |
+| `joined_method` | string | `""` | `""` | the account's `joined_method`, or `""` when the record has none (D-055) |
 
 `node` goes into `record/schema` with every field above required.
 
@@ -88,7 +90,12 @@ xops report tree --tenant cvd --from-node tree.jsonl --out cvd-tree.yaml
             urn: urn:tnt:cvd:lzc:main:org:root:acc:225989366329
             source_id: "225989366329"
             status: ACTIVE
+            joined_at: "2023-05-08T04:21:10Z"
+            joined_method: CREATED
   ```
+- An account shows its `name`, `status`, `joined_at` and `joined_method`. `status`,
+  `joined_at` and `joined_method` are left out when they are `""`, so LZ and OU nodes don't
+  show them.
 - The command fails, writing nothing, when there isn't exactly one `lzc` node, or a node's
   `parent_urn` names no node in the input; the error names the file, the line and the URN.
 - `xops/report/` already has 5 non-test files, so the YAML writer is a new package,
@@ -132,6 +139,9 @@ read the tree (D-054).
 - On the mock: every `account` record from `aws-accounts` has exactly one `acc` node, every `ou`
   record has exactly one `org` node, and each node's `urn` equals the matching `ou_urn` or
   `account_urn` that `map` writes for the same account (shown in the PR).
+- Every `acc` node in the demo tree has the `name`, `joined_at` and `joined_method` of its
+  `account` record, and so does every account in the demo YAML (D-055); an account record
+  without the two fields gives `""` and no YAML key (test).
 - `xops report tree` writes the demo YAML, matching its golden file.
 - The tests above pass.
 - `go run ./scripts/check` all PASS, with `docs PASS`.
