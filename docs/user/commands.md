@@ -34,7 +34,7 @@ Same for the FinOps binary.
 List an AWS Organization as `ou` and `account` records (OUs first, then accounts, each sorted by
 `id`).
 
-**Flags:** `--tenant ID` (required), `--mock`, `--profile`, `--region` (default `us-east-1`), `--lz` with `--taxonomy`.
+**Flags:** `--tenant ID` (required), `--mock`, `--profile`, `--region` (default `us-east-1`), `--taxonomy` with an optional `--lz`. With `--taxonomy`, the records carry the taxonomy's one LZ as `lz` (D-052); a `--lz` that names another code stops the command with both codes in the error, and `--lz` without `--taxonomy` is an error.
 
 **Reads:** nothing (live AWS or mock).
 
@@ -47,8 +47,8 @@ List an AWS Organization as `ou` and `account` records (OUs first, then accounts
 Two-level Cost Explorer read: `project_tag_cost` then `cost` records.
 
 **Flags:** `--tenant ID` (required), `--mock`, `--profile`, `--region`, `--granularity monthly|daily`, `--metric`,
-`--from` / `--to`, `--app-tag`, `--project-tag`, `--lz` with `--taxonomy` (its `tenant` must be
-`--tenant`), `--refresh`.
+`--from` / `--to`, `--app-tag`, `--project-tag`, `--taxonomy` (its `tenant` must be `--tenant`)
+with an optional `--lz` that defaults to its one LZ, `--refresh`.
 
 **Reads:** nothing (live AWS or mock).
 

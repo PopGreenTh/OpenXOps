@@ -144,6 +144,10 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 		}
 	}
 
+	if len(t.LZs) != 1 {
+		addErr("taxonomy-lz-count", "lzs", fmt.Sprintf("a tenant has exactly one LZ, the taxonomy has %d", len(t.LZs)))
+	}
+
 	type ouKey struct {
 		lz, ou string
 	}

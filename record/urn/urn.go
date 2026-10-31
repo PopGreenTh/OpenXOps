@@ -4,6 +4,7 @@ package urn
 import (
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 var idRule = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
@@ -13,13 +14,27 @@ func ValidID(id string) bool {
 	return idRule.MatchString(id)
 }
 
-// Slug lowercases s and turns every run of characters outside [a-z0-9] into one `-`, trimmed at
-// both ends. An empty result is `unknown`.
+// Slug turns a name from the cloud into an id (D-053). It first splits CamelCase: a word break
+// goes between a lowercase letter or digit and the uppercase letter after it, and between two
+// uppercase letters when the second is followed by a lowercase letter. It then lowercases, turns
+// every run of characters outside [a-z0-9] into one `-`, and trims at both ends. An empty result
+// is `unknown`.
 func Slug(s string) string {
+	rs := []rune(s)
+	isUpper := func(r rune) bool { return r >= 'A' && r <= 'Z' }
+	isLower := func(r rune) bool { return r >= 'a' && r <= 'z' }
+	isDigit := func(r rune) bool { return r >= '0' && r <= '9' }
 	var b strings.Builder
 	dash := false
-	for _, r := range strings.ToLower(s) {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+	for i, r := range rs {
+		if i > 0 && isUpper(r) {
+			prev := rs[i-1]
+			if isLower(prev) || isDigit(prev) || (isUpper(prev) && i+1 < len(rs) && isLower(rs[i+1])) {
+				dash = true
+			}
+		}
+		r = unicode.ToLower(r)
+		if isLower(r) || isDigit(r) {
 			if dash && b.Len() > 0 {
 				b.WriteByte('-')
 			}

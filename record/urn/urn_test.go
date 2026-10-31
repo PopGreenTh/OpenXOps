@@ -31,14 +31,30 @@ func TestSlug(t *testing.T) {
 	cases := []struct {
 		in, want string
 	}{
-		{"Checkout", "checkout"},
+		// The table of D-053.
+		{"SharedServices", "shared-services"},
+		{"NonProd", "non-prod"},
+		{"AWSConfig", "aws-config"},
+		{"AmazonEC2", "amazon-ec2"},
+		{"Ec2Prod", "ec2-prod"},
+		{"Hub2", "hub2"},
+		{"Spoke-SIT", "spoke-sit"},
 		{"Amazon Elastic Compute Cloud - Compute", "amazon-elastic-compute-cloud-compute"},
+		{"---", "unknown"},
+		// More.
+		{"Checkout", "checkout"},
 		{"  --Prod__EU--  ", "prod-eu"},
 		{"AWS Key Management Service", "aws-key-management-service"},
+		{"AmazonCloudWatch", "amazon-cloud-watch"},
+		{"AmazonS3", "amazon-s3"},
+		{"S3Bucket", "s3-bucket"},
 		{"already-a-slug", "already-a-slug"},
+		{"ABC", "abc"},
+		{"abc", "abc"},
+		{"A", "a"},
+		{"HTTPServer", "http-server"},
 		{"Café", "caf"},
 		{"", "unknown"},
-		{"---", "unknown"},
 		{"日本", "unknown"},
 	}
 	for _, tc := range cases {
@@ -56,6 +72,7 @@ func TestOUPath(t *testing.T) {
 		{"/", "root"},
 		{"", "root"},
 		{"/Shared Services", "shared-services"},
+		{"/Workloads/Checkout/NonProd", "workloads/checkout/non-prod"},
 		{"/Workloads/!!!", "workloads/unknown"},
 	}
 	for _, tc := range cases {
