@@ -138,3 +138,8 @@ Built by WO-0105-A (#23, `c62476b`) and WO-0105-B (#36, `ebcb461`).
   `allocation` was dropped.
 - On the mock data, the cost after `share` equals Cost Explorer's per period, metric and
   currency (largest difference 5e-13), and no `cost` record is left without an App.
+
+Later changes:
+- WO-0109-B (#59): split rows get the five App-level URNs from the allocation they land on. The
+  `invalid` App sits under Project `unalloc`, and a cost center's URN sits under its own business
+  unit. All 6 share cases pass with URNs.

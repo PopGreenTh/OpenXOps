@@ -122,3 +122,11 @@ Built by WO-0102-A (#10, `44e25ff`), with two follow-ups in WO-0101-B (#33).
   `xops sense aws-accounts [--mock] [--lz …]` writes `ou` and `account` records.
 - Discovery lists one parent at a time. WO-0101-B removed the unused concurrency parameter, and
   the command writes through `cmd.OutOrStdout()`.
+
+Later changes:
+- WO-0102-B (#65, `d4d0c88`) adds `joined_at` and `joined_method` to every `account` record, from
+  the `ListAccountsForParent` response (D-051). Both are optional in the schema. On the real
+  Organization all 16 accounts carry them (15 `CREATED`, 1 `INVITED`).
+- WO-0109-A (#57) adds the required `--tenant` and `tenant` on every record. WO-0109-C (#68) makes
+  `--lz` optional with `--taxonomy`: it defaults to the taxonomy's one LZ (D-052), and a `--lz`
+  naming another code is an error.
