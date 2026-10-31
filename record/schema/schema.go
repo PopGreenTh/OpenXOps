@@ -85,6 +85,8 @@ var accountSchema = Schema{
 		{Name: "ou_path", Type: TypeString, Required: true},
 		{Name: "ou_id_path", Type: TypeString, Required: true},
 		{Name: "tenant", Type: TypeString, Required: true},
+		{Name: "joined_at", Type: TypeString},
+		{Name: "joined_method", Type: TypeString},
 	},
 }
 

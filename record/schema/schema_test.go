@@ -153,3 +153,12 @@ func TestValidateCostWithoutURNsPasses(t *testing.T) {
 		t.Fatal("a non-string URN must be rejected")
 	}
 }
+
+func TestAccountJoinedFieldsOptionalStrings(t *testing.T) {
+	for _, name := range []string{"joined_at", "joined_method"} {
+		f, ok := fieldOf("account", name)
+		if !ok || f.Type != TypeString || f.Required {
+			t.Errorf("account.%s = %+v, want an optional string", name, f)
+		}
+	}
+}
