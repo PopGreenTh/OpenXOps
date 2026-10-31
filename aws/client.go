@@ -3,6 +3,7 @@ package aws
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
@@ -97,9 +98,19 @@ func (c *OrgClient) ListAccountsForParent(ctx context.Context, parentID string) 
 
 func accountFromAWS(ac types.Account) Account {
 	return Account{
-		ID:     aws.ToString(ac.Id),
-		Name:   aws.ToString(ac.Name),
-		Email:  aws.ToString(ac.Email),
-		Status: string(ac.Status),
+		ID:           aws.ToString(ac.Id),
+		Name:         aws.ToString(ac.Name),
+		Email:        aws.ToString(ac.Email),
+		Status:       string(ac.Status),
+		JoinedAt:     joinedAt(ac.JoinedTimestamp),
+		JoinedMethod: string(ac.JoinedMethod),
 	}
+}
+
+// joinedAt formats t in RFC 3339 UTC with no fraction, or returns "" when t is nil.
+func joinedAt(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.UTC().Format(time.RFC3339)
 }

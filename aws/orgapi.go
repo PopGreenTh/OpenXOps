@@ -28,6 +28,10 @@ type Account struct {
 	Email    string
 	Status   string
 	ParentID string
+	// JoinedAt is JoinedTimestamp in RFC 3339 UTC to the second, or "" when AWS leaves it out.
+	JoinedAt string `json:"joined_at"`
+	// JoinedMethod is JoinedMethod as AWS gives it (CREATED or INVITED), or "".
+	JoinedMethod string `json:"joined_method"`
 }
 
 // OrgAPI lists an AWS Organization. Implementations use the retry wrapper for each call.

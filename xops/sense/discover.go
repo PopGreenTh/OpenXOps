@@ -49,6 +49,8 @@ func BuildRecords(snap aws.Snapshot, lz string) []record.Record {
 			"parent_id":          ac.ParentID,
 			"ou_path":            parent.path,
 			"ou_id_path":         parent.idPath,
+			"joined_at":          ac.JoinedAt,
+			"joined_method":      ac.JoinedMethod,
 		}
 		if lz != "" {
 			rec["lz"] = lz

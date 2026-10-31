@@ -14,13 +14,17 @@
             "id": "200000000010",
             "name": "sec-audit",
             "email": "sec-audit@example.com",
-            "status": "ACTIVE"
+            "status": "ACTIVE",
+            "joined_at": "2019-03-11T02:30:00Z",
+            "joined_method": "CREATED"
           },
           {
             "id": "200000000011",
             "name": "sec-log",
             "email": "sec-log@example.com",
-            "status": "ACTIVE"
+            "status": "ACTIVE",
+            "joined_at": "2019-03-11T02:41:18Z",
+            "joined_method": "CREATED"
           }
         ]
       },
@@ -41,7 +45,9 @@
                     "id": "200000000001",
                     "name": "chk-prod",
                     "email": "chk-prod@example.com",
-                    "status": "ACTIVE"
+                    "status": "ACTIVE",
+                    "joined_at": "2020-01-15T08:00:31Z",
+                    "joined_method": "CREATED"
                   }
                 ]
               },
@@ -54,7 +60,9 @@
                     "id": "200000000003",
                     "name": "chk-nonprod",
                     "email": "chk-nonprod@example.com",
-                    "status": "ACTIVE"
+                    "status": "ACTIVE",
+                    "joined_at": "2020-01-15T08:22:07Z",
+                    "joined_method": "CREATED"
                   }
                 ]
               }
@@ -74,7 +82,9 @@
                     "id": "200000000004",
                     "name": "pay-prod",
                     "email": "pay-prod@example.com",
-                    "status": "ACTIVE"
+                    "status": "ACTIVE",
+                    "joined_at": "2021-04-12T03:15:27Z",
+                    "joined_method": "INVITED"
                   }
                 ]
               },
@@ -87,7 +97,9 @@
                     "id": "200000000005",
                     "name": "pay-nonprod",
                     "email": "pay-nonprod@example.com",
-                    "status": "ACTIVE"
+                    "status": "ACTIVE",
+                    "joined_at": "2021-04-12T03:48:52Z",
+                    "joined_method": "CREATED"
                   }
                 ]
               }
@@ -106,7 +118,9 @@
             "id": "200000000002",
             "name": "shared-platform",
             "email": "shared@example.com",
-            "status": "ACTIVE"
+            "status": "ACTIVE",
+            "joined_at": "2019-06-20T14:05:09Z",
+            "joined_method": "CREATED"
           }
         ]
       }
@@ -116,13 +130,17 @@
         "id": "111111111111",
         "name": "management",
         "email": "mgmt@example.com",
-        "status": "ACTIVE"
+        "status": "ACTIVE",
+        "joined_at": "2019-03-04T09:12:45Z",
+        "joined_method": "CREATED"
       },
       {
         "id": "200000000099",
         "name": "sandbox",
         "email": "sandbox@example.com",
-        "status": "ACTIVE"
+        "status": "ACTIVE",
+        "joined_at": "2022-09-30T23:59:59Z",
+        "joined_method": "CREATED"
       }
     ]
   }
