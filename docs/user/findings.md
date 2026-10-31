@@ -10,6 +10,7 @@ warnings do not stop other commands. Subjects that name a taxonomy node use its 
 |---|---|---|---|---|---|
 | `taxonomy-missing-field` | error | `finops enrich validate` | Section or code | A required field is empty in the taxonomy YAML. | Fill in the missing field. |
 | `taxonomy-invalid-id` | error | `finops enrich validate` | Code | A `code` is not an id: ids are lowercase letters and digits joined by single dashes (`^[a-z0-9]+(-[a-z0-9]+)*$`). | Rename the code (`BU-RETAIL` becomes `retail`). |
+| `taxonomy-lz-count` | error | `finops enrich validate` | `lzs` | The taxonomy does not have exactly one LZ: a tenant has one landing zone (D-052). | Keep one entry under `lzs`. |
 | `taxonomy-reserved-code` | error | `finops enrich validate` | Code | A `code` is a reserved id: `unalloc`, `unspec` or `invalid`. | Rename the code. |
 | `taxonomy-duplicate-code` | error | `finops enrich validate` | Code | The same code appears twice in a section. | Remove or rename the duplicate. |
 | `taxonomy-unknown-reference` | error | `finops enrich validate` | Code or path | A reference points to a code that does not exist (for example unknown `business_unit`). | Fix the reference or add the target. |
@@ -29,7 +30,7 @@ warnings do not stop other commands. Subjects that name a taxonomy node use its 
 | `cost-history-short` | warning | `finops sense aws-cost` | First period returned | Fewer periods returned than requested. | Enable longer Cost Explorer history in AWS. |
 | `environment-not-in-app` | warning | `finops enrich map` | Account and App | Environment on account is not defined under the App. | Fix taxonomy environments or account override. |
 | `environment-unresolved` | warning | `finops enrich map` | Account ID | Environment could not be resolved. | Add OU environment link or account environment. |
-| `lz-unknown` | warning | `finops enrich map` | Organization | Management account does not match any LZ in taxonomy. | Fix `lzs` or use the correct `--lz`. |
+| `lz-unknown` | warning | `finops enrich map` | Organization | Management account does not match any LZ in taxonomy. | Fix the LZ's `management_account` in `lzs`. |
 | `ou-not-found` | warning | `finops enrich map` | OU path | `ou_link` path not found in inventory. | Fix path spelling or refresh accounts. |
 | `ou-path-ambiguous` | warning | `xops sense aws-accounts` | OU path | Two sibling OUs share the same name under one parent. | Rename OUs in AWS Organizations. |
 | `project-tag-mismatch` | warning | `finops enrich map` | Account and tag value | A `project_tag_cost` row has a non-empty Project tag value that is not the account's Project (or one of them on a shared account). | Align Project tags with taxonomy or fix the taxonomy. |

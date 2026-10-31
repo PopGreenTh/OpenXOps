@@ -91,7 +91,7 @@ func TestCostOfAccountNotInInventoryHasEveryURN(t *testing.T) {
 		"lz_urn":            "urn:tnt:testtnt:lzc:main",
 		"ou_urn":            "urn:tnt:testtnt:lzc:main:org:unknown",
 		"account_urn":       "urn:tnt:testtnt:lzc:main:org:unknown:acc:300000000009",
-		"service_urn":       "urn:tnt:testtnt:lzc:main:org:unknown:acc:300000000009:svc:amazons3",
+		"service_urn":       "urn:tnt:testtnt:lzc:main:org:unknown:acc:300000000009:svc:amazon-s3",
 	}
 	for k, v := range want {
 		if cost[k] != v {

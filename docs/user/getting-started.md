@@ -44,12 +44,12 @@ Optional: compare two map runs with `finops analyze changes` (see [commands.md](
 1. Configure AWS credentials with read-only access described in [aws-setup.md](aws-setup.md).
 2. Prepare a taxonomy YAML for your organization (see [taxonomy.md](taxonomy.md)). Its first line
    names your tenant (`tenant: testtnt` below); pass the same id as `--tenant` to every command.
-3. Replace `--mock` with live calls and add `--lz` / `--taxonomy` where your landing zone
-   requires it:
+3. Replace `--mock` with live calls. Add `--taxonomy` to the Sense commands to check the
+   organization against your landing zone: `--lz` is optional and defaults to the taxonomy's one LZ.
 
 ```bash
 go run ./xops sense aws-accounts --tenant testtnt > accounts.jsonl
-go run ./finops sense aws-cost --tenant testtnt --lz main --taxonomy taxonomy.yaml > cost.jsonl
+go run ./finops sense aws-cost --tenant testtnt --taxonomy taxonomy.yaml > cost.jsonl
 go run ./finops enrich map --tenant testtnt --taxonomy taxonomy.yaml \
   --from-accounts accounts.jsonl --from-cost cost.jsonl > map.jsonl
 go run ./finops enrich share --tenant testtnt --taxonomy taxonomy.yaml --from-cost map.jsonl > shared.jsonl

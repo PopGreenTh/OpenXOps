@@ -3,7 +3,7 @@
 Every line is one flat JSON object with a `kind` field and a `tenant` field. Schemas are enforced
 on declared inputs (D-037). Every record a command reads that has `tenant` must equal its
 `--tenant`, whatever the kind ([commands.md](commands.md)). Optional fields appear in output when a command sets them (for example `lz` with
-`--lz`).
+`--taxonomy`).
 
 ## `ou`
 
@@ -22,7 +22,7 @@ Organizational unit in an AWS Organization.
 | `path` | string | yes | Human path from root (`/Workloads/Checkout`). |
 | `id_path` | string | yes | ID path from root. |
 | `has_children` | bool | yes | Whether the OU has child OUs. |
-| `lz` | string | no | Landing zone code when `--lz` is used. |
+| `lz` | string | no | The tenant's landing zone code, when `--taxonomy` is used (`--lz` defaults to it). |
 
 ## `account`
 
@@ -44,7 +44,7 @@ Member account in an AWS Organization.
 | `ou_id_path` | string | yes | Parent OU ID path. |
 | `joined_at` | string | no | When the account joined the organization: AWS `JoinedTimestamp` in RFC 3339 UTC, to the second (`2021-04-12T03:15:27Z`). It is the account's creation time only when `joined_method` is `CREATED`; for an `INVITED` account it is when the account accepted the invitation. `aws-accounts` always writes it, as `""` when AWS gives none. |
 | `joined_method` | string | no | How the account joined: `CREATED` or `INVITED`, as AWS gives it. `aws-accounts` always writes it, as `""` when AWS gives none. |
-| `lz` | string | no | Landing zone code when `--lz` is used. |
+| `lz` | string | no | The tenant's landing zone code, when `--taxonomy` is used (`--lz` defaults to it). |
 
 ## `project_tag_cost`
 
@@ -64,7 +64,7 @@ Project tag total from Cost Explorer (level 1).
 | `estimated` | bool | yes | Whether Cost Explorer marked the value estimated. |
 | `account_id` | string | yes | Linked account ID. |
 | `project_tag` | string | yes | Project tag value (`""` = untagged). |
-| `lz` | string | no | Landing zone code when `--lz` is used. |
+| `lz` | string | no | The tenant's landing zone code, when `--taxonomy` is used (`--lz` defaults to it). |
 
 ## `cost`
 
@@ -85,7 +85,7 @@ Service and App tag cost from Cost Explorer (level 2), or enriched after `map` /
 | `account_id` | string | yes | Linked account ID. |
 | `service` | string | yes | AWS service name. |
 | `app_tag` | string | yes | App tag value on the row (`""` = untagged). |
-| `lz` | string | no | Landing zone code when `--lz` is used. |
+| `lz` | string | no | The tenant's landing zone code, when `--taxonomy` is used (`--lz` defaults to it). |
 | `app` | string | no | Resolved App id after `map` / `share` (`unalloc`, or `invalid` for a tag that names no App the account serves). |
 | `project` | string | no | Resolved Project code. |
 | `environment` | string | no | Resolved Environment code. |

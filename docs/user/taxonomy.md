@@ -16,7 +16,7 @@ See `finops/enrich/testdata/demo-taxonomy.yaml` for a working example.
 | `cost_centers` | `{ code, name, business_unit }` — cost center rolls up to a business unit. |
 | `projects` | `{ code, name, business_unit }` — project for reporting. |
 | `apps` | App definitions with `project`, `cost_center`, and `environments`. |
-| `lzs` | Landing zones: `{ code, name, csp, currency, management_account }`. |
+| `lzs` | The tenant's one landing zone: `{ code, name, csp, currency, management_account }`. A tenant has exactly one LZ (D-052); `validate` reports any other count as `taxonomy-lz-count`. |
 | `ou_links` | Map OU paths to an App and/or Environment for an LZ. |
 | `accounts` | Per-account overrides: `{ account, apps[], environment }`. |
 | `tags` | Optional `{ app, project }` keys for Cost Explorer (defaults `App` / `Project`). |
@@ -56,9 +56,26 @@ level, where `<tenant>` is the file's `tenant`:
 | Account | `urn:tnt:testtnt:lzc:main:org:workloads/checkout/prod:acc:200000000001` |
 | Service (on `cost` only) | `<account URN>:svc:amazon-elastic-compute-cloud-compute` |
 
-Names that come from the cloud are slugged: lowercase, every run of characters outside
-`[a-z0-9]` becomes one `-`, trimmed at both ends (an empty result is `unknown`). An OU path becomes
-its slugged segments joined by `/`, without the leading `/`; the root `/` is `root`.
+Names that come from the cloud are slugged (D-053). First CamelCase is split: a word break goes
+between a lowercase letter or digit and the uppercase letter after it, and between two uppercase
+letters when the second is followed by a lowercase letter. Then the name is lowercased, every run
+of characters outside `[a-z0-9]` becomes one `-`, and the ends are trimmed. An empty result is
+`unknown`.
+
+| Name | Slug |
+|---|---|
+| `SharedServices` | `shared-services` |
+| `NonProd` | `non-prod` |
+| `AWSConfig` | `aws-config` |
+| `AmazonEC2` | `amazon-ec2` |
+| `Ec2Prod` | `ec2-prod` |
+| `Hub2` | `hub2` |
+| `Spoke-SIT` | `spoke-sit` |
+| `Amazon Elastic Compute Cloud - Compute` | `amazon-elastic-compute-cloud-compute` |
+| `---` | `unknown` |
+
+An OU path becomes its slugged segments joined by `/`, without the leading `/`
+(`/Workloads/Checkout/NonProd` is `workloads/checkout/non-prod`); the root `/` is `root`.
 
 System nodes build URNs with their reserved ids. An unmapped account's Environment is
 `urn:tnt:testtnt:prj:unalloc:app:unalloc:env:unalloc`; an `invalid` App is
