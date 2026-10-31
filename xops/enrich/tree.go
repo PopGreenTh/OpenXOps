@@ -71,34 +71,38 @@ func LZTree(tenant string, lz LZ, recs []record.Record) []record.Record {
 			} else if name == "" {
 				name = "Root"
 			}
-			ous = append(ous, node(tenant, str(r, "csp"), typeOU, ouURN(path), parent, urn.OUPath(path), name, str(r, "id"), path, ""))
+			ous = append(ous, node(tenant, str(r, "csp"), typeOU, ouURN(path), parent, urn.OUPath(path), name, str(r, "id"), path, "", "", ""))
 		case "account":
 			parent := ouURN(str(r, "ou_path"))
 			id := str(r, "id")
-			accs = append(accs, node(tenant, str(r, "csp"), typeAcc, parent.Child(typeAcc, id), parent, id, str(r, "name"), id, str(r, "ou_path"), str(r, "status")))
+			accs = append(accs, node(tenant, str(r, "csp"), typeAcc, parent.Child(typeAcc, id), parent, id, str(r, "name"), id, str(r, "ou_path"), str(r, "status"),
+				str(r, "joined_at"), str(r, "joined_method")))
 		}
 	}
 	sortByURN(ous)
 	sortByURN(accs)
 
-	out := []record.Record{node(tenant, lz.CSP, typeLZ, lzURN, "", lz.Code, lz.Name, lz.ManagementAccount, "", "")}
+	out := []record.Record{node(tenant, lz.CSP, typeLZ, lzURN, "", lz.Code, lz.Name, lz.ManagementAccount, "", "", "", "")}
 	out = append(out, ous...)
 	return append(out, accs...)
 }
 
-func node(tenant, csp, typ string, u, parent urn.URN, id, name, sourceID, path, status string) record.Record {
+// node builds one node record. joinedAt and joinedMethod are the account's (D-055), "" elsewhere.
+func node(tenant, csp, typ string, u, parent urn.URN, id, name, sourceID, path, status, joinedAt, joinedMethod string) record.Record {
 	return record.Record{
-		"kind":       "node",
-		"tenant":     tenant,
-		"csp":        csp,
-		"type":       typ,
-		"urn":        u.String(),
-		"parent_urn": parent.String(),
-		"id":         id,
-		"name":       name,
-		"source_id":  sourceID,
-		"path":       path,
-		"status":     status,
+		"kind":          "node",
+		"tenant":        tenant,
+		"csp":           csp,
+		"type":          typ,
+		"urn":           u.String(),
+		"parent_urn":    parent.String(),
+		"id":            id,
+		"name":          name,
+		"source_id":     sourceID,
+		"path":          path,
+		"status":        status,
+		"joined_at":     joinedAt,
+		"joined_method": joinedMethod,
 	}
 }
 

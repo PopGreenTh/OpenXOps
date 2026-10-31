@@ -18,13 +18,16 @@ type Doc struct {
 
 // Node is one LZ, OU or account in the tree. Field order is the order in the YAML.
 type Node struct {
-	Type     string  `yaml:"type"`
-	ID       string  `yaml:"id"`
-	Name     string  `yaml:"name"`
-	URN      string  `yaml:"urn"`
-	SourceID string  `yaml:"source_id"`
-	Status   string  `yaml:"status,omitempty"`
-	Children []*Node `yaml:"children,omitempty"`
+	Type     string `yaml:"type"`
+	ID       string `yaml:"id"`
+	Name     string `yaml:"name"`
+	URN      string `yaml:"urn"`
+	SourceID string `yaml:"source_id"`
+	Status   string `yaml:"status,omitempty"`
+	// JoinedAt and JoinedMethod are an account's (D-055); they are left out when empty.
+	JoinedAt     string  `yaml:"joined_at,omitempty"`
+	JoinedMethod string  `yaml:"joined_method,omitempty"`
+	Children     []*Node `yaml:"children,omitempty"`
 }
 
 type entry struct {
@@ -50,6 +53,7 @@ func Build(tenant, source string, recs []record.Record) (Doc, error) {
 			node: &Node{
 				Type: str(r, "type"), ID: str(r, "id"), Name: str(r, "name"), URN: str(r, "urn"),
 				SourceID: str(r, "source_id"), Status: str(r, "status"),
+				JoinedAt: str(r, "joined_at"), JoinedMethod: str(r, "joined_method"),
 			},
 			parent: str(r, "parent_urn"),
 			line:   i + 1,

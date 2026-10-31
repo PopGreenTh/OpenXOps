@@ -210,6 +210,8 @@ var nodeSchema = Schema{
 		{Name: "source_id", Type: TypeString, Required: true},
 		{Name: "path", Type: TypeString, Required: true},
 		{Name: "status", Type: TypeString, Required: true},
+		{Name: "joined_at", Type: TypeString, Required: true},
+		{Name: "joined_method", Type: TypeString, Required: true},
 	},
 }
 

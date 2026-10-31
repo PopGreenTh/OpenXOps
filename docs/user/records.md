@@ -168,6 +168,8 @@ every OU and every account. Nodes are named by the same URNs `finops enrich map`
 | `source_id` | string | yes | The LZ's management account, the AWS OU or root id, or the account id. |
 | `path` | string | yes | `""` for the LZ; the OU's `path`; the account's `ou_path`. |
 | `status` | string | yes | The account's `status`; `""` for the LZ and OUs. |
+| `joined_at` | string | yes | The account's `joined_at` (RFC 3339 UTC, [`account`](#account)), or `""` when the record has none; `""` for the LZ and OUs (D-055). |
+| `joined_method` | string | yes | The account's `joined_method` (`CREATED` or `INVITED`), or `""` when the record has none; `""` for the LZ and OUs (D-055). |
 
 ## `finding`
 

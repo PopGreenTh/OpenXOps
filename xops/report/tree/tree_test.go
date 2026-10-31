@@ -130,3 +130,41 @@ func TestBuildIgnoresOtherKinds(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestJoinedOnAccountsOnly(t *testing.T) {
+	recs := goodNodes()
+	for _, r := range recs {
+		r["joined_at"], r["joined_method"] = "", ""
+		if r["type"] == "acc" && r["id"] == "111111111111" {
+			r["joined_at"], r["joined_method"] = "2019-03-04T09:12:45Z", "CREATED"
+		}
+	}
+	doc, err := Build("testtnt", "nodes.jsonl", recs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	// On the account that has them: after status, joined_at, then joined_method, at one indent.
+	lines := strings.Split(text, "\n")
+	found := false
+	for i, l := range lines {
+		if strings.TrimSpace(l) == `joined_at: "2019-03-04T09:12:45Z"` && i > 0 && i+1 < len(lines) {
+			indent := l[:len(l)-len(strings.TrimLeft(l, " "))]
+			found = lines[i-1] == indent+"status: ACTIVE" && lines[i+1] == indent+"joined_method: CREATED"
+		}
+	}
+	if !found {
+		t.Errorf("YAML lacks status, joined_at, joined_method in that order:\n%s", text)
+	}
+	// The other account has empty ones: no key. LZ and OUs: no key.
+	if n := strings.Count(text, "joined_at:"); n != 1 {
+		t.Errorf("%d joined_at keys, want 1:\n%s", n, text)
+	}
+	if n := strings.Count(text, "joined_method:"); n != 1 {
+		t.Errorf("%d joined_method keys, want 1:\n%s", n, text)
+	}
+}

@@ -146,7 +146,8 @@ go run ./xops enrich lz-tree --tenant testtnt --taxonomy xops/enrich/testdata/de
 
 Write the `node` records as one nested YAML file people can read: the LZ at the top and every
 node's `children` under it, OUs before accounts, each group in `id` order. A node without children
-has no `children` key.
+has no `children` key. An account shows its `name`, `status`, `joined_at` and `joined_method` (D-055);
+a field that is `""` is left out, and the LZ and OUs never show the join fields.
 
 **Flags:** `--tenant ID` (required), `--from-node FILE` or stdin, `--out FILE` (the YAML goes to
 stdout when it is not given). An existing `--out` file is replaced: a tree is a snapshot, not a log.

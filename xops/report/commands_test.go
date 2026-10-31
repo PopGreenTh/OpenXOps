@@ -7,7 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/PopGreenTh/OpenXOps/record"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 func TestReportCommandsTenant(t *testing.T) {
@@ -203,4 +205,63 @@ func TestReportTreeTenant(t *testing.T) {
 			t.Fatalf("error %q should contain %q", err, w)
 		}
 	}
+}
+
+func TestDemoYAMLAccountsCarryNameAndJoined(t *testing.T) {
+	data, err := os.ReadFile(demoTreeYAML)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc struct {
+		LZ yamlNode `yaml:"lz"`
+	}
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		t.Fatal(err)
+	}
+	var accs []yamlNode
+	var walk func(n yamlNode)
+	walk = func(n yamlNode) {
+		if n.Type == "acc" {
+			accs = append(accs, n)
+		} else if n.JoinedAt != "" || n.JoinedMethod != "" {
+			t.Errorf("%s node %s shows join fields", n.Type, n.URN)
+		}
+		for _, c := range n.Children {
+			walk(c)
+		}
+	}
+	walk(doc.LZ)
+
+	in, err := record.ReadFile("../sense/testdata/aws-accounts.jsonl", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]record.Record{}
+	for _, r := range in {
+		if r.Kind() == "account" {
+			want[r["id"].(string)] = r
+		}
+	}
+	if len(accs) != len(want) || len(accs) == 0 {
+		t.Fatalf("%d accounts in the YAML, %d account records", len(accs), len(want))
+	}
+	for _, a := range accs {
+		r, ok := want[a.ID]
+		if !ok {
+			t.Fatalf("account %s is not in the account records", a.ID)
+		}
+		if a.Name != r["name"] || a.JoinedAt != r["joined_at"] || a.JoinedMethod != r["joined_method"] || a.JoinedAt == "" || a.JoinedMethod == "" {
+			t.Errorf("account %s: YAML %q %q %q, record %v %v %v", a.ID, a.Name, a.JoinedAt, a.JoinedMethod, r["name"], r["joined_at"], r["joined_method"])
+		}
+	}
+}
+
+type yamlNode struct {
+	Type         string     `yaml:"type"`
+	ID           string     `yaml:"id"`
+	Name         string     `yaml:"name"`
+	URN          string     `yaml:"urn"`
+	JoinedAt     string     `yaml:"joined_at"`
+	JoinedMethod string     `yaml:"joined_method"`
+	Children     []yamlNode `yaml:"children"`
 }

@@ -306,3 +306,75 @@ func mustRead(t *testing.T, path string) string {
 	}
 	return string(data)
 }
+
+func TestLZTreeJoined(t *testing.T) {
+	with := account("200000000003", "chk-nonprod", "ou-3", "/Workloads/Checkout/NonProd")
+	with["joined_at"] = "2020-01-15T08:22:07Z"
+	with["joined_method"] = "INVITED"
+	without := account("111111111111", "management", "r-1", "/") // no joined_at, no joined_method
+	in := []record.Record{ou("r-1", "Root", "", "/"), ou("ou-1", "Workloads", "r-1", "/Workloads"), without, with}
+	m := byURN(LZTree("testtnt", testLZ, in))
+
+	n := m["urn:tnt:testtnt:lzc:main:org:root:acc:111111111111"]
+	if str(n, "joined_at") != "" || str(n, "joined_method") != "" {
+		t.Errorf("an account record without the fields: joined_at = %q, joined_method = %q, want both empty", n["joined_at"], n["joined_method"])
+	}
+	for _, k := range []string{"joined_at", "joined_method"} {
+		if v, ok := n[k]; !ok || v != "" {
+			t.Errorf("node.%s = %v (present: %v), want an empty string", k, v, ok)
+		}
+	}
+	n = m["urn:tnt:testtnt:lzc:main:org:workloads:acc:200000000003"]
+	if n == nil {
+		n = m["urn:tnt:testtnt:lzc:main:org:workloads/checkout/non-prod:acc:200000000003"]
+	}
+	if str(n, "joined_at") != "2020-01-15T08:22:07Z" || str(n, "joined_method") != "INVITED" {
+		t.Errorf("account node joined = %q %q, want the account record's", n["joined_at"], n["joined_method"])
+	}
+	for u, n := range m {
+		if str(n, "type") != "acc" && (n["joined_at"] != "" || n["joined_method"] != "") {
+			t.Errorf("%s node %s has joined_at/joined_method %q/%q, want empty", str(n, "type"), u, n["joined_at"], n["joined_method"])
+		}
+	}
+}
+
+func TestDemoAccountNodesCarryNameAndJoined(t *testing.T) {
+	in, err := record.ReadFile(mockAccounts(t), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := record.ReadFile(demoTreeFile, map[string]struct{}{"node": {}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	nodes := map[string]record.Record{}
+	for _, n := range out {
+		if str(n, "type") == "acc" {
+			nodes[str(n, "id")] = n
+		}
+	}
+	checked := 0
+	for _, r := range in {
+		if r.Kind() != "account" {
+			continue
+		}
+		n, ok := nodes[str(r, "id")]
+		if !ok {
+			t.Fatalf("no acc node for account %s", str(r, "id"))
+		}
+		for _, f := range []string{"name", "joined_at", "joined_method"} {
+			if str(n, f) == "" || str(n, f) != str(r, f) {
+				t.Errorf("account %s: node %s = %q, account record %q", str(r, "id"), f, str(n, f), str(r, f))
+			}
+		}
+		checked++
+	}
+	if checked != len(nodes) || checked == 0 {
+		t.Fatalf("checked %d accounts, %d acc nodes", checked, len(nodes))
+	}
+	for _, n := range out {
+		if str(n, "type") != "acc" && (str(n, "joined_at") != "" || str(n, "joined_method") != "") {
+			t.Errorf("%s node %s has join fields", str(n, "type"), str(n, "urn"))
+		}
+	}
+}
