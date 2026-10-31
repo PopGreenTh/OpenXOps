@@ -39,6 +39,17 @@ Open `finops.xlsx`: each sheet is one record kind from the shared cost file.
 
 Optional: compare two map runs with `finops analyze changes` (see [commands.md](commands.md)).
 
+Optional: see your cloud hierarchy as URNs before any cost is mapped (D-054). `lz-tree` turns the
+accounts into one `node` record per LZ, OU and account, and `report tree` writes them as a nested
+YAML file:
+
+```bash
+go run ./xops enrich lz-tree --tenant testtnt \
+  --taxonomy xops/enrich/testdata/demo-taxonomy.yaml \
+  --from-accounts accounts.jsonl > tree.jsonl
+go run ./xops report tree --tenant testtnt --from-node tree.jsonl --out tree.yaml
+```
+
 ## Real Organization
 
 1. Configure AWS credentials with read-only access described in [aws-setup.md](aws-setup.md).

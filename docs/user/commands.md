@@ -118,6 +118,47 @@ Compare a previous map output to the current one; emit `change` records, then pa
 
 **Example:** `go run ./finops analyze changes --tenant testtnt --before before.jsonl --from-map now.jsonl`
 
+## `xops enrich lz-tree`
+
+Turn `ou` and `account` records into one flat `node` record per node of the tenant's cloud
+hierarchy: the landing zone, every OU and every account (D-054). The LZ is the taxonomy's one LZ
+(D-052). URNs are built as `finops enrich map` builds `lz_urn`, `ou_urn` and `account_urn`, so the
+two agree.
+
+**Flags:** `--tenant ID` (required), `--taxonomy FILE` (required; its `tenant` must be `--tenant`
+and it must have exactly one LZ), `--from-accounts FILE` or stdin.
+
+**Reads:** `ou` and `account` records. Every one's `management_account` must be the LZ's, or the
+command stops with the file (or `stdin`), the line and both accounts.
+
+**Writes:** only `node` records: the LZ node, then the OU nodes sorted by `urn`, then the account
+nodes sorted by `urn`. Input records are not passed through. The same input gives the same output.
+
+**Example:**
+
+```bash
+go run ./xops sense aws-accounts --tenant testtnt --mock > accounts.jsonl
+go run ./xops enrich lz-tree --tenant testtnt --taxonomy xops/enrich/testdata/demo-taxonomy.yaml \
+  --from-accounts accounts.jsonl > tree.jsonl
+```
+
+## `xops report tree`
+
+Write the `node` records as one nested YAML file people can read: the LZ at the top and every
+node's `children` under it, OUs before accounts, each group in `id` order. A node without children
+has no `children` key.
+
+**Flags:** `--tenant ID` (required), `--from-node FILE` or stdin, `--out FILE` (the YAML goes to
+stdout when it is not given). An existing `--out` file is replaced: a tree is a snapshot, not a log.
+
+**Reads:** `node` records.
+
+**Writes:** one YAML document. The command fails, writing nothing, when there isn't exactly one
+`lzc` node, when two nodes have the same `urn`, or when a node's `parent_urn` names no node; the
+error names the file (or `stdin`), the line and the URN.
+
+**Example:** `go run ./xops report tree --tenant testtnt --from-node tree.jsonl --out tree.yaml`
+
 ## `xops report table`
 
 Print aligned tables per record kind (stdout or append with `--out`).

@@ -30,6 +30,15 @@ go run ./finops enrich share --tenant testtnt --taxonomy finops/enrich/testdata/
 go run ./xops report excel --tenant testtnt --from-cost shared.jsonl --out finops.xlsx
 ```
 
+Optionally, see the cloud hierarchy as URNs: `xops enrich lz-tree` turns `accounts.jsonl` into
+`node` records and `xops report tree` writes them as nested YAML:
+
+```bash
+go run ./xops enrich lz-tree --tenant testtnt --taxonomy xops/enrich/testdata/demo-taxonomy.yaml \
+  --from-accounts accounts.jsonl > tree.jsonl
+go run ./xops report tree --tenant testtnt --from-node tree.jsonl --out tree.yaml
+```
+
 ## Documentation
 
 | Audience | Start here |

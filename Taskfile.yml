@@ -66,6 +66,16 @@ tasks:
     cmds:
       - go run ./xops sense aws-accounts --tenant testtnt --mock
 
+  run:xops:enrich-lz-tree:
+    desc: Turn the demo accounts into node records (the demo tree)
+    cmds:
+      - go run ./xops enrich lz-tree --tenant testtnt --taxonomy xops/enrich/testdata/demo-taxonomy.yaml --from-accounts xops/sense/testdata/aws-accounts.jsonl
+
+  run:xops:report-tree:
+    desc: Write the demo tree as nested YAML
+    cmds:
+      - go run ./xops report tree --tenant testtnt --from-node xops/enrich/testdata/demo-tree.jsonl
+
   run:xops:report-table:
     desc: Print report tables from mixed fixture
     cmds:
