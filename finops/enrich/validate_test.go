@@ -1,6 +1,7 @@
 package enrich
 
 import (
+	"github.com/PopGreenTh/OpenXOps/record"
 	"os"
 	"path/filepath"
 	"strings"
@@ -222,5 +223,39 @@ func TestUppercaseUnallocIsNoLongerReservedButNotAnID(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("want taxonomy-invalid-id for BU-UNALLOC, got %v", codes)
+	}
+}
+
+func TestValidateLZCount(t *testing.T) {
+	lz := func(code string) LZ {
+		return LZ{Code: code, Name: "L", CSP: "aws", Currency: "USD", ManagementAccount: "1"}
+	}
+	cases := []struct {
+		name    string
+		lzs     []LZ
+		wantErr bool
+	}{
+		{"none", nil, true},
+		{"one", []LZ{lz("main")}, false},
+		{"two", []LZ{lz("main"), lz("other")}, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var found []record.Record
+			for _, f := range ValidateTaxonomy(Taxonomy{LZs: tc.lzs}) {
+				if f["code"] == "taxonomy-lz-count" {
+					found = append(found, f)
+				}
+			}
+			if !tc.wantErr {
+				if len(found) != 0 {
+					t.Fatalf("unexpected %v", found)
+				}
+				return
+			}
+			if len(found) != 1 || found[0]["severity"] != "error" || found[0]["subject"] != "lzs" {
+				t.Fatalf("want one taxonomy-lz-count error with subject lzs, got %v", found)
+			}
+		})
 	}
 }

@@ -27,7 +27,7 @@ The commands need exactly these actions (no write access):
 }
 ```
 
-- **Organizations** (`xops sense aws-accounts`, and `DescribeOrganization` when `--lz` is used
+- **Organizations** (`xops sense aws-accounts`, and `DescribeOrganization` when `--taxonomy` is used
   on cost): list the organization tree read-only.
 - **Cost Explorer** (`finops sense aws-cost`): `ce:GetCostAndUsage` only.
 

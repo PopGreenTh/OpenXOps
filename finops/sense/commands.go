@@ -55,13 +55,18 @@ func awsCostCommand() *cobra.Command {
 			if lz != "" && taxonomy == "" {
 				return fmt.Errorf("--lz requires --taxonomy")
 			}
-			if taxonomy != "" && lz == "" {
-				return fmt.Errorf("--taxonomy requires --lz")
-			}
 			if taxonomy != "" {
 				if err := checkTaxonomyTenant(taxonomy, tenant); err != nil {
 					return err
 				}
+				code, err := taxonomyLZ(taxonomy)
+				if err != nil {
+					return err
+				}
+				if lz != "" && lz != code {
+					return fmt.Errorf("--lz %q is not the LZ %q of taxonomy %s", lz, code, taxonomy)
+				}
+				lz = code
 			}
 			var api ce.API
 			if mock {
@@ -99,7 +104,7 @@ func awsCostCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&refresh, "refresh", false, "refetch all periods in range (never overwrite closed cache files)")
 	cmd.Flags().StringVar(&profile, "profile", "", "AWS shared config profile")
 	cmd.Flags().StringVar(&region, "region", "", "AWS region (default us-east-1)")
-	cmd.Flags().StringVar(&lz, "lz", "", "landing zone code (requires --taxonomy)")
+	cmd.Flags().StringVar(&lz, "lz", "", "landing zone code (requires --taxonomy; defaults to the taxonomy's one LZ)")
 	cmd.Flags().StringVar(&taxonomy, "taxonomy", "", "taxonomy YAML for --lz and default tag keys (its tenant must be --tenant)")
 	cmd.Flags().StringVar(&granularity, "granularity", "monthly", "monthly or daily")
 	cmd.Flags().StringVar(&metric, "metric", "", "Cost Explorer metric (default by granularity)")
@@ -156,6 +161,26 @@ func resolveTags(opt CostOptions) (app, project string, err error) {
 		project = "Project"
 	}
 	return app, project, nil
+}
+
+// taxonomyLZ returns the code of the one LZ in the taxonomy at path (D-052).
+func taxonomyLZ(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("read taxonomy %s: %w", path, err)
+	}
+	var doc struct {
+		LZs []struct {
+			Code string `yaml:"code"`
+		} `yaml:"lzs"`
+	}
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return "", fmt.Errorf("parse taxonomy %s: %w", path, err)
+	}
+	if len(doc.LZs) != 1 {
+		return "", fmt.Errorf("taxonomy %s has %d LZs, want exactly one", path, len(doc.LZs))
+	}
+	return doc.LZs[0].Code, nil
 }
 
 func managementAccountForLZ(path, code string) (string, error) {

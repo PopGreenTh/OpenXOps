@@ -307,6 +307,20 @@ func TestCostHistoryShortFinding(t *testing.T) {
 	}
 }
 
+// chdirTemp runs the test in an empty directory, so that the command's relative cache under
+// data/ never lands in the package directory.
+func chdirTemp(t *testing.T) {
+	t.Helper()
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(wd) })
+}
+
 func runCostCommand(t *testing.T, args ...string) ([]byte, error) {
 	t.Helper()
 	var out bytes.Buffer
@@ -346,23 +360,16 @@ func TestAwsCostCommandWithoutTenantFailsBeforeReading(t *testing.T) {
 
 func TestAwsCostCommandTaxonomyTenant(t *testing.T) {
 	defer setupTestClock(t)()
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(t.TempDir()); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(wd) })
+	chdirTemp(t)
 	write := func(name, tenant string) string {
-		body := "tenant: " + tenant + "\nlzs:\n  - { code: LZ-MAIN, name: Main, csp: aws, currency: USD, management_account: \"111111111111\" }\n"
+		body := "tenant: " + tenant + "\nlzs:\n  - { code: main, name: Main, csp: aws, currency: USD, management_account: \"111111111111\" }\n"
 		if err := os.WriteFile(name, []byte(body), 0o644); err != nil {
 			t.Fatal(err)
 		}
 		return name
 	}
 	other := write("other.yaml", "othertnt")
-	_, err = runCostCommand(t, "--tenant", "testtnt", "--mock", "--lz", "LZ-MAIN", "--taxonomy", other)
+	_, err := runCostCommand(t, "--tenant", "testtnt", "--mock", "--lz", "main", "--taxonomy", other)
 	if err == nil {
 		t.Fatal("expected a taxonomy tenant error")
 	}
@@ -373,7 +380,7 @@ func TestAwsCostCommandTaxonomyTenant(t *testing.T) {
 	}
 
 	same := write("same.yaml", "testtnt")
-	out, err := runCostCommand(t, "--tenant", "testtnt", "--mock", "--lz", "LZ-MAIN", "--taxonomy", same)
+	out, err := runCostCommand(t, "--tenant", "testtnt", "--mock", "--taxonomy", same)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -412,5 +419,66 @@ func TestEveryAwsCostRecordHasTenant(t *testing.T) {
 	}
 	if !kinds["cost"] || !kinds["project_tag_cost"] || !kinds["finding"] {
 		t.Fatalf("kinds = %v, want cost, project_tag_cost and finding", kinds)
+	}
+}
+
+func TestAwsCostLZDefaultsFromTaxonomy(t *testing.T) {
+	defer setupTestClock(t)()
+	chdirTemp(t)
+	dir := t.TempDir()
+	write := func(name string, codes ...string) string {
+		body := "tenant: testtnt\nlzs:\n"
+		for _, c := range codes {
+			body += "  - { code: " + c + ", name: Main, csp: aws, currency: USD, management_account: \"111111111111\" }\n"
+		}
+		path := filepath.Join(dir, name)
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	one := write("one.yaml", "main")
+
+	for _, extra := range [][]string{nil, {"--lz", "main"}} {
+		out, err := runCostCommand(t, append([]string{"--tenant", "testtnt", "--mock", "--taxonomy", one}, extra...)...)
+		if err != nil {
+			t.Fatalf("args %v: %v", extra, err)
+		}
+		recs, err := record.Read(bytes.NewReader(out), "stdout", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, r := range recs {
+			if (r.Kind() == "cost" || r.Kind() == "project_tag_cost") && r["lz"] != "main" {
+				t.Fatalf("record %d lz = %v, want main", i+1, r["lz"])
+			}
+		}
+	}
+
+	cases := []struct {
+		name string
+		args []string
+		want []string
+	}{
+		{"lz differs from the taxonomy", []string{"--lz", "other", "--taxonomy", one}, []string{`"other"`, `"main"`}},
+		{"lz without taxonomy", []string{"--lz", "main"}, []string{"--lz requires --taxonomy"}},
+		{"two LZs", []string{"--taxonomy", write("two.yaml", "main", "other")}, []string{"2 LZs"}},
+		{"no LZ", []string{"--taxonomy", write("none.yaml")}, []string{"0 LZs"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := runCostCommand(t, append([]string{"--tenant", "testtnt", "--mock"}, tc.args...)...)
+			if err == nil {
+				t.Fatal("expected an error")
+			}
+			if len(out) != 0 {
+				t.Fatalf("wrote %q", out)
+			}
+			for _, w := range tc.want {
+				if !strings.Contains(err.Error(), w) {
+					t.Fatalf("error %q should contain %q", err, w)
+				}
+			}
+		})
 	}
 }

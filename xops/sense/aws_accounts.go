@@ -69,22 +69,48 @@ func awsAccountsCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&mock, "mock", false, "read the embedded demo organization")
 	cmd.Flags().StringVar(&profile, "profile", "", "AWS shared config profile")
 	cmd.Flags().StringVar(&region, "region", "", "AWS region (default us-east-1)")
-	cmd.Flags().StringVar(&lz, "lz", "", "landing zone code (requires --taxonomy)")
-	cmd.Flags().StringVar(&taxonomy, "taxonomy", "", "taxonomy YAML for --lz")
+	cmd.Flags().StringVar(&lz, "lz", "", "landing zone code (requires --taxonomy; defaults to the taxonomy's one LZ)")
+	cmd.Flags().StringVar(&taxonomy, "taxonomy", "", "taxonomy YAML: its one LZ is checked against the organization's management account")
 	return cmd
 }
 
+// resolveLZ returns the LZ code for the records. With --taxonomy it is the taxonomy's one LZ (D-052);
+// a --lz that names another code is an error that names both.
 func resolveLZ(lz, taxonomy string) (string, error) {
-	if lz == "" {
-		if taxonomy != "" {
-			return "", fmt.Errorf("--taxonomy requires --lz")
+	if taxonomy == "" {
+		if lz != "" {
+			return "", fmt.Errorf("--lz requires --taxonomy")
 		}
 		return "", nil
 	}
-	if taxonomy == "" {
-		return "", fmt.Errorf("--lz requires --taxonomy")
+	code, err := taxonomyLZ(taxonomy)
+	if err != nil {
+		return "", err
 	}
-	return lz, nil
+	if lz != "" && lz != code {
+		return "", fmt.Errorf("--lz %q is not the LZ %q of taxonomy %s", lz, code, taxonomy)
+	}
+	return code, nil
+}
+
+// taxonomyLZ returns the code of the one LZ in the taxonomy at path.
+func taxonomyLZ(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("read taxonomy %s: %w", path, err)
+	}
+	var doc struct {
+		LZs []struct {
+			Code string `yaml:"code"`
+		} `yaml:"lzs"`
+	}
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return "", fmt.Errorf("parse taxonomy %s: %w", path, err)
+	}
+	if len(doc.LZs) != 1 {
+		return "", fmt.Errorf("taxonomy %s has %d LZs, want exactly one", path, len(doc.LZs))
+	}
+	return doc.LZs[0].Code, nil
 }
 
 func managementAccountForLZ(path, code string) (string, error) {
