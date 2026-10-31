@@ -307,6 +307,20 @@ func TestCostHistoryShortFinding(t *testing.T) {
 	}
 }
 
+// chdirTemp runs the test in an empty directory, so that the command's relative cache under
+// data/ never lands in the package directory.
+func chdirTemp(t *testing.T) {
+	t.Helper()
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(wd) })
+}
+
 func runCostCommand(t *testing.T, args ...string) ([]byte, error) {
 	t.Helper()
 	var out bytes.Buffer
@@ -346,14 +360,7 @@ func TestAwsCostCommandWithoutTenantFailsBeforeReading(t *testing.T) {
 
 func TestAwsCostCommandTaxonomyTenant(t *testing.T) {
 	defer setupTestClock(t)()
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(t.TempDir()); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(wd) })
+	chdirTemp(t)
 	write := func(name, tenant string) string {
 		body := "tenant: " + tenant + "\nlzs:\n  - { code: main, name: Main, csp: aws, currency: USD, management_account: \"111111111111\" }\n"
 		if err := os.WriteFile(name, []byte(body), 0o644); err != nil {
@@ -362,7 +369,7 @@ func TestAwsCostCommandTaxonomyTenant(t *testing.T) {
 		return name
 	}
 	other := write("other.yaml", "othertnt")
-	_, err = runCostCommand(t, "--tenant", "testtnt", "--mock", "--lz", "main", "--taxonomy", other)
+	_, err := runCostCommand(t, "--tenant", "testtnt", "--mock", "--lz", "main", "--taxonomy", other)
 	if err == nil {
 		t.Fatal("expected a taxonomy tenant error")
 	}
@@ -417,6 +424,7 @@ func TestEveryAwsCostRecordHasTenant(t *testing.T) {
 
 func TestAwsCostLZDefaultsFromTaxonomy(t *testing.T) {
 	defer setupTestClock(t)()
+	chdirTemp(t)
 	dir := t.TempDir()
 	write := func(name string, codes ...string) string {
 		body := "tenant: testtnt\nlzs:\n"
