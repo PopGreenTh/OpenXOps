@@ -149,6 +149,28 @@ Month-on-month mapping change from `finops analyze changes`.
 | `period_from` | string | yes | Start period for the comparison. |
 | `period_to` | string | yes | End period. |
 
+## `node`
+
+One node of the tenant's cloud tree, written by `xops enrich lz-tree` (D-054): the landing zone,
+every OU and every account. Nodes are named by the same URNs `finops enrich map` writes as
+`lz_urn`, `ou_urn` and `account_urn` ([taxonomy.md](taxonomy.md#urns-d-046)).
+
+| Field | Type | Required | Meaning |
+|---|---|---|---|
+| `kind` | string | yes | Always `node`. |
+| `tenant` | string | yes | Tenant id, the `--tenant` of the command that wrote the record (D-045). |
+| `csp` | string | yes | Cloud provider (`aws`): the LZ's, or the `ou` or `account` record's. |
+| `type` | string | yes | The URN type of the level: `lzc` (the LZ), `org` (an OU) or `acc` (an account). |
+| `urn` | string | yes | The node's URN: `urn:tnt:<tenant>:lzc:<lz>`, `…:org:<OU path>` or `<parent OU URN>:acc:<account id>`. |
+| `parent_urn` | string | yes | The parent's URN: `""` for the LZ, the LZ for the root OU, otherwise the parent OU. |
+| `id` | string | yes | The LZ code, the OU path slug (`platform/hub/hub-sit`, `root`) or the account id. |
+| `name` | string | yes | The LZ's name, the OU's name (`Root` for the root) or the account's name. |
+| `source_id` | string | yes | The LZ's management account, the AWS OU or root id, or the account id. |
+| `path` | string | yes | `""` for the LZ; the OU's `path`; the account's `ou_path`. |
+| `status` | string | yes | The account's `status`; `""` for the LZ and OUs. |
+| `joined_at` | string | yes | The account's `joined_at` (RFC 3339 UTC, [`account`](#account)), or `""` when the record has none; `""` for the LZ and OUs (D-055). |
+| `joined_method` | string | yes | The account's `joined_method` (`CREATED` or `INVITED`), or `""` when the record has none; `""` for the LZ and OUs (D-055). |
+
 ## `finding`
 
 Validation or mapping issue emitted as a record (stdout); severity `error` makes `validate` exit 1.

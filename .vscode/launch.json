@@ -56,6 +56,24 @@
       "console": "integratedTerminal"
     },
     {
+      "name": "xops enrich lz-tree (demo accounts)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/xops",
+      "args": ["enrich", "lz-tree", "--tenant", "testtnt", "--taxonomy", "${workspaceFolder}/xops/enrich/testdata/demo-taxonomy.yaml", "--from-accounts", "${workspaceFolder}/xops/sense/testdata/aws-accounts.jsonl"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "xops report tree (demo-tree.jsonl)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/xops",
+      "args": ["report", "tree", "--tenant", "testtnt", "--from-node", "${workspaceFolder}/xops/enrich/testdata/demo-tree.jsonl"],
+      "console": "integratedTerminal"
+    },
+    {
       "name": "xops report table (mixed.jsonl)",
       "type": "go",
       "request": "launch",

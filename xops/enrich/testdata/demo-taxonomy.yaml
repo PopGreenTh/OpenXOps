@@ -1,0 +1,7 @@
+tenant: testtnt
+lzs:
+  - code: main
+    name: Main
+    csp: aws
+    currency: USD
+    management_account: "111111111111"

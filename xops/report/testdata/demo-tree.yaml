@@ -1,0 +1,140 @@
+tenant: testtnt
+lz:
+  type: lzc
+  id: main
+  name: Main
+  urn: urn:tnt:testtnt:lzc:main
+  source_id: "111111111111"
+  children:
+    - type: org
+      id: root
+      name: Root
+      urn: urn:tnt:testtnt:lzc:main:org:root
+      source_id: r-1
+      children:
+        - type: org
+          id: security
+          name: Security
+          urn: urn:tnt:testtnt:lzc:main:org:security
+          source_id: ou-sec
+          children:
+            - type: acc
+              id: "200000000010"
+              name: sec-audit
+              urn: urn:tnt:testtnt:lzc:main:org:security:acc:200000000010
+              source_id: "200000000010"
+              status: ACTIVE
+              joined_at: "2019-03-11T02:30:00Z"
+              joined_method: CREATED
+            - type: acc
+              id: "200000000011"
+              name: sec-log
+              urn: urn:tnt:testtnt:lzc:main:org:security:acc:200000000011
+              source_id: "200000000011"
+              status: ACTIVE
+              joined_at: "2019-03-11T02:41:18Z"
+              joined_method: CREATED
+        - type: org
+          id: shared
+          name: Shared
+          urn: urn:tnt:testtnt:lzc:main:org:shared
+          source_id: ou-shared
+          children:
+            - type: acc
+              id: "200000000002"
+              name: shared-platform
+              urn: urn:tnt:testtnt:lzc:main:org:shared:acc:200000000002
+              source_id: "200000000002"
+              status: ACTIVE
+              joined_at: "2019-06-20T14:05:09Z"
+              joined_method: CREATED
+        - type: org
+          id: workloads
+          name: Workloads
+          urn: urn:tnt:testtnt:lzc:main:org:workloads
+          source_id: ou-1
+          children:
+            - type: org
+              id: workloads/checkout
+              name: Checkout
+              urn: urn:tnt:testtnt:lzc:main:org:workloads/checkout
+              source_id: ou-2
+              children:
+                - type: org
+                  id: workloads/checkout/non-prod
+                  name: NonProd
+                  urn: urn:tnt:testtnt:lzc:main:org:workloads/checkout/non-prod
+                  source_id: ou-3np
+                  children:
+                    - type: acc
+                      id: "200000000003"
+                      name: chk-nonprod
+                      urn: urn:tnt:testtnt:lzc:main:org:workloads/checkout/non-prod:acc:200000000003
+                      source_id: "200000000003"
+                      status: ACTIVE
+                      joined_at: "2020-01-15T08:22:07Z"
+                      joined_method: CREATED
+                - type: org
+                  id: workloads/checkout/prod
+                  name: Prod
+                  urn: urn:tnt:testtnt:lzc:main:org:workloads/checkout/prod
+                  source_id: ou-3
+                  children:
+                    - type: acc
+                      id: "200000000001"
+                      name: chk-prod
+                      urn: urn:tnt:testtnt:lzc:main:org:workloads/checkout/prod:acc:200000000001
+                      source_id: "200000000001"
+                      status: ACTIVE
+                      joined_at: "2020-01-15T08:00:31Z"
+                      joined_method: CREATED
+            - type: org
+              id: workloads/payments
+              name: Payments
+              urn: urn:tnt:testtnt:lzc:main:org:workloads/payments
+              source_id: ou-pay
+              children:
+                - type: org
+                  id: workloads/payments/non-prod
+                  name: NonProd
+                  urn: urn:tnt:testtnt:lzc:main:org:workloads/payments/non-prod
+                  source_id: ou-pay-np
+                  children:
+                    - type: acc
+                      id: "200000000005"
+                      name: pay-nonprod
+                      urn: urn:tnt:testtnt:lzc:main:org:workloads/payments/non-prod:acc:200000000005
+                      source_id: "200000000005"
+                      status: ACTIVE
+                      joined_at: "2021-04-12T03:48:52Z"
+                      joined_method: CREATED
+                - type: org
+                  id: workloads/payments/prod
+                  name: Prod
+                  urn: urn:tnt:testtnt:lzc:main:org:workloads/payments/prod
+                  source_id: ou-pay-prod
+                  children:
+                    - type: acc
+                      id: "200000000004"
+                      name: pay-prod
+                      urn: urn:tnt:testtnt:lzc:main:org:workloads/payments/prod:acc:200000000004
+                      source_id: "200000000004"
+                      status: ACTIVE
+                      joined_at: "2021-04-12T03:15:27Z"
+                      joined_method: INVITED
+        - type: acc
+          id: "111111111111"
+          name: management
+          urn: urn:tnt:testtnt:lzc:main:org:root:acc:111111111111
+          source_id: "111111111111"
+          status: ACTIVE
+          joined_at: "2019-03-04T09:12:45Z"
+          joined_method: CREATED
+        - type: acc
+          id: "200000000099"
+          name: sandbox
+          urn: urn:tnt:testtnt:lzc:main:org:root:acc:200000000099
+          source_id: "200000000099"
+          status: ACTIVE
+          joined_at: "2022-09-30T23:59:59Z"
+          joined_method: CREATED
