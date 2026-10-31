@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/PopGreenTh/OpenXOps/record"
 )
 
 func TestAWSAccountsMockGolden(t *testing.T) {
@@ -24,5 +26,27 @@ func TestAWSAccountsMockGolden(t *testing.T) {
 	}
 	if !bytes.Equal(out.Bytes(), want) {
 		t.Fatalf("mock output differs from %s", golden)
+	}
+}
+
+func TestAWSAccountsGoldenHasJoined(t *testing.T) {
+	recs, err := record.ReadFile(filepath.Join("testdata", "aws-accounts.jsonl"), map[string]struct{}{"account": {}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := 0
+	for i, rec := range recs {
+		if rec["kind"] != "account" {
+			continue
+		}
+		n++
+		for _, name := range []string{"joined_at", "joined_method"} {
+			if s, _ := rec[name].(string); s == "" {
+				t.Errorf("line %d: account %v has empty %s", i+1, rec["id"], name)
+			}
+		}
+	}
+	if n == 0 {
+		t.Fatal("no account records")
 	}
 }

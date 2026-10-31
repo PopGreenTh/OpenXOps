@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
@@ -56,7 +57,8 @@ func (pagingOrganizationsFake) ListAccountsForParent(ctx context.Context, params
 	if params.NextToken == nil {
 		return &organizations.ListAccountsForParentOutput{
 			Accounts: []types.Account{
-				{Id: aws.String("200000000001"), Name: aws.String("a1"), Email: aws.String("a1@example.com"), Status: types.AccountStatusActive},
+				{Id: aws.String("200000000001"), Name: aws.String("a1"), Email: aws.String("a1@example.com"), Status: types.AccountStatusActive,
+					JoinedTimestamp: aws.Time(time.Date(2020, 1, 15, 8, 0, 31, 0, time.UTC)), JoinedMethod: types.AccountJoinedMethodCreated},
 			},
 			NextToken: aws.String(pagingToken),
 		}, nil
@@ -66,7 +68,8 @@ func (pagingOrganizationsFake) ListAccountsForParent(ctx context.Context, params
 	}
 	return &organizations.ListAccountsForParentOutput{
 		Accounts: []types.Account{
-			{Id: aws.String("200000000002"), Name: aws.String("a2"), Email: aws.String("a2@example.com"), Status: types.AccountStatusActive},
+			{Id: aws.String("200000000002"), Name: aws.String("a2"), Email: aws.String("a2@example.com"), Status: types.AccountStatusActive,
+				JoinedTimestamp: aws.Time(time.Date(2021, 4, 12, 3, 15, 27, 0, time.UTC)), JoinedMethod: types.AccountJoinedMethodInvited},
 		},
 	}, nil
 }
@@ -92,5 +95,36 @@ func TestOrgClientListAccountsForParentPaging(t *testing.T) {
 	}
 	if len(accs) != 2 || accs[0].ID != "200000000001" || accs[1].ID != "200000000002" {
 		t.Fatalf("accs = %+v", accs)
+	}
+	if accs[0].JoinedAt != "2020-01-15T08:00:31Z" || accs[0].JoinedMethod != "CREATED" ||
+		accs[1].JoinedAt != "2021-04-12T03:15:27Z" || accs[1].JoinedMethod != "INVITED" {
+		t.Fatalf("joined = %+v", accs)
+	}
+}
+
+func TestJoinedAt(t *testing.T) {
+	bangkok := time.FixedZone("ICT", 7*60*60)
+	tests := []struct {
+		name string
+		in   *time.Time
+		want string
+	}{
+		{"nil", nil, ""},
+		{"utc", aws.Time(time.Date(2021, 4, 12, 3, 15, 27, 0, time.UTC)), "2021-04-12T03:15:27Z"},
+		{"non-utc with fraction", aws.Time(time.Date(2021, 4, 12, 10, 15, 27, 987654321, bangkok)), "2021-04-12T03:15:27Z"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := joinedAt(tt.in); got != tt.want {
+				t.Fatalf("joinedAt = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAccountFromAWSMissingJoined(t *testing.T) {
+	ac := accountFromAWS(types.Account{Id: aws.String("200000000001")})
+	if ac.JoinedAt != "" || ac.JoinedMethod != "" {
+		t.Fatalf("joined = %q %q, want empty", ac.JoinedAt, ac.JoinedMethod)
 	}
 }

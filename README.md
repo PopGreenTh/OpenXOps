@@ -8,7 +8,8 @@ to.
 
 Two binaries:
 
-- **`xops`** — shared commands (`xops sense aws-accounts`, `xops report excel`)
+- **`xops`** — shared commands (`xops sense aws-accounts`, which lists OUs and accounts with
+  each account's join time, and `xops report excel`)
 - **`finops`** — cost (first); `secops` and `cloudops` later
 
 Stages: **Sense › Enrich › Analyze › Enforce › Report**. Records are flat JSON Lines; only Report

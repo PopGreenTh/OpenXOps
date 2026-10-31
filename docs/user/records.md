@@ -42,6 +42,8 @@ Member account in an AWS Organization.
 | `parent_id` | string | yes | Parent OU ID. |
 | `ou_path` | string | yes | Parent OU human path. |
 | `ou_id_path` | string | yes | Parent OU ID path. |
+| `joined_at` | string | no | When the account joined the organization: AWS `JoinedTimestamp` in RFC 3339 UTC, to the second (`2021-04-12T03:15:27Z`). It is the account's creation time only when `joined_method` is `CREATED`; for an `INVITED` account it is when the account accepted the invitation. `aws-accounts` always writes it, as `""` when AWS gives none. |
+| `joined_method` | string | no | How the account joined: `CREATED` or `INVITED`, as AWS gives it. `aws-accounts` always writes it, as `""` when AWS gives none. |
 | `lz` | string | no | Landing zone code when `--lz` is used. |
 
 ## `project_tag_cost`
