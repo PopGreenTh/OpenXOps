@@ -51,6 +51,7 @@ var ByKind = map[string]Schema{
 	"allocation":       allocationSchema,
 	"change":           changeSchema,
 	"finding":          findingSchema,
+	"node":             nodeSchema,
 }
 
 var ouSchema = Schema{
@@ -192,6 +193,23 @@ var findingSchema = Schema{
 		{Name: "message", Type: TypeString, Required: true},
 		{Name: "command", Type: TypeString, Required: true},
 		{Name: "tenant", Type: TypeString, Required: true},
+	},
+}
+
+var nodeSchema = Schema{
+	Kind: "node",
+	Fields: []Field{
+		{Name: "kind", Type: TypeString, Required: true},
+		{Name: "tenant", Type: TypeString, Required: true},
+		{Name: "csp", Type: TypeString, Required: true},
+		{Name: "type", Type: TypeString, Required: true},
+		{Name: "urn", Type: TypeString, Required: true},
+		{Name: "parent_urn", Type: TypeString, Required: true},
+		{Name: "id", Type: TypeString, Required: true},
+		{Name: "name", Type: TypeString, Required: true},
+		{Name: "source_id", Type: TypeString, Required: true},
+		{Name: "path", Type: TypeString, Required: true},
+		{Name: "status", Type: TypeString, Required: true},
 	},
 }
 

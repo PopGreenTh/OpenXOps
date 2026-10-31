@@ -6,7 +6,7 @@ import (
 )
 
 func TestEveryContractKindHasSchema(t *testing.T) {
-	want := []string{"ou", "account", "cost", "project_tag_cost", "allocation", "change", "finding"}
+	want := []string{"ou", "account", "cost", "project_tag_cost", "allocation", "change", "finding", "node"}
 	for _, k := range want {
 		if _, ok := ByKind[k]; !ok {
 			t.Fatalf("missing schema for kind %q", k)
@@ -160,5 +160,33 @@ func TestAccountJoinedFieldsOptionalStrings(t *testing.T) {
 		if !ok || f.Type != TypeString || f.Required {
 			t.Errorf("account.%s = %+v, want an optional string", name, f)
 		}
+	}
+}
+
+func TestNodeFieldsAllRequiredStrings(t *testing.T) {
+	want := []string{"kind", "tenant", "csp", "type", "urn", "parent_urn", "id", "name", "source_id", "path", "status"}
+	if got := len(ByKind["node"].Fields); got != len(want) {
+		t.Fatalf("node has %d fields, want %d", got, len(want))
+	}
+	for _, name := range want {
+		f, ok := fieldOf("node", name)
+		if !ok || f.Type != TypeString || !f.Required {
+			t.Errorf("node.%s = %+v, want a required string", name, f)
+		}
+	}
+}
+
+func TestValidateNodeMissingField(t *testing.T) {
+	rec := map[string]any{
+		"kind": "node", "tenant": "testtnt", "csp": "aws", "type": "lzc", "urn": "urn:tnt:testtnt:lzc:main",
+		"parent_urn": "", "id": "main", "name": "Main", "source_id": "111111111111", "path": "",
+	}
+	err := Validate("tree.jsonl", 3, rec, map[string]struct{}{"node": {}})
+	if err == nil || !strings.Contains(err.Error(), "tree.jsonl:3:") || !strings.Contains(err.Error(), `"status"`) {
+		t.Fatalf("error = %v, want a missing status at tree.jsonl:3", err)
+	}
+	rec["status"] = ""
+	if err := Validate("tree.jsonl", 3, rec, map[string]struct{}{"node": {}}); err != nil {
+		t.Fatal(err)
 	}
 }
