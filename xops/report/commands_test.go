@@ -66,3 +66,141 @@ func TestReportCommandsTenant(t *testing.T) {
 		})
 	}
 }
+
+const (
+	demoTreeJSONL = "../enrich/testdata/demo-tree.jsonl"
+	demoTreeYAML  = "testdata/demo-tree.yaml"
+)
+
+func runTree(t *testing.T, args ...string) (string, error) {
+	t.Helper()
+	var out bytes.Buffer
+	cmd := treeCommand()
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = true
+	cmd.SetOut(&out)
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs(args)
+	err := cmd.Execute()
+	return out.String(), err
+}
+
+func TestReportTreeGolden(t *testing.T) {
+	want, err := os.ReadFile(demoTreeYAML)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for run := 1; run <= 2; run++ {
+		got, err := runTree(t, "--tenant", "testtnt", "--from-node", demoTreeJSONL)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != string(want) {
+			t.Fatalf("run %d: stdout differs from %s", run, demoTreeYAML)
+		}
+	}
+	out := filepath.Join(t.TempDir(), "tree.yaml")
+	for run := 1; run <= 2; run++ {
+		if _, err := runTree(t, "--tenant", "testtnt", "--from-node", demoTreeJSONL, "--out", out); err != nil {
+			t.Fatal(err)
+		}
+		got, err := os.ReadFile(out)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(got, want) {
+			t.Fatalf("run %d: --out file differs from %s", run, demoTreeYAML)
+		}
+	}
+}
+
+func TestReportTreeReplacesOutFile(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "tree.yaml")
+	if err := os.WriteFile(out, []byte("old content that is longer than nothing\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runTree(t, "--tenant", "testtnt", "--from-node", demoTreeJSONL, "--out", out); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := os.ReadFile(out)
+	if strings.Contains(string(got), "old content") || !strings.HasPrefix(string(got), "tenant: testtnt\n") {
+		t.Fatalf("--out was appended to, not replaced:\n%s", got)
+	}
+}
+
+func TestReportTreeFailsWritingNothing(t *testing.T) {
+	data, err := os.ReadFile(demoTreeJSONL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSuffix(string(data), "\n"), "\n")
+	write := func(name string, ls []string) string {
+		path := filepath.Join(t.TempDir(), name)
+		if err := os.WriteFile(path, []byte(strings.Join(ls, "\n")+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	noLZ := write("no-lz.jsonl", lines[1:])
+	twoLZ := write("two-lz.jsonl", append(append([]string{}, lines...), strings.Replace(lines[0], "lzc:main", "lzc:other", 2)))
+	dangling := write("dangling.jsonl", append([]string{lines[0]}, strings.Replace(lines[1], `"parent_urn":"urn:tnt:testtnt:lzc:main"`, `"parent_urn":"urn:tnt:testtnt:lzc:gone"`, 1)))
+
+	cases := []struct {
+		name, file string
+		want       []string
+	}{
+		{"no lzc node", noLZ, []string{noLZ, "no lzc node"}},
+		{"two lzc nodes", twoLZ, []string{twoLZ + ":21:", "urn:tnt:testtnt:lzc:other"}},
+		{"dangling parent_urn", dangling, []string{dangling + ":2:", "urn:tnt:testtnt:lzc:gone"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := filepath.Join(t.TempDir(), "tree.yaml")
+			stdout, err := runTree(t, "--tenant", "testtnt", "--from-node", tc.file, "--out", out)
+			if err == nil {
+				t.Fatal("expected an error")
+			}
+			for _, w := range tc.want {
+				if !strings.Contains(err.Error(), w) {
+					t.Fatalf("error %q should contain %q", err, w)
+				}
+			}
+			if _, statErr := os.Stat(out); statErr == nil {
+				t.Fatal("--out was written")
+			}
+			if stdout != "" {
+				t.Fatalf("stdout = %q", stdout)
+			}
+			stdout, err = runTree(t, "--tenant", "testtnt", "--from-node", tc.file)
+			if err == nil || stdout != "" {
+				t.Fatalf("stdout run: err = %v, stdout = %q", err, stdout)
+			}
+		})
+	}
+}
+
+func TestReportTreeTenant(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "missing.jsonl")
+	for _, tenant := range [][]string{nil, {"--tenant", "Bad_Tenant"}} {
+		_, err := runTree(t, append(tenant, "--from-node", missing)...)
+		if err == nil || !strings.Contains(err.Error(), "tenant") || strings.Contains(err.Error(), "missing.jsonl") {
+			t.Fatalf("args %v: error = %v, want a --tenant error before reading", tenant, err)
+		}
+	}
+	data, _ := os.ReadFile(demoTreeJSONL)
+	other := filepath.Join(t.TempDir(), "other.jsonl")
+	lines := strings.Split(strings.TrimSuffix(string(data), "\n"), "\n")
+	lines[2] = strings.Replace(lines[2], `"tenant":"testtnt"`, `"tenant":"othertnt"`, 1)
+	if err := os.WriteFile(other, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err := runTree(t, "--tenant", "testtnt", "--from-node", other)
+	if err == nil {
+		t.Fatal("expected a record tenant error")
+	}
+	for _, w := range []string{other + ":3:", `"othertnt"`, `"testtnt"`} {
+		if !strings.Contains(err.Error(), w) {
+			t.Fatalf("error %q should contain %q", err, w)
+		}
+	}
+}

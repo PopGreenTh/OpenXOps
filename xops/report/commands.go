@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/xops/report/tree"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +24,7 @@ func Commands() []*cobra.Command {
 		Use:   "report",
 		Short: "Turn records into tables, CSV or Excel",
 	}
-	report.AddCommand(tableCommand(), csvCommand(), excelCommand())
+	report.AddCommand(tableCommand(), csvCommand(), excelCommand(), treeCommand())
 	return []*cobra.Command{report}
 }
 
@@ -81,6 +82,44 @@ func excelCommand() *cobra.Command {
 	cmd.Flags().StringVar(&out, "out", "", "workbook path (required)")
 	cmd.Flags().StringVar(&kinds, "kinds", "", "limit to comma-separated kinds")
 	record.AddFromFlags(cmd, fromPtrs(froms))
+	return cmd
+}
+
+func treeCommand() *cobra.Command {
+	var out, tenant string
+	from := record.From{Name: "node", Kinds: []string{"node"}}
+	cmd := &cobra.Command{
+		Use:   "tree",
+		Short: "Write the cloud tree as one nested YAML file",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			record.LogStart("xops report tree", map[string]string{"out": out, "from-node": from.File}, map[string]string{"tenant": tenant})
+			recs, err := record.AssembleTenant(os.Stdin, tenant, []record.From{from})
+			if err != nil {
+				return err
+			}
+			source := from.File
+			if source == "" || source == "-" {
+				source = "stdin"
+			}
+			doc, err := tree.Build(tenant, source, recs)
+			if err != nil {
+				return err
+			}
+			data, err := tree.Marshal(doc)
+			if err != nil {
+				return err
+			}
+			if strings.TrimSpace(out) == "" {
+				_, err = cmd.OutOrStdout().Write(data)
+				return err
+			}
+			return os.WriteFile(out, data, 0o644)
+		},
+	}
+	record.AddTenantFlag(cmd, &tenant)
+	cmd.Flags().StringVar(&out, "out", "", "write the YAML to FILE, replacing it (default: stdout)")
+	record.AddFromFlags(cmd, []*record.From{&from})
 	return cmd
 }
 
