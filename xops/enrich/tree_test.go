@@ -3,12 +3,14 @@ package enrich
 import (
 	"bytes"
 	"context"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/record/urn"
 	"github.com/PopGreenTh/OpenXOps/xops/sense"
 	"github.com/spf13/cobra"
 )
@@ -61,20 +63,20 @@ func TestLZTreeNodes(t *testing.T) {
 		want      map[string]string
 	}{
 		{"the LZ", "urn:tnt:testtnt:lzc:main", map[string]string{
-			"type": "lzc", "parent_urn": "", "id": "main", "name": "Main", "source_id": "111111111111", "path": "", "status": "", "csp": "aws"}},
+			"type": "lzc", "parent_urn": "", "code": "main", "name": "Main", "ref_id": "111111111111", "path": "", "status": "", "csp": "aws"}},
 		{"the root OU", "urn:tnt:testtnt:lzc:main:org:root", map[string]string{
-			"type": "org", "parent_urn": "urn:tnt:testtnt:lzc:main", "id": "root", "name": "Root", "source_id": "r-1", "path": "/", "status": ""}},
+			"type": "org", "parent_urn": "urn:tnt:testtnt:lzc:main", "code": "root", "name": "Root", "ref_id": "r-1", "path": "/", "status": ""}},
 		{"a nested OU", "urn:tnt:testtnt:lzc:main:org:workloads/checkout", map[string]string{
-			"type": "org", "parent_urn": "urn:tnt:testtnt:lzc:main:org:workloads", "id": "workloads/checkout", "name": "Checkout",
-			"source_id": "ou-2", "path": "/Workloads/Checkout"}},
+			"type": "org", "parent_urn": "urn:tnt:testtnt:lzc:main:org:workloads", "code": "checkout", "name": "Checkout",
+			"ref_id": "ou-2", "path": "/Workloads/Checkout"}},
 		{"an account in the root OU", "urn:tnt:testtnt:lzc:main:org:root:acc:111111111111", map[string]string{
-			"type": "acc", "parent_urn": "urn:tnt:testtnt:lzc:main:org:root", "id": "111111111111", "name": "management",
-			"source_id": "111111111111", "path": "/", "status": "ACTIVE"}},
+			"type": "acc", "parent_urn": "urn:tnt:testtnt:lzc:main:org:root", "code": "111111111111", "name": "management",
+			"ref_id": "111111111111", "path": "/", "status": "ACTIVE"}},
 		{"an account in a CamelCase OU", "urn:tnt:testtnt:lzc:main:org:workloads/checkout/non-prod:acc:200000000003", map[string]string{
-			"type": "acc", "parent_urn": "urn:tnt:testtnt:lzc:main:org:workloads/checkout/non-prod", "id": "200000000003",
+			"type": "acc", "parent_urn": "urn:tnt:testtnt:lzc:main:org:workloads/checkout/non-prod", "code": "200000000003",
 			"name": "chk-nonprod", "path": "/Workloads/Checkout/NonProd"}},
 		{"the CamelCase OU", "urn:tnt:testtnt:lzc:main:org:workloads/checkout/non-prod", map[string]string{
-			"type": "org", "id": "workloads/checkout/non-prod", "name": "NonProd", "source_id": "ou-3"}},
+			"type": "org", "code": "non-prod", "name": "NonProd", "ref_id": "ou-3"}},
 	}
 	for _, tc := range cases {
 		n, ok := m[tc.urn]
@@ -350,7 +352,7 @@ func TestDemoAccountNodesCarryNameAndJoined(t *testing.T) {
 	nodes := map[string]record.Record{}
 	for _, n := range out {
 		if str(n, "type") == "acc" {
-			nodes[str(n, "id")] = n
+			nodes[str(n, "code")] = n
 		}
 	}
 	checked := 0
@@ -376,5 +378,151 @@ func TestDemoAccountNodesCarryNameAndJoined(t *testing.T) {
 		if str(n, "type") != "acc" && (str(n, "joined_at") != "" || str(n, "joined_method") != "") {
 			t.Errorf("%s node %s has join fields", str(n, "type"), str(n, "urn"))
 		}
+	}
+}
+
+// shortOUInventory has an OU named IT, whose slug `it` is shorter than a code may be.
+func shortOUInventory() []record.Record {
+	return []record.Record{
+		ou("r-1", "Root", "", "/"),
+		ou("ou-it", "IT", "r-1", "/IT"),
+		account("111111111111", "management", "r-1", "/"),
+	}
+}
+
+func TestOUNamedITKeepsItsShortCodeAndWarns(t *testing.T) {
+	nodes := LZTree("testtnt", testLZ, shortOUInventory())
+	n := byURN(nodes)["urn:tnt:testtnt:lzc:main:org:it"]
+	if n == nil {
+		t.Fatalf("no node for the IT OU in %v", nodes)
+	}
+	if str(n, "code") != "it" || str(n, "name") != "IT" || str(n, "ref_id") != "ou-it" || str(n, "path") != "/IT" {
+		t.Fatalf("IT node = %v", n)
+	}
+	warnings, err := CheckNodes(nodes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(warnings) != 1 || !strings.Contains(warnings[0], "urn:tnt:testtnt:lzc:main:org:it") || !strings.Contains(warnings[0], `"it"`) {
+		t.Fatalf("warnings = %v, want exactly one naming the IT node and its code", warnings)
+	}
+}
+
+func TestLZTreeCommandWarnsOnStderrOnce(t *testing.T) {
+	var logs bytes.Buffer
+	old := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, &slog.HandlerOptions{Level: slog.LevelWarn})))
+	t.Cleanup(func() { slog.SetDefault(old) })
+
+	var lines []string
+	for _, r := range shortOUInventory() {
+		var b bytes.Buffer
+		if err := record.Write(&b, []record.Record{r}); err != nil {
+			t.Fatal(err)
+		}
+		lines = append(lines, strings.TrimSuffix(b.String(), "\n"))
+	}
+	accounts := writeFile(t, "accounts.jsonl", strings.Join(lines, "\n")+"\n")
+
+	var out bytes.Buffer
+	cmd := lzTreeCommand()
+	cmd.SilenceUsage, cmd.SilenceErrors = true, true
+	cmd.SetOut(&out)
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs([]string{"--tenant", "testtnt", "--taxonomy", demoTaxonomy, "--from-accounts", accounts})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if n := strings.Count(logs.String(), "level=WARN"); n != 1 {
+		t.Fatalf("%d warnings, want 1:\n%s", n, logs.String())
+	}
+	if !strings.Contains(logs.String(), "urn:tnt:testtnt:lzc:main:org:it") {
+		t.Fatalf("the warning does not name the node:\n%s", logs.String())
+	}
+	if !strings.Contains(out.String(), `"code":"it"`) || !strings.Contains(out.String(), "urn:tnt:testtnt:lzc:main:org:it") {
+		t.Fatalf("the IT node was not written:\n%s", out.String())
+	}
+}
+
+func TestCheckNodesStopsOnABadURN(t *testing.T) {
+	long := strings.Repeat("x", 300)
+	cases := []struct {
+		name string
+		lz   LZ
+		inv  []record.Record
+		want []string
+	}{
+		{"a space in the LZ code", LZ{Code: "my lz", Name: "Main", CSP: "aws", ManagementAccount: "111111111111"}, inventory(),
+			[]string{"lzc node", "urn:tnt:testtnt:lzc:my lz", "URN rule"}},
+		{"a URN over 250 characters", testLZ, []record.Record{ou("r-1", "Root", "", "/"), ou("ou-x", long, "r-1", "/"+long)},
+			[]string{"org node", "URN rule"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := CheckNodes(LZTree("testtnt", tc.lz, tc.inv))
+			if err == nil {
+				t.Fatal("expected an error")
+			}
+			for _, w := range tc.want {
+				if !strings.Contains(err.Error(), w) {
+					t.Fatalf("error %q should contain %q", err, w)
+				}
+			}
+		})
+	}
+
+	// And the command stops without writing anything.
+	taxonomy := writeFile(t, "tax.yaml", strings.Replace(mustRead(t, demoTaxonomy), "code: main", "code: my lz", 1))
+	accounts := mockAccounts(t)
+	_, err := execute(t, "enrich", "lz-tree", "--tenant", "testtnt", "--taxonomy", taxonomy, "--from-accounts", accounts)
+	if err == nil || !strings.Contains(err.Error(), "URN rule") || !strings.Contains(err.Error(), "my lz") {
+		t.Fatalf("error = %v, want the URN rule error naming the node", err)
+	}
+}
+
+func TestCheckNodesEmptyNameStops(t *testing.T) {
+	nodes := LZTree("testtnt", testLZ, inventory())
+	for _, n := range nodes {
+		if str(n, "type") == "acc" {
+			n["name"] = ""
+			break
+		}
+	}
+	_, err := CheckNodes(nodes)
+	if err == nil || !strings.Contains(err.Error(), "empty name") || !strings.Contains(err.Error(), "acc node") {
+		t.Fatalf("error = %v, want an empty name error naming the account node", err)
+	}
+}
+
+func TestEveryDemoNodeHasCodeURNAndName(t *testing.T) {
+	out, err := record.ReadFile(demoTreeFile, map[string]struct{}{"node": {}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	longest := ""
+	for _, n := range out {
+		for _, f := range []string{"code", "urn", "name", "ref_id"} {
+			if str(n, f) == "" {
+				t.Errorf("node %v has an empty %s", n["urn"], f)
+			}
+		}
+		if _, has := n["id"]; has {
+			t.Errorf("node %s still has id", str(n, "urn"))
+		}
+		if _, has := n["source_id"]; has {
+			t.Errorf("node %s still has source_id", str(n, "urn"))
+		}
+		if !urn.ValidURN(str(n, "urn")) || !urn.ValidCode(str(n, "code")) {
+			t.Errorf("node %s breaks the URN or code rule", str(n, "urn"))
+		}
+		if str(n, "type") == "org" && str(n, "code") != urn.Slug(str(n, "name")) {
+			t.Errorf("OU %s: code %q, want the slug of its name %q", str(n, "urn"), str(n, "code"), urn.Slug(str(n, "name")))
+		}
+		if len(str(n, "urn")) > len(longest) {
+			longest = str(n, "urn")
+		}
+	}
+	if len(longest) < 40 {
+		t.Fatalf("longest demo URN %q looks too short", longest)
 	}
 }

@@ -164,7 +164,7 @@ func TestAccountJoinedFieldsOptionalStrings(t *testing.T) {
 }
 
 func TestNodeFieldsAllRequiredStrings(t *testing.T) {
-	want := []string{"kind", "tenant", "csp", "type", "urn", "parent_urn", "id", "name", "source_id", "path", "status", "joined_at", "joined_method"}
+	want := []string{"kind", "tenant", "csp", "type", "urn", "parent_urn", "code", "name", "ref_id", "path", "status", "joined_at", "joined_method"}
 	if got := len(ByKind["node"].Fields); got != len(want) {
 		t.Fatalf("node has %d fields, want %d", got, len(want))
 	}
@@ -179,7 +179,7 @@ func TestNodeFieldsAllRequiredStrings(t *testing.T) {
 func TestValidateNodeMissingField(t *testing.T) {
 	rec := map[string]any{
 		"kind": "node", "tenant": "testtnt", "csp": "aws", "type": "lzc", "urn": "urn:tnt:testtnt:lzc:main",
-		"parent_urn": "", "id": "main", "name": "Main", "source_id": "111111111111", "path": "",
+		"parent_urn": "", "code": "main", "name": "Main", "ref_id": "111111111111", "path": "",
 		"joined_at": "", "joined_method": "",
 	}
 	err := Validate("tree.jsonl", 3, rec, map[string]struct{}{"node": {}})

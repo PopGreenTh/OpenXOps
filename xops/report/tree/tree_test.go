@@ -9,7 +9,7 @@ import (
 
 func nd(typ, id, urn, parent string) record.Record {
 	return record.Record{"kind": "node", "tenant": "testtnt", "csp": "aws", "type": typ, "urn": urn, "parent_urn": parent,
-		"id": id, "name": "n-" + id, "source_id": "s-" + id, "path": "", "status": ""}
+		"code": id, "name": "n-" + id, "ref_id": "r-" + id, "path": "", "status": ""}
 }
 
 const (
@@ -45,11 +45,11 @@ func TestBuildNestsAndOrders(t *testing.T) {
 	root := doc.LZ.Children[0]
 	var got []string
 	for _, c := range root.Children {
-		got = append(got, c.Type+":"+c.ID)
+		got = append(got, c.Type+":"+c.Code)
 	}
 	want := "org:alpha,org:zeta,acc:111111111111,acc:200000000002"
 	if strings.Join(got, ",") != want {
-		t.Fatalf("children = %v, want %s (OUs before accounts, each in id order)", got, want)
+		t.Fatalf("children = %v, want %s (OUs before accounts, each in code order)", got, want)
 	}
 }
 
@@ -64,9 +64,9 @@ func TestMarshalShape(t *testing.T) {
 	}
 	text := string(data)
 	for _, want := range []string{
-		"tenant: testtnt\nlz:\n  type: lzc\n  id: main\n",
-		"  source_id: s-main\n  children:\n    - type: org\n      id: root\n",
-		`id: "111111111111"`, // a numeric-looking id is quoted
+		"tenant: testtnt\nlz:\n  type: lzc\n  code: main\n",
+		"  ref_id: r-main\n  children:\n    - type: org\n      code: root\n",
+		`code: "111111111111"`, // a numeric-looking code is quoted
 		"status: ACTIVE\n",
 	} {
 		if !strings.Contains(text, want) {
@@ -135,7 +135,7 @@ func TestJoinedOnAccountsOnly(t *testing.T) {
 	recs := goodNodes()
 	for _, r := range recs {
 		r["joined_at"], r["joined_method"] = "", ""
-		if r["type"] == "acc" && r["id"] == "111111111111" {
+		if r["type"] == "acc" && r["code"] == "111111111111" {
 			r["joined_at"], r["joined_method"] = "2019-03-04T09:12:45Z", "CREATED"
 		}
 	}

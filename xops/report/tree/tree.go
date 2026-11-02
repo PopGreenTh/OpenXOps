@@ -18,12 +18,12 @@ type Doc struct {
 
 // Node is one LZ, OU or account in the tree. Field order is the order in the YAML.
 type Node struct {
-	Type     string `yaml:"type"`
-	ID       string `yaml:"id"`
-	Name     string `yaml:"name"`
-	URN      string `yaml:"urn"`
-	SourceID string `yaml:"source_id"`
-	Status   string `yaml:"status,omitempty"`
+	Type   string `yaml:"type"`
+	Code   string `yaml:"code"`
+	Name   string `yaml:"name"`
+	URN    string `yaml:"urn"`
+	RefID  string `yaml:"ref_id"`
+	Status string `yaml:"status,omitempty"`
 	// JoinedAt and JoinedMethod are an account's (D-055); they are left out when empty.
 	JoinedAt     string  `yaml:"joined_at,omitempty"`
 	JoinedMethod string  `yaml:"joined_method,omitempty"`
@@ -40,7 +40,7 @@ type entry struct {
 // are that input's records in file order, so a record's line is its position plus one. Records of
 // other kinds are ignored. It fails, naming source, the line and the URN, when there isn't exactly
 // one lzc node, when two nodes share a urn, or when a node's parent_urn names no node or the node
-// is not under the lzc node. Children are the OUs, then the accounts, each group in id order.
+// is not under the lzc node. Children are the OUs, then the accounts, each group in code order.
 func Build(tenant, source string, recs []record.Record) (Doc, error) {
 	byURN := map[string]*entry{}
 	var all []*entry
@@ -51,8 +51,8 @@ func Build(tenant, source string, recs []record.Record) (Doc, error) {
 		}
 		e := &entry{
 			node: &Node{
-				Type: str(r, "type"), ID: str(r, "id"), Name: str(r, "name"), URN: str(r, "urn"),
-				SourceID: str(r, "source_id"), Status: str(r, "status"),
+				Type: str(r, "type"), Code: str(r, "code"), Name: str(r, "name"), URN: str(r, "urn"),
+				RefID: str(r, "ref_id"), Status: str(r, "status"),
 				JoinedAt: str(r, "joined_at"), JoinedMethod: str(r, "joined_method"),
 			},
 			parent: str(r, "parent_urn"),
@@ -129,7 +129,7 @@ func reachable(from, want *Node) bool {
 	return false
 }
 
-// sortChildren orders every node's children: OUs, then accounts, then anything else, each by id.
+// sortChildren orders every node's children: OUs, then accounts, then anything else, each by code.
 func sortChildren(n *Node) {
 	rank := func(typ string) int {
 		switch typ {
@@ -145,7 +145,7 @@ func sortChildren(n *Node) {
 		if ra, rb := rank(a.Type), rank(b.Type); ra != rb {
 			return ra < rb
 		}
-		return a.ID < b.ID
+		return a.Code < b.Code
 	})
 	for _, c := range n.Children {
 		sortChildren(c)

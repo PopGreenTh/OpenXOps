@@ -246,19 +246,19 @@ func TestDemoYAMLAccountsCarryNameAndJoined(t *testing.T) {
 		t.Fatalf("%d accounts in the YAML, %d account records", len(accs), len(want))
 	}
 	for _, a := range accs {
-		r, ok := want[a.ID]
+		r, ok := want[a.Code]
 		if !ok {
-			t.Fatalf("account %s is not in the account records", a.ID)
+			t.Fatalf("account %s is not in the account records", a.Code)
 		}
 		if a.Name != r["name"] || a.JoinedAt != r["joined_at"] || a.JoinedMethod != r["joined_method"] || a.JoinedAt == "" || a.JoinedMethod == "" {
-			t.Errorf("account %s: YAML %q %q %q, record %v %v %v", a.ID, a.Name, a.JoinedAt, a.JoinedMethod, r["name"], r["joined_at"], r["joined_method"])
+			t.Errorf("account %s: YAML %q %q %q, record %v %v %v", a.Code, a.Name, a.JoinedAt, a.JoinedMethod, r["name"], r["joined_at"], r["joined_method"])
 		}
 	}
 }
 
 type yamlNode struct {
 	Type         string     `yaml:"type"`
-	ID           string     `yaml:"id"`
+	Code         string     `yaml:"code"`
 	Name         string     `yaml:"name"`
 	URN          string     `yaml:"urn"`
 	JoinedAt     string     `yaml:"joined_at"`
