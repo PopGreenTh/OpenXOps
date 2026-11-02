@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/record/urn"
 	"gopkg.in/yaml.v3"
 )
 
@@ -23,6 +24,7 @@ type Node struct {
 	Name     string `yaml:"name"`
 	URN      string `yaml:"urn"`
 	SourceID string `yaml:"source_id"`
+	Alias    string `yaml:"alias,omitempty"`
 	Status   string `yaml:"status,omitempty"`
 	// JoinedAt and JoinedMethod are an account's (D-055); they are left out when empty.
 	JoinedAt     string  `yaml:"joined_at,omitempty"`
@@ -52,7 +54,7 @@ func Build(tenant, source string, recs []record.Record) (Doc, error) {
 		e := &entry{
 			node: &Node{
 				Type: str(r, "type"), ID: str(r, "id"), Name: str(r, "name"), URN: str(r, "urn"),
-				SourceID: str(r, "source_id"), Status: str(r, "status"),
+				SourceID: str(r, "source_id"), Alias: str(r, "alias"), Status: str(r, "status"),
 				JoinedAt: str(r, "joined_at"), JoinedMethod: str(r, "joined_method"),
 			},
 			parent: str(r, "parent_urn"),
@@ -150,6 +152,175 @@ func sortChildren(n *Node) {
 	for _, c := range n.Children {
 		sortChildren(c)
 	}
+}
+
+// TaxonomyDoc is the YAML document for --format taxonomy.
+type TaxonomyDoc struct {
+	Tenant  string            `yaml:"tenant"`
+	LZConns []*TaxonomyLZConn `yaml:"lz_conns"`
+}
+
+type TaxonomyLZConn struct {
+	Code              string            `yaml:"code"`
+	URN               string            `yaml:"urn"`
+	Name              string            `yaml:"name"`
+	Alias             string            `yaml:"alias,omitempty"`
+	Tenant            string            `yaml:"tenant"`
+	CSP               string            `yaml:"csp"`
+	Currency          string            `yaml:"currency"`
+	ManagementAccount string            `yaml:"management_account"`
+	RefID             string            `yaml:"ref_id"`
+	OUPaths           []*TaxonomyOUPath `yaml:"ou_paths"`
+}
+
+type TaxonomyOUPath struct {
+	Code     string             `yaml:"code"`
+	URN      string             `yaml:"urn"`
+	Name     string             `yaml:"name"`
+	Alias    string             `yaml:"alias,omitempty"`
+	RefID    string             `yaml:"ref_id"`
+	Path     string             `yaml:"path"`
+	Accounts []*TaxonomyAccount `yaml:"accounts,omitempty"`
+}
+
+type TaxonomyAccount struct {
+	Code   string `yaml:"code"`
+	URN    string `yaml:"urn"`
+	Name   string `yaml:"name"`
+	Alias  string `yaml:"alias,omitempty"`
+	RefID  string `yaml:"ref_id"`
+	Status string `yaml:"status,omitempty"`
+}
+
+// BuildTaxonomy builds the taxonomy lz_conns structure from node records.
+// It includes only the leaf OUs where accounts reside.
+func BuildTaxonomy(tenant, source string, recs []record.Record) (TaxonomyDoc, error) {
+	var lzRecord record.Record
+	ouMap := map[string]record.Record{}
+	var accRecords []record.Record
+
+	for i, r := range recs {
+		if r.Kind() != "node" {
+			continue
+		}
+		typ := str(r, "type")
+		urnStr := str(r, "urn")
+		switch typ {
+		case "lzc":
+			if lzRecord != nil {
+				return TaxonomyDoc{}, fmt.Errorf("%s:%d: second lzc node %s (want exactly one)", source, i+1, urnStr)
+			}
+			lzRecord = r
+		case "org":
+			ouMap[urnStr] = r
+		case "acc":
+			accRecords = append(accRecords, r)
+		}
+	}
+
+	if lzRecord == nil {
+		return TaxonomyDoc{}, fmt.Errorf("%s: no lzc node (want exactly one)", source)
+	}
+
+	lzURN := str(lzRecord, "urn")
+	mgmtID := str(lzRecord, "source_id")
+
+	accsByOU := map[string][]record.Record{}
+	for _, acc := range accRecords {
+		pURN := str(acc, "parent_urn")
+		if (pURN == lzURN || pURN == lzURN+":org:root") && str(acc, "source_id") == mgmtID {
+			continue
+		}
+		accsByOU[pURN] = append(accsByOU[pURN], acc)
+	}
+
+	var ouPaths []*TaxonomyOUPath
+	for ouURN, accs := range accsByOU {
+		ouNode, ok := ouMap[ouURN]
+		if !ok {
+			return TaxonomyDoc{}, fmt.Errorf("%s: parent_urn %q of accounts names no OU node", source, ouURN)
+		}
+
+		ouName := str(ouNode, "name")
+		ouCode := ouName
+		if ouCode == "" {
+			ouCode = str(ouNode, "id")
+		}
+
+		sort.SliceStable(accs, func(i, j int) bool {
+			return str(accs[i], "source_id") < str(accs[j], "source_id")
+		})
+
+		var accounts []*TaxonomyAccount
+		for _, a := range accs {
+			accCode := str(a, "name")
+			if accCode == "" {
+				accCode = str(a, "id")
+			}
+			accURN := str(ouNode, "urn") + ":acc:" + urn.Slug(accCode)
+			accounts = append(accounts, &TaxonomyAccount{
+				Code:   accCode,
+				URN:    accURN,
+				Name:   accCode,
+				Alias:  str(a, "alias"),
+				RefID:  str(a, "source_id"),
+				Status: str(a, "status"),
+			})
+		}
+
+		ouPaths = append(ouPaths, &TaxonomyOUPath{
+			Code:     ouCode,
+			URN:      str(ouNode, "urn"),
+			Name:     ouName,
+			Alias:    str(ouNode, "alias"),
+			RefID:    str(ouNode, "source_id"),
+			Path:     str(ouNode, "path"),
+			Accounts: accounts,
+		})
+	}
+
+	sort.SliceStable(ouPaths, func(i, j int) bool {
+		return ouPaths[i].Path < ouPaths[j].Path
+	})
+
+	lzCode := str(lzRecord, "id")
+	lzName := str(lzRecord, "name")
+	csp := str(lzRecord, "csp")
+	if csp == "" {
+		csp = "aws"
+	}
+
+	lzConn := &TaxonomyLZConn{
+		Code:              lzCode,
+		URN:               str(lzRecord, "urn"),
+		Name:              lzName,
+		Alias:             str(lzRecord, "alias"),
+		Tenant:            tenant,
+		CSP:               csp,
+		Currency:          "USD",
+		ManagementAccount: mgmtID,
+		RefID:             mgmtID,
+		OUPaths:           ouPaths,
+	}
+
+	return TaxonomyDoc{
+		Tenant:  tenant,
+		LZConns: []*TaxonomyLZConn{lzConn},
+	}, nil
+}
+
+// MarshalTaxonomy writes the taxonomy document as YAML with two-space indents.
+func MarshalTaxonomy(d TaxonomyDoc) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(d); err != nil {
+		return nil, err
+	}
+	if err := enc.Close(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 func str(r record.Record, key string) string {

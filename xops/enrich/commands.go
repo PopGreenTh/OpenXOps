@@ -3,6 +3,7 @@ package enrich
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/PopGreenTh/OpenXOps/record"
 	"github.com/spf13/cobra"
@@ -57,6 +58,43 @@ func lzTreeCommand() *cobra.Command {
 	return cmd
 }
 
+type rawOUPath struct {
+	Code     string       `yaml:"code"`
+	Name     string       `yaml:"name"`
+	Path     string       `yaml:"path"`
+	Alias    string       `yaml:"alias"`
+	Accounts []rawAccount `yaml:"accounts"`
+}
+
+type rawAccount struct {
+	Code    string `yaml:"code"`
+	Name    string `yaml:"name"`
+	RefID   string `yaml:"ref_id"`
+	Account string `yaml:"account"`
+	Alias   string `yaml:"alias"`
+}
+
+type rawOULink struct {
+	OU    string `yaml:"ou"`
+	Alias string `yaml:"alias"`
+}
+
+type rawAccountLink struct {
+	Account string `yaml:"account"`
+	Alias   string `yaml:"alias"`
+}
+
+type rawLZItem struct {
+	Code              string      `yaml:"code"`
+	URN               string      `yaml:"urn"`
+	Name              string      `yaml:"name"`
+	Alias             string      `yaml:"alias"`
+	CSP               string      `yaml:"csp"`
+	ManagementAccount string      `yaml:"management_account"`
+	RefID             string      `yaml:"ref_id"`
+	OUPaths           []rawOUPath `yaml:"ou_paths"`
+}
+
 // loadLZ reads the tenant and the one LZ of the taxonomy at path (D-052) and checks the tenant.
 func loadLZ(path, tenant string) (LZ, error) {
 	data, err := os.ReadFile(path)
@@ -64,25 +102,129 @@ func loadLZ(path, tenant string) (LZ, error) {
 		return LZ{}, fmt.Errorf("read taxonomy %s: %w", path, err)
 	}
 	var doc struct {
-		Tenant string `yaml:"tenant"`
-		LZs    []struct {
-			Code              string `yaml:"code"`
-			Name              string `yaml:"name"`
-			CSP               string `yaml:"csp"`
-			ManagementAccount string `yaml:"management_account"`
-		} `yaml:"lzs"`
+		Tenant   yaml.Node        `yaml:"tenant"`
+		LZs      []rawLZItem      `yaml:"lzs"`
+		LZConns  []rawLZItem      `yaml:"lz_conns"`
+		OULinks  []rawOULink      `yaml:"ou_links"`
+		Accounts []rawAccountLink `yaml:"accounts"`
 	}
 	if err := yaml.Unmarshal(data, &doc); err != nil {
 		return LZ{}, fmt.Errorf("parse taxonomy %s: %w", path, err)
 	}
-	if err := record.CheckTaxonomyTenant(path, doc.Tenant, tenant); err != nil {
+	tnt, err := parseTenantNode(&doc.Tenant)
+	if err != nil {
+		return LZ{}, fmt.Errorf("parse taxonomy %s tenant: %w", path, err)
+	}
+	if err := record.CheckTaxonomyTenant(path, tnt, tenant); err != nil {
 		return LZ{}, err
 	}
-	if len(doc.LZs) != 1 {
-		return LZ{}, fmt.Errorf("taxonomy %s has %d LZs, want exactly one", path, len(doc.LZs))
+	lzs := doc.LZs
+	if len(lzs) == 0 {
+		lzs = doc.LZConns
 	}
-	l := doc.LZs[0]
-	return LZ{Code: l.Code, Name: l.Name, CSP: l.CSP, ManagementAccount: l.ManagementAccount}, nil
+	if len(lzs) != 1 {
+		return LZ{}, fmt.Errorf("taxonomy %s has %d LZs, want exactly one", path, len(lzs))
+	}
+	l := lzs[0]
+	mgmt := l.ManagementAccount
+	if mgmt == "" {
+		mgmt = l.RefID
+	}
+	code := l.Code
+	if l.URN != "" {
+		if u := urnSegment(l.URN, "lzc"); u != "" {
+			code = u
+		}
+	}
+
+	ouAliases := map[string]string{}
+	accountAliases := map[string]string{}
+	for _, ou := range l.OUPaths {
+		if ou.Alias != "" {
+			if ou.Path != "" {
+				ouAliases[ou.Path] = ou.Alias
+			}
+			if ou.Code != "" {
+				ouAliases[ou.Code] = ou.Alias
+			}
+			if ou.Name != "" {
+				ouAliases[ou.Name] = ou.Alias
+			}
+		}
+		for _, acc := range ou.Accounts {
+			if acc.Alias != "" {
+				if acc.RefID != "" {
+					accountAliases[acc.RefID] = acc.Alias
+				}
+				if acc.Code != "" {
+					accountAliases[acc.Code] = acc.Alias
+				}
+				if acc.Account != "" {
+					accountAliases[acc.Account] = acc.Alias
+				}
+				if acc.Name != "" {
+					accountAliases[acc.Name] = acc.Alias
+				}
+			}
+		}
+	}
+	for _, link := range doc.OULinks {
+		if link.Alias != "" && link.OU != "" {
+			ouAliases[link.OU] = link.Alias
+		}
+	}
+	for _, acc := range doc.Accounts {
+		if acc.Alias != "" && acc.Account != "" {
+			accountAliases[acc.Account] = acc.Alias
+		}
+	}
+
+	return LZ{
+		Code:              code,
+		Name:              l.Name,
+		CSP:               strings.ToLower(l.CSP),
+		ManagementAccount: mgmt,
+		Alias:             l.Alias,
+		OUAliases:         ouAliases,
+		AccountAliases:    accountAliases,
+	}, nil
+}
+
+func parseTenantNode(n *yaml.Node) (string, error) {
+	if n == nil || n.Kind == 0 {
+		return "", nil
+	}
+	if n.Kind == yaml.ScalarNode {
+		return n.Value, nil
+	}
+	if n.Kind == yaml.MappingNode {
+		var m struct {
+			Code string `yaml:"code"`
+			URN  string `yaml:"urn"`
+		}
+		if err := n.Decode(&m); err != nil {
+			return "", err
+		}
+		if m.URN != "" {
+			if t := urnSegment(m.URN, "tnt"); t != "" {
+				return t, nil
+			}
+		}
+		if m.Code != "" {
+			return strings.ToLower(m.Code), nil
+		}
+	}
+	return "", fmt.Errorf("unexpected tenant node kind")
+}
+
+func urnSegment(u, typ string) string {
+	parts := strings.Split(u, ":")
+	for i := 0; i < len(parts)-1; i++ {
+		if parts[i] == typ {
+			return parts[i+1]
+		}
+	}
+	return ""
 }
 
 func hasInventory(recs []record.Record) bool {

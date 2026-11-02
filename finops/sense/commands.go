@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/PopGreenTh/OpenXOps/aws"
 	"github.com/PopGreenTh/OpenXOps/aws/ce"
@@ -122,12 +123,61 @@ func checkTaxonomyTenant(path, tenant string) error {
 		return fmt.Errorf("read taxonomy %s: %w", path, err)
 	}
 	var doc struct {
-		Tenant string `yaml:"tenant"`
+		Tenant yaml.Node `yaml:"tenant"`
 	}
 	if err := yaml.Unmarshal(data, &doc); err != nil {
 		return fmt.Errorf("parse taxonomy %s: %w", path, err)
 	}
-	return record.CheckTaxonomyTenant(path, doc.Tenant, tenant)
+	tnt, err := parseTenantNode(&doc.Tenant)
+	if err != nil {
+		return fmt.Errorf("parse taxonomy %s tenant: %w", path, err)
+	}
+	return record.CheckTaxonomyTenant(path, tnt, tenant)
+}
+
+type rawLZItem struct {
+	Code              string `yaml:"code"`
+	URN               string `yaml:"urn"`
+	Name              string `yaml:"name"`
+	ManagementAccount string `yaml:"management_account"`
+	RefID             string `yaml:"ref_id"`
+}
+
+func urnSegment(u, typ string) string {
+	parts := strings.Split(u, ":")
+	for i := 0; i < len(parts)-1; i++ {
+		if parts[i] == typ {
+			return parts[i+1]
+		}
+	}
+	return ""
+}
+
+func parseTenantNode(n *yaml.Node) (string, error) {
+	if n == nil || n.Kind == 0 {
+		return "", nil
+	}
+	if n.Kind == yaml.ScalarNode {
+		return n.Value, nil
+	}
+	if n.Kind == yaml.MappingNode {
+		var m struct {
+			Code string `yaml:"code"`
+			URN  string `yaml:"urn"`
+		}
+		if err := n.Decode(&m); err != nil {
+			return "", err
+		}
+		if m.URN != "" {
+			if t := urnSegment(m.URN, "tnt"); t != "" {
+				return t, nil
+			}
+		}
+		if m.Code != "" {
+			return strings.ToLower(m.Code), nil
+		}
+	}
+	return "", fmt.Errorf("unexpected tenant node kind")
 }
 
 func resolveTags(opt CostOptions) (app, project string, err error) {
@@ -170,17 +220,26 @@ func taxonomyLZ(path string) (string, error) {
 		return "", fmt.Errorf("read taxonomy %s: %w", path, err)
 	}
 	var doc struct {
-		LZs []struct {
-			Code string `yaml:"code"`
-		} `yaml:"lzs"`
+		LZs     []rawLZItem `yaml:"lzs"`
+		LZConns []rawLZItem `yaml:"lz_conns"`
 	}
 	if err := yaml.Unmarshal(data, &doc); err != nil {
 		return "", fmt.Errorf("parse taxonomy %s: %w", path, err)
 	}
-	if len(doc.LZs) != 1 {
-		return "", fmt.Errorf("taxonomy %s has %d LZs, want exactly one", path, len(doc.LZs))
+	lzs := doc.LZs
+	if len(lzs) == 0 {
+		lzs = doc.LZConns
 	}
-	return doc.LZs[0].Code, nil
+	if len(lzs) != 1 {
+		return "", fmt.Errorf("taxonomy %s has %d LZs, want exactly one", path, len(lzs))
+	}
+	code := lzs[0].Code
+	if lzs[0].URN != "" {
+		if u := urnSegment(lzs[0].URN, "lzc"); u != "" {
+			code = u
+		}
+	}
+	return code, nil
 }
 
 func managementAccountForLZ(path, code string) (string, error) {
@@ -189,17 +248,29 @@ func managementAccountForLZ(path, code string) (string, error) {
 		return "", fmt.Errorf("read taxonomy %s: %w", path, err)
 	}
 	var doc struct {
-		LZs []struct {
-			Code              string `yaml:"code"`
-			ManagementAccount string `yaml:"management_account"`
-		} `yaml:"lzs"`
+		LZs     []rawLZItem `yaml:"lzs"`
+		LZConns []rawLZItem `yaml:"lz_conns"`
 	}
 	if err := yaml.Unmarshal(data, &doc); err != nil {
 		return "", fmt.Errorf("parse taxonomy %s: %w", path, err)
 	}
-	for _, lz := range doc.LZs {
-		if lz.Code == code {
-			return lz.ManagementAccount, nil
+	lzs := doc.LZs
+	if len(lzs) == 0 {
+		lzs = doc.LZConns
+	}
+	for _, lz := range lzs {
+		c := lz.Code
+		if lz.URN != "" {
+			if u := urnSegment(lz.URN, "lzc"); u != "" {
+				c = u
+			}
+		}
+		if strings.EqualFold(c, code) || strings.EqualFold(lz.Code, code) {
+			mgmt := lz.ManagementAccount
+			if mgmt == "" {
+				mgmt = lz.RefID
+			}
+			return mgmt, nil
 		}
 	}
 	return "", fmt.Errorf("LZ %q not found in taxonomy %s", code, path)

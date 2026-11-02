@@ -104,7 +104,7 @@ func stepGofmt() error {
 }
 
 func stepTest() error {
-	return runCmd("go", "test", "./...")
+	return runCmd("go", "test", "-p", "2", "./...")
 }
 
 func stepDocs() error {

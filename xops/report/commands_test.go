@@ -130,6 +130,20 @@ func TestReportTreeReplacesOutFile(t *testing.T) {
 	}
 }
 
+func TestReportTreeFormatTaxonomy(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "tree.yaml")
+	if _, err := runTree(t, "--tenant", "testtnt", "--from-node", demoTreeJSONL, "--format", "taxonomy", "--out", out); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := os.ReadFile(out)
+	if !strings.Contains(string(got), "lz_conns:") {
+		t.Fatalf("expected lz_conns in output:\n%s", got)
+	}
+	if _, err := runTree(t, "--tenant", "testtnt", "--from-node", demoTreeJSONL, "--format", "invalid"); err == nil {
+		t.Fatal("expected error for invalid format")
+	}
+}
+
 func TestReportTreeFailsWritingNothing(t *testing.T) {
 	data, err := os.ReadFile(demoTreeJSONL)
 	if err != nil {

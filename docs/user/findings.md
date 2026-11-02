@@ -13,6 +13,7 @@ warnings do not stop other commands. Subjects that name a taxonomy node use its 
 | `taxonomy-lz-count` | error | `finops enrich validate` | `lzs` | The taxonomy does not have exactly one LZ: a tenant has one landing zone (D-052). | Keep one entry under `lzs`. |
 | `taxonomy-reserved-code` | error | `finops enrich validate` | Code | A `code` is a reserved id: `unalloc`, `unspec` or `invalid`. | Rename the code. |
 | `taxonomy-duplicate-code` | error | `finops enrich validate` | Code | The same code appears twice in a section. | Remove or rename the duplicate. |
+| `taxonomy-duplicate-alias` | error | `finops enrich validate` | Code or path | The same alias appears twice on nodes of the same type. | Remove or rename the duplicate alias. |
 | `taxonomy-unknown-reference` | error | `finops enrich validate` | Code or path | A reference points to a code that does not exist (for example unknown `business_unit`). | Fix the reference or add the target. |
 | `taxonomy-duplicate-ou-link` | error | `finops enrich validate` | OU path | Two `ou_links` rows set the same App or Environment for one LZ and OU. | Keep one link per OU and field. |
 | `taxonomy-environment-not-in-app` | error | `finops enrich validate` | Account and App | An account override sets an Environment not defined under the App. | Fix environments under the App or the override. |

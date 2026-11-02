@@ -3,6 +3,7 @@ package enrich
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/PopGreenTh/OpenXOps/record"
 	"github.com/PopGreenTh/OpenXOps/record/urn"
@@ -30,7 +31,20 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 		}
 	}
 
+	checkAlias := func(what, subject, alias string, seen map[string]string) {
+		if alias == "" {
+			return
+		}
+		key := strings.ToLower(strings.TrimSpace(alias))
+		if first, dup := seen[key]; dup {
+			addErr("taxonomy-duplicate-alias", subject, fmt.Sprintf("duplicate %s alias %q (first on %q)", what, alias, first))
+			return
+		}
+		seen[key] = subject
+	}
+
 	buCodes := map[string]struct{}{}
+	buAliases := map[string]string{}
 	for _, bu := range t.BusinessUnits {
 		if bu.Code == "" {
 			addErr("taxonomy-missing-field", "business_units", "business unit missing code")
@@ -44,9 +58,11 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 			addErr("taxonomy-duplicate-code", bu.Code, "duplicate business unit code")
 		}
 		buCodes[bu.Code] = struct{}{}
+		checkAlias("business unit", bu.Code, bu.Alias, buAliases)
 	}
 
 	ccCodes := map[string]struct{}{}
+	ccAliases := map[string]string{}
 	for _, cc := range t.CostCenters {
 		if cc.Code == "" {
 			addErr("taxonomy-missing-field", "cost_centers", "cost center missing code")
@@ -60,6 +76,7 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 			addErr("taxonomy-duplicate-code", cc.Code, "duplicate cost center code")
 		}
 		ccCodes[cc.Code] = struct{}{}
+		checkAlias("cost center", cc.Code, cc.Alias, ccAliases)
 		if cc.BusinessUnit != "" {
 			if _, ok := buCodes[cc.BusinessUnit]; !ok {
 				addErr("taxonomy-unknown-reference", cc.Code, fmt.Sprintf("unknown business_unit %q", cc.BusinessUnit))
@@ -67,7 +84,13 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 		}
 	}
 
+	ontAliases := map[string]string{}
+	for _, ont := range t.OwnerTeams {
+		checkAlias("owner team", ont.Code, ont.Alias, ontAliases)
+	}
+
 	prjCodes := map[string]struct{}{}
+	prjAliases := map[string]string{}
 	for _, pr := range t.Projects {
 		if pr.Code == "" {
 			addErr("taxonomy-missing-field", "projects", "project missing code")
@@ -81,6 +104,7 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 			addErr("taxonomy-duplicate-code", pr.Code, "duplicate project code")
 		}
 		prjCodes[pr.Code] = struct{}{}
+		checkAlias("project", pr.Code, pr.Alias, prjAliases)
 		if pr.BusinessUnit != "" {
 			if _, ok := buCodes[pr.BusinessUnit]; !ok {
 				addErr("taxonomy-unknown-reference", pr.Code, fmt.Sprintf("unknown business_unit %q", pr.BusinessUnit))
@@ -89,7 +113,9 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 	}
 
 	appCodes := map[string]struct{}{}
+	appAliases := map[string]string{}
 	appEnvs := map[string]map[string]struct{}{}
+	envAliases := map[string]string{}
 	for _, app := range t.Apps {
 		if app.Code == "" {
 			addErr("taxonomy-missing-field", "apps", "app missing code")
@@ -103,6 +129,7 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 			addErr("taxonomy-duplicate-code", app.Code, "duplicate app code")
 		}
 		appCodes[app.Code] = struct{}{}
+		checkAlias("app", app.Code, app.Alias, appAliases)
 		if app.Project != "" {
 			if _, ok := prjCodes[app.Project]; !ok {
 				addErr("taxonomy-unknown-reference", app.Code, fmt.Sprintf("unknown project %q", app.Project))
@@ -121,11 +148,13 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 			}
 			checkID(env.Code, "environment")
 			envSet[env.Code] = struct{}{}
+			checkAlias("environment", env.Code, env.Alias, envAliases)
 		}
 		appEnvs[app.Code] = envSet
 	}
 
 	lzCodes := map[string]struct{}{}
+	lzAliases := map[string]string{}
 	for _, lz := range t.LZs {
 		if lz.Code == "" {
 			addErr("taxonomy-missing-field", "lzs", "LZ missing code")
@@ -139,6 +168,7 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 			addErr("taxonomy-duplicate-code", lz.Code, "duplicate LZ code")
 		}
 		lzCodes[lz.Code] = struct{}{}
+		checkAlias("LZ", lz.Code, lz.Alias, lzAliases)
 		if lz.Default != nil {
 			checkEnvUnderApps(lz.Default.Environment, []string{lz.Default.App}, appEnvs, addErr, lz.Code+" default")
 		}
@@ -189,10 +219,33 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 		}
 	}
 
+	ouAliases := map[string]string{}
+	seenOU := map[string]struct{}{}
+	for _, ou := range t.OUs {
+		subj := ou.Path
+		if subj == "" {
+			subj = ou.Code
+		}
+		seenOU[subj] = struct{}{}
+		checkAlias("OU", subj, ou.Alias, ouAliases)
+	}
+	for _, link := range t.OULinks {
+		if _, ok := seenOU[link.OU]; !ok && link.Alias != "" {
+			seenOU[link.OU] = struct{}{}
+			checkAlias("OU", link.OU, link.Alias, ouAliases)
+		}
+	}
+
+	accAliases := map[string]string{}
+	seenAcc := map[string]struct{}{}
 	for _, ac := range t.Accounts {
 		if ac.Account == "" {
 			addErr("taxonomy-missing-field", "accounts", "account entry missing account id")
 			continue
+		}
+		if _, ok := seenAcc[ac.Account]; !ok {
+			seenAcc[ac.Account] = struct{}{}
+			checkAlias("account", ac.Account, ac.Alias, accAliases)
 		}
 		if len(ac.Apps) == 0 && ac.Environment == "" {
 			addErr("taxonomy-missing-field", ac.Account, "account entry must set apps and/or environment")

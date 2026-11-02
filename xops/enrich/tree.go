@@ -23,6 +23,9 @@ type LZ struct {
 	Name              string
 	CSP               string
 	ManagementAccount string
+	Alias             string
+	OUAliases         map[string]string
+	AccountAliases    map[string]string
 }
 
 // CheckManagement returns an error naming source, the line and both accounts for the first ou or
@@ -61,6 +64,7 @@ func LZTree(tenant string, lz LZ, recs []record.Record) []record.Record {
 		case "ou":
 			path := str(r, "path")
 			name := str(r, "name")
+			id := str(r, "id")
 			parent := lzURN
 			if path != "/" {
 				if p, ok := byID[str(r, "parent_id")]; ok {
@@ -71,25 +75,44 @@ func LZTree(tenant string, lz LZ, recs []record.Record) []record.Record {
 			} else if name == "" {
 				name = "Root"
 			}
-			ous = append(ous, node(tenant, str(r, "csp"), typeOU, ouURN(path), parent, urn.OUPath(path), name, str(r, "id"), path, "", "", ""))
+			alias := str(r, "alias")
+			if alias == "" && lz.OUAliases != nil {
+				if a, ok := lz.OUAliases[path]; ok {
+					alias = a
+				} else if a, ok := lz.OUAliases[id]; ok {
+					alias = a
+				} else if a, ok := lz.OUAliases[name]; ok {
+					alias = a
+				}
+			}
+			ous = append(ous, node(tenant, str(r, "csp"), typeOU, ouURN(path), parent, urn.OUPath(path), name, id, path, "", "", "", alias))
 		case "account":
 			parent := ouURN(str(r, "ou_path"))
 			id := str(r, "id")
-			accs = append(accs, node(tenant, str(r, "csp"), typeAcc, parent.Child(typeAcc, id), parent, id, str(r, "name"), id, str(r, "ou_path"), str(r, "status"),
-				str(r, "joined_at"), str(r, "joined_method")))
+			name := str(r, "name")
+			alias := str(r, "alias")
+			if alias == "" && lz.AccountAliases != nil {
+				if a, ok := lz.AccountAliases[id]; ok {
+					alias = a
+				} else if a, ok := lz.AccountAliases[name]; ok {
+					alias = a
+				}
+			}
+			accs = append(accs, node(tenant, str(r, "csp"), typeAcc, parent.Child(typeAcc, id), parent, id, name, id, str(r, "ou_path"), str(r, "status"),
+				str(r, "joined_at"), str(r, "joined_method"), alias))
 		}
 	}
 	sortByURN(ous)
 	sortByURN(accs)
 
-	out := []record.Record{node(tenant, lz.CSP, typeLZ, lzURN, "", lz.Code, lz.Name, lz.ManagementAccount, "", "", "", "")}
+	out := []record.Record{node(tenant, lz.CSP, typeLZ, lzURN, "", lz.Code, lz.Name, lz.ManagementAccount, "", "", "", "", lz.Alias)}
 	out = append(out, ous...)
 	return append(out, accs...)
 }
 
 // node builds one node record. joinedAt and joinedMethod are the account's (D-055), "" elsewhere.
-func node(tenant, csp, typ string, u, parent urn.URN, id, name, sourceID, path, status, joinedAt, joinedMethod string) record.Record {
-	return record.Record{
+func node(tenant, csp, typ string, u, parent urn.URN, id, name, sourceID, path, status, joinedAt, joinedMethod, alias string) record.Record {
+	r := record.Record{
 		"kind":          "node",
 		"tenant":        tenant,
 		"csp":           csp,
@@ -104,6 +127,10 @@ func node(tenant, csp, typ string, u, parent urn.URN, id, name, sourceID, path, 
 		"joined_at":     joinedAt,
 		"joined_method": joinedMethod,
 	}
+	if alias != "" {
+		r["alias"] = alias
+	}
+	return r
 }
 
 // parentPath returns the path of the OU above path ("/Platform/Hub" gives "/Platform").

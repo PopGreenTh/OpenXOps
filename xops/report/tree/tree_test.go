@@ -168,3 +168,73 @@ func TestJoinedOnAccountsOnly(t *testing.T) {
 		t.Errorf("%d joined_method keys, want 1:\n%s", n, text)
 	}
 }
+
+func TestBuildTaxonomy(t *testing.T) {
+	doc, err := BuildTaxonomy("testtnt", "nodes.jsonl", goodNodes())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if doc.Tenant != "testtnt" || len(doc.LZConns) != 1 {
+		t.Fatalf("doc = %+v", doc)
+	}
+	lz := doc.LZConns[0]
+	if lz.Code != "main" || lz.ManagementAccount != "s-main" {
+		t.Fatalf("lz = %+v", lz)
+	}
+	data, err := MarshalTaxonomy(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	if !strings.Contains(text, "lz_conns:") {
+		t.Errorf("want lz_conns in YAML, got:\n%s", text)
+	}
+	if !strings.Contains(text, "ou_paths:") {
+		t.Errorf("want ou_paths in YAML, got:\n%s", text)
+	}
+	if !strings.Contains(text, "accounts:") {
+		t.Errorf("want accounts in YAML, got:\n%s", text)
+	}
+}
+
+func TestBuildWithAliases(t *testing.T) {
+	nodes := goodNodes()
+	nodes[2]["alias"] = "main-alias"
+	nodes[4]["alias"] = "root-alias"
+	nodes[3]["alias"] = "acc-alias"
+
+	doc, err := Build("testtnt", "nodes.jsonl", nodes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	if !strings.Contains(text, "alias: main-alias") {
+		t.Errorf("want alias: main-alias in YAML, got:\n%s", text)
+	}
+	if !strings.Contains(text, "alias: root-alias") {
+		t.Errorf("want alias: root-alias in YAML, got:\n%s", text)
+	}
+	if !strings.Contains(text, "alias: acc-alias") {
+		t.Errorf("want alias: acc-alias in YAML, got:\n%s", text)
+	}
+
+	taxDoc, err := BuildTaxonomy("testtnt", "nodes.jsonl", nodes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	taxData, err := MarshalTaxonomy(taxDoc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	taxText := string(taxData)
+	if !strings.Contains(taxText, "alias: main-alias") {
+		t.Errorf("want alias: main-alias in taxonomy YAML, got:\n%s", taxText)
+	}
+	if !strings.Contains(taxText, "alias: acc-alias") {
+		t.Errorf("want alias: acc-alias in taxonomy YAML, got:\n%s", taxText)
+	}
+}
