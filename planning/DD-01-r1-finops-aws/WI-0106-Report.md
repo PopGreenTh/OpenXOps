@@ -60,3 +60,7 @@ Built by WO-0106-A (#14, `d94b7c4`), with follow-ups in WO-0101-B (#33).
   - table rows carry no trailing spaces;
   - Excel append finds the next row from the sheet's real last row, so an all-empty record's
     row is kept.
+
+Later changes:
+- WO-0109-A (#57): `table`, `csv` and `excel` take `--tenant` and check every record they read.
+- WO-0110-A (#71) adds `xops report tree` (see WI-0110).

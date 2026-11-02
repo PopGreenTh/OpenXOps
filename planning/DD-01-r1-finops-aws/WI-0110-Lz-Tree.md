@@ -147,3 +147,17 @@ read the tree (D-054).
 - `go run ./scripts/check` all PASS, with `docs PASS`.
 
 **Verify.** `go run ./scripts/check`
+
+## Delivered (as built)
+
+Built by WO-0110-A (#71, `f237cd5`) by the Claude Code implementer session, after one round of
+changes for D-055.
+
+- `xops enrich lz-tree` (new package `xops/enrich/`) writes `node` records: the LZ, then OUs and
+  accounts sorted by URN. Account nodes carry `name`, `status`, `joined_at` and `joined_method`.
+  The URNs match `map`'s `lz_urn`, `ou_urn` and `account_urn`.
+- `xops report tree` (new package `xops/report/tree/`) writes the nested YAML. It fails, writing
+  nothing, on no or two `lzc` nodes, a dangling `parent_urn`, a duplicate URN or a cycle.
+- On the real Organization: 1 LZ, 19 OUs and 16 accounts.
+- Left open: `scripts/doccheck` doesn't list `xops enrich`, so a missing doc section for
+  `lz-tree` would not fail `docs`.

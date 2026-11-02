@@ -144,3 +144,12 @@ Built by WO-0104-A (#15, `f07c7c5`), with follow-ups in WO-0101-B (#33).
   - `lz-unknown` is emitted once per organization;
   - the `project-tag-mismatch` message names the tag and the account's Project or Projects;
   - `map` declares the kinds it reads, for the D-037 schema check.
+
+Later changes:
+- WO-0109-A (#57): `--tenant`, the taxonomy `tenant` key and the tenant check on every input.
+- WO-0109-B (#59, `d3e42b8`): taxonomy codes are ids. `validate` reports `taxonomy-invalid-id`, and
+  `taxonomy-reserved-code` now means `unalloc`, `unspec` or `invalid`. System nodes use those ids,
+  and `allocation` and `cost` carry the URN fields (D-046 to D-048). An account missing from the
+  inventory gets the OU path `unknown` (`org:unknown`).
+- WO-0109-C (#68, `3132423`): `validate` reports `taxonomy-lz-count` unless there is exactly one LZ
+  (D-052). Service and OU slugs split CamelCase (D-053).

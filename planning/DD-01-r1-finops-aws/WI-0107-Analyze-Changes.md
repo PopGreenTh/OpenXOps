@@ -78,3 +78,9 @@ Built by WO-0107-A (#24, `6478dd5`).
   cost but none for the subject.
 - On the demo data: one `remapped` / `environment` change on `200000000001`, `ENV-PROD` →
   `ENV-NONPROD`, 42.5 USD.
+
+Later changes:
+- WO-0109-A (#57): `--tenant`, checked on `--before` and `--from-map`, and `tenant` on `change`
+  records. WO-0109-B (#59) moved its fixtures to ids.
+- Known gap: the Task `run:finops:analyze-changes` fails because
+  `finops/analyze/testdata/cost.jsonl` lacks the newer `cost` fields.

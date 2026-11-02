@@ -219,3 +219,23 @@ that branch into yours with a merge commit, and don't edit any file under `testd
 - `go run ./scripts/check` all PASS, with `docs PASS`.
 
 **Verify.** `go run ./scripts/check`
+
+## Delivered (as built)
+
+Built by WO-0109-A (#57, `ecc1de7`), WO-0109-B (#59, `d3e42b8`) and WO-0109-C (#68, `3132423`),
+each by the Claude Code implementer session (D-050) and each passing its first review.
+
+- `record/urn/`: `ValidID`, `Slug` (with the D-053 CamelCase split), `OUPath` and the URN
+  builder.
+- `record/`: `AddTenantFlag`, which checks the id before anything is read; the tenant read check
+  on every input, naming the file or `stdin`, the line and both tenants; `SetTenant` and
+  `SetTenantOwn`. `tenant` is required on every kind.
+- Every command but `version` takes `--tenant`. The taxonomy starts with `tenant:` and holds one
+  LZ.
+- `map` and `share` write ids and URN fields. The 12 map and 6 share reference cases pass with
+  URNs, unchanged from `claude/cases-urn` and `claude/cases-slug`.
+- On the real Organization, the 19 OU paths slug without collisions (for example
+  `infrastructure/shared-services`).
+- Left open: the mock Cost Explorer tags still use the old codes, so the demo sends more cost to
+  `invalid` than before (500 rows instead of 100). `org:unknown` is built but not yet written into
+  the Contracts above. OU URN collisions are Q-009.

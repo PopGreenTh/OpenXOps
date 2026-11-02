@@ -124,3 +124,9 @@ Built by WO-0103-A (#22, `ff91c89`) after four review rounds.
   Its subject is the first period returned.
 - Adds `github.com/aws/aws-sdk-go-v2/service/costexplorer`, which raised the AWS SDK core to
   v1.30.0.
+
+Later changes:
+- WO-0109-A (#57): `--tenant`, `tenant` on every record, and `--taxonomy`'s tenant must match.
+- WO-0109-C (#68): `--lz` defaults to the taxonomy's one LZ (D-052).
+- Known gap, not yet a Work Order: the Cost Explorer client reads only the first page of each
+  `GetCostAndUsage` response and ignores `NextPageToken`.
