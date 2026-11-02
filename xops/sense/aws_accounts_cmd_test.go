@@ -87,7 +87,7 @@ func TestAWSAccountsCommandWithoutTenantFailsBeforeReading(t *testing.T) {
 	for _, args := range [][]string{
 		{"--mock"},
 		{"--region", "us-east-1"},
-		{"--tenant", "Not_Valid", "--mock"},
+		{"--tenant", "ab", "--mock"},
 	} {
 		var out bytes.Buffer
 		cmd := awsAccountsCommand()

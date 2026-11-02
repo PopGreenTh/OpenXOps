@@ -45,7 +45,7 @@ func TestReportCommandsTenant(t *testing.T) {
 			return out.String(), err
 		}
 		t.Run(c.name+" without tenant", func(t *testing.T) {
-			for _, tenant := range [][]string{nil, {"--tenant", "Bad"}, {"--tenant", ""}} {
+			for _, tenant := range [][]string{nil, {"--tenant", "ab"}, {"--tenant", ""}} {
 				out, err := run(append(tenant, "--from-cost", missing)...)
 				if err == nil || !strings.Contains(err.Error(), "tenant") || strings.Contains(err.Error(), "missing.jsonl") {
 					t.Fatalf("args %v: error = %v, want a --tenant error before reading", tenant, err)
@@ -183,7 +183,7 @@ func TestReportTreeFailsWritingNothing(t *testing.T) {
 
 func TestReportTreeTenant(t *testing.T) {
 	missing := filepath.Join(t.TempDir(), "missing.jsonl")
-	for _, tenant := range [][]string{nil, {"--tenant", "Bad_Tenant"}} {
+	for _, tenant := range [][]string{nil, {"--tenant", "ab"}} {
 		_, err := runTree(t, append(tenant, "--from-node", missing)...)
 		if err == nil || !strings.Contains(err.Error(), "tenant") || strings.Contains(err.Error(), "missing.jsonl") {
 			t.Fatalf("args %v: error = %v, want a --tenant error before reading", tenant, err)

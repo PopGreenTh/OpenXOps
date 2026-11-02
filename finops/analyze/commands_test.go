@@ -56,7 +56,7 @@ func runChanges(t *testing.T, args ...string) ([]record.Record, error) {
 
 func TestChangesWithoutTenantFailsBeforeReading(t *testing.T) {
 	missing := filepath.Join(t.TempDir(), "missing.jsonl")
-	for _, tenant := range [][]string{nil, {"--tenant", "Bad"}, {"--tenant", ""}} {
+	for _, tenant := range [][]string{nil, {"--tenant", "ab"}, {"--tenant", ""}} {
 		_, err := runChanges(t, append(tenant, "--before", missing, "--from-map", missing)...)
 		if err == nil || !strings.Contains(err.Error(), "tenant") || strings.Contains(err.Error(), "missing.jsonl") {
 			t.Fatalf("args %v: error = %v, want a --tenant error before reading", tenant, err)

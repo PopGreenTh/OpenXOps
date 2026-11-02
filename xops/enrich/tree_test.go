@@ -258,7 +258,7 @@ func TestLZTreeCommandErrors(t *testing.T) {
 		want []string
 	}{
 		{"no tenant", []string{"--taxonomy", missing, "--from-accounts", missing}, []string{"tenant"}},
-		{"malformed tenant", []string{"--tenant", "Bad_Tenant", "--taxonomy", missing, "--from-accounts", missing}, []string{"invalid --tenant"}},
+		{"malformed tenant", []string{"--tenant", "ab", "--taxonomy", missing, "--from-accounts", missing}, []string{"invalid --tenant"}},
 		{"taxonomy for another tenant", []string{"--tenant", "testtnt", "--taxonomy", otherTenant, "--from-accounts", accounts}, []string{otherTenant, `"othertnt"`, `"testtnt"`}},
 		{"taxonomy with two LZs", []string{"--tenant", "testtnt", "--taxonomy", twoLZs, "--from-accounts", accounts}, []string{"2 LZs", "exactly one"}},
 		{"records of another management account", []string{"--tenant", "testtnt", "--taxonomy", otherLZ, "--from-accounts", accounts}, []string{accounts + ":1:", `"999999999999"`, `"111111111111"`}},

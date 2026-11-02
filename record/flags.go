@@ -51,7 +51,7 @@ func AddFromFlags(cmd *cobra.Command, froms []*From) {
 // AddTenantFlag registers the required --tenant flag on cmd, bound to tenant. A missing or
 // malformed id stops the command before RunE, so before it reads anything.
 func AddTenantFlag(cmd *cobra.Command, tenant *string) {
-	cmd.Flags().StringVar(tenant, "tenant", "", "tenant id (required): lowercase letters and digits, joined by single dashes")
+	cmd.Flags().StringVar(tenant, "tenant", "", "tenant id (required): 3 to 50 characters, letters, digits and . + = @ _ -")
 	_ = cmd.MarkFlagRequired("tenant")
 	prev := cmd.PreRunE
 	cmd.PreRunE = func(c *cobra.Command, args []string) error {

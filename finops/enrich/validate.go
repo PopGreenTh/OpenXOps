@@ -3,6 +3,7 @@ package enrich
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/PopGreenTh/OpenXOps/record"
 	"github.com/PopGreenTh/OpenXOps/record/urn"
@@ -23,12 +24,25 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 	// checkID applies the id rule and the reserved ids to one code (D-047).
 	checkID := func(code, what string) {
 		switch {
-		case !urn.ValidID(code):
-			addErr("taxonomy-invalid-id", code, fmt.Sprintf("%s code is not an id (lowercase letters and digits, joined by single dashes)", what))
+		case !urn.ValidCode(code):
+			addErr("taxonomy-invalid-id", code, fmt.Sprintf("%s code breaks the code rule (3 to 50 characters: letters, digits and . + = @ _ -)", what))
 		case reservedCode(code):
 			addErr("taxonomy-reserved-code", code, fmt.Sprintf("%s code is a reserved id", what))
 		}
 	}
+
+	// newDup returns a check for one list of codes: codes that differ only in case are duplicates
+	// (D-056), because App tags already match codes in any case.
+	newDup := func() func(code string) bool {
+		seen := map[string]struct{}{}
+		return func(code string) bool {
+			k := strings.ToLower(code)
+			_, dup := seen[k]
+			seen[k] = struct{}{}
+			return dup
+		}
+	}
+	dupBu, dupCc, dupPrj, dupApp, dupLz := newDup(), newDup(), newDup(), newDup(), newDup()
 
 	buCodes := map[string]struct{}{}
 	for _, bu := range t.BusinessUnits {
@@ -40,7 +54,7 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 			addErr("taxonomy-missing-field", bu.Code, "business unit missing name")
 		}
 		checkID(bu.Code, "business unit")
-		if _, dup := buCodes[bu.Code]; dup {
+		if dupBu(bu.Code) {
 			addErr("taxonomy-duplicate-code", bu.Code, "duplicate business unit code")
 		}
 		buCodes[bu.Code] = struct{}{}
@@ -56,7 +70,7 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 			addErr("taxonomy-missing-field", cc.Code, "cost center missing required field")
 		}
 		checkID(cc.Code, "cost center")
-		if _, dup := ccCodes[cc.Code]; dup {
+		if dupCc(cc.Code) {
 			addErr("taxonomy-duplicate-code", cc.Code, "duplicate cost center code")
 		}
 		ccCodes[cc.Code] = struct{}{}
@@ -77,7 +91,7 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 			addErr("taxonomy-missing-field", pr.Code, "project missing required field")
 		}
 		checkID(pr.Code, "project")
-		if _, dup := prjCodes[pr.Code]; dup {
+		if dupPrj(pr.Code) {
 			addErr("taxonomy-duplicate-code", pr.Code, "duplicate project code")
 		}
 		prjCodes[pr.Code] = struct{}{}
@@ -99,7 +113,7 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 			addErr("taxonomy-missing-field", app.Code, "app missing required field")
 		}
 		checkID(app.Code, "app")
-		if _, dup := appCodes[app.Code]; dup {
+		if dupApp(app.Code) {
 			addErr("taxonomy-duplicate-code", app.Code, "duplicate app code")
 		}
 		appCodes[app.Code] = struct{}{}
@@ -114,12 +128,16 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 			}
 		}
 		envSet := map[string]struct{}{}
+		dupEnv := newDup()
 		for _, env := range app.Environments {
 			if env.Code == "" {
 				addErr("taxonomy-missing-field", app.Code, "environment missing code")
 				continue
 			}
 			checkID(env.Code, "environment")
+			if dupEnv(env.Code) {
+				addErr("taxonomy-duplicate-code", env.Code, "duplicate environment code under app "+app.Code)
+			}
 			envSet[env.Code] = struct{}{}
 		}
 		appEnvs[app.Code] = envSet
@@ -135,7 +153,7 @@ func ValidateTaxonomy(t Taxonomy) []record.Record {
 			addErr("taxonomy-missing-field", lz.Code, "LZ missing required field")
 		}
 		checkID(lz.Code, "LZ")
-		if _, dup := lzCodes[lz.Code]; dup {
+		if dupLz(lz.Code) {
 			addErr("taxonomy-duplicate-code", lz.Code, "duplicate LZ code")
 		}
 		lzCodes[lz.Code] = struct{}{}
