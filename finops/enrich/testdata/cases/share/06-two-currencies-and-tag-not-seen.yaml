@@ -9,29 +9,29 @@ taxonomy:
   cost_centers: [{ code: ecom, name: E-commerce, business_unit: retail }]
   projects: [{ code: shop, name: Online shop, business_unit: retail }]
   apps:
-    - { code: a, name: A, project: shop, cost_center: ecom, environments: [{ code: prod, name: Production }] }
-    - { code: b, name: B, project: shop, cost_center: ecom, environments: [{ code: prod, name: Production }] }
-    - { code: c, name: C, project: shop, cost_center: ecom, environments: [{ code: prod, name: Production }] }
+    - { code: aaa, name: AAA, project: shop, cost_center: ecom, environments: [{ code: prod, name: Production }] }
+    - { code: bbb, name: BBB, project: shop, cost_center: ecom, environments: [{ code: prod, name: Production }] }
+    - { code: ccc, name: CCC, project: shop, cost_center: ecom, environments: [{ code: prod, name: Production }] }
   lzs: [{ code: main, name: Main, csp: aws, currency: USD, management_account: "111111111111" }]
   accounts:
-    - { account: "200000000001", apps: [a, b], environment: prod }
-    - { account: "200000000002", apps: [c], environment: prod }
-    - { account: "200000000003", apps: [a, b, c], environment: prod }
+    - { account: "200000000001", apps: [aaa, bbb], environment: prod }
+    - { account: "200000000002", apps: [ccc], environment: prod }
+    - { account: "200000000003", apps: [aaa, bbb, ccc], environment: prod }
 records:
-  - { kind: allocation, account_id: "200000000001", account_name: acct-200000000001, lz: main, ou_path: /, project: shop, app: a, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: true }
-  - { kind: allocation, account_id: "200000000001", account_name: acct-200000000001, lz: main, ou_path: /, project: shop, app: b, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: true }
-  - { kind: allocation, account_id: "200000000002", account_name: acct-200000000002, lz: main, ou_path: /, project: shop, app: c, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: false }
-  - { kind: allocation, account_id: "200000000003", account_name: acct-200000000003, lz: main, ou_path: /, project: shop, app: a, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: true }
-  - { kind: allocation, account_id: "200000000003", account_name: acct-200000000003, lz: main, ou_path: /, project: shop, app: b, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: true }
-  - { kind: allocation, account_id: "200000000003", account_name: acct-200000000003, lz: main, ou_path: /, project: shop, app: c, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: true }
+  - { kind: allocation, account_id: "200000000001", account_name: acct-200000000001, lz: main, ou_path: /, project: shop, app: aaa, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: true }
+  - { kind: allocation, account_id: "200000000001", account_name: acct-200000000001, lz: main, ou_path: /, project: shop, app: bbb, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: true }
+  - { kind: allocation, account_id: "200000000002", account_name: acct-200000000002, lz: main, ou_path: /, project: shop, app: ccc, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: false }
+  - { kind: allocation, account_id: "200000000003", account_name: acct-200000000003, lz: main, ou_path: /, project: shop, app: aaa, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: true }
+  - { kind: allocation, account_id: "200000000003", account_name: acct-200000000003, lz: main, ou_path: /, project: shop, app: bbb, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: true }
+  - { kind: allocation, account_id: "200000000003", account_name: acct-200000000003, lz: main, ou_path: /, project: shop, app: ccc, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: true }
   - { kind: cost, csp: aws, management_account: "111111111111", account_id: "200000000001", granularity: monthly, period: 2026-09, metric: UnblendedCost, service: AmazonEC2, app_tag: "", amount: 100, currency: USD, estimated: false, lz: main, environment: prod, environment_rule: account, shared: true, project: "", app: "", business_unit: "", cost_center: "", app_rule: "" }
   - { kind: cost, csp: aws, management_account: "111111111111", account_id: "200000000001", granularity: monthly, period: 2026-09, metric: UnblendedCost, service: AmazonEC2, app_tag: "", amount: 50, currency: EUR, estimated: false, lz: main, environment: prod, environment_rule: account, shared: true, project: "", app: "", business_unit: "", cost_center: "", app_rule: "" }
 expect:
   costs:
-    - { account_id: "200000000001", app: a, amount: 25, currency: EUR, share_rule: untagged-equal }
-    - { account_id: "200000000001", app: a, amount: 50, currency: USD, share_rule: untagged-equal }
-    - { account_id: "200000000001", app: b, amount: 25, currency: EUR, share_rule: untagged-equal }
-    - { account_id: "200000000001", app: b, amount: 50, currency: USD, share_rule: untagged-equal }
+    - { account_id: "200000000001", app: aaa, amount: 25, currency: EUR, share_rule: untagged-equal }
+    - { account_id: "200000000001", app: aaa, amount: 50, currency: USD, share_rule: untagged-equal }
+    - { account_id: "200000000001", app: bbb, amount: 25, currency: EUR, share_rule: untagged-equal }
+    - { account_id: "200000000001", app: bbb, amount: 50, currency: USD, share_rule: untagged-equal }
   findings:
     - { code: shared-untagged, subject: 200000000001/2026-09 }
     - { code: app-tag-not-seen, subject: App }
