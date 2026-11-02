@@ -708,3 +708,28 @@ name and join datetime. The `node` record gains `joined_at` and `joined_method`,
 account's record (D-051), `""` on LZ and OU nodes and when the account record has none. The YAML
 tree shows them on accounts and leaves them out when empty. Built in WO-0110-A before PR #71
 merges, not as a new Work Order.
+
+## D-056
+
+**Every tree node has a code, a URN and a name; cloud nodes have a `ref_id`** (repo owner,
+2026-11-02; amends [D-047](#d-047), [D-054](#d-054) and the WI-0109 and WI-0110 Contracts). The
+repo owner restated the three hierarchies of [D-046](#d-046) with these rules for every node:
+
+- **Code**: `^[A-Za-z0-9.+=@_-]{3,50}$`. The repo owner first gave `{3,30}` and widened it
+  to 50 after seeing that real service names slug to 34–38 characters (`Amazon Elastic Compute
+  Cloud - Compute`). It binds `--tenant`, the taxonomy's `tenant` and every taxonomy `code`.
+  Codes that differ only in case are duplicates, because App tags already match codes in any
+  case. Reserved ids match in any case too.
+- **URN id**: the code lowercased (`PRJ_Shop` → `prj_shop`). Names from the cloud keep the slug
+  rule ([D-053](#d-053)).
+- **URN**: `^[a-z0-9.:+=@_/-]{11,250}$`.
+- **Name**: every node has a non-empty `name`. The tenant has no node in Release 1, so its name
+  waits for the tenant node.
+- **Cloud nodes**: on the `node` record, `id` becomes `code` and `source_id` becomes `ref_id`,
+  the id of the cloud resource the node stands for. The values don't change, except an OU's.
+  An OU's `code` is the slug of its own name (`hub-sit`, `root`). Its full path stays in `path`,
+  and its URN keeps the slugged path from the root, as before.
+- **A cloud slug outside the code rule**, for example an OU named `IT`, is kept as it is, and
+  `lz-tree` logs a warning naming the node. Recorded by the planner; the repo owner can change it.
+- Release 1, as WO-0110-B; the Release 1 tag waits for it. The reference cases with codes
+  shorter than 3 (`a`, `b`, `c`, `qa`) are renamed on `claude/cases-code`.
