@@ -161,11 +161,11 @@ every OU and every account. Nodes are named by the same URNs `finops enrich map`
 | `tenant` | string | yes | Tenant id, the `--tenant` of the command that wrote the record (D-045). |
 | `csp` | string | yes | Cloud provider (`aws`): the LZ's, or the `ou` or `account` record's. |
 | `type` | string | yes | The URN type of the level: `lzc` (the LZ), `org` (an OU) or `acc` (an account). |
-| `urn` | string | yes | The node's URN: `urn:tnt:<tenant>:lzc:<lz>`, `…:org:<OU path>` or `<parent OU URN>:acc:<account id>`. |
+| `urn` | string | yes | The node's URN: `urn:tnt:<tenant>:lzc:<lz>`, `…:org:<OU path>` or `<parent OU URN>:acc:<account id>`. It matches `^[a-z0-9.:+=@_/-]{11,250}$`, and the OU path stays the slugged path from the root, so the URN is not built from `code`. |
 | `parent_urn` | string | yes | The parent's URN: `""` for the LZ, the LZ for the root OU, otherwise the parent OU. |
-| `id` | string | yes | The LZ code, the OU path slug (`platform/hub/hub-sit`, `root`) or the account id. |
+| `code` | string | yes | The LZ code, the slug of the OU's own name (`hub-sit`, `root`) or the account id (D-056). It is never empty. A slug that breaks the code rule (an OU named `IT` gives `it`) is kept, with a warning on stderr. |
 | `name` | string | yes | The LZ's name, the OU's name (`Root` for the root) or the account's name. |
-| `source_id` | string | yes | The LZ's management account, the AWS OU or root id, or the account id. |
+| `ref_id` | string | yes | The id of the cloud resource the node stands for: the LZ's management account, the AWS OU or root id (`ou-6ibz-…`, `r-6ibz`), or the account id. |
 | `path` | string | yes | `""` for the LZ; the OU's `path`; the account's `ou_path`. |
 | `status` | string | yes | The account's `status`; `""` for the LZ and OUs. |
 | `joined_at` | string | yes | The account's `joined_at` (RFC 3339 UTC, [`account`](#account)), or `""` when the record has none; `""` for the LZ and OUs (D-055). |

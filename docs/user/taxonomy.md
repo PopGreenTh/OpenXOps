@@ -22,15 +22,23 @@ See `finops/enrich/testdata/demo-taxonomy.yaml` for a working example.
 | `tags` | Optional `{ app, project }` keys for Cost Explorer (defaults `App` / `Project`). |
 | `defaults` | Optional default App when an account has no other rule. |
 
-## Ids and reserved ids (D-047)
+## Codes and reserved ids (D-047, D-056)
 
-Every `code` (business units, cost centers, projects, apps, their `environments`, and `lzs`) is an
-**id**: lowercase letters and digits, joined by single dashes (`^[a-z0-9]+(-[a-z0-9]+)*$`), for
-example `retail`, `chk` or `b2c-eu`. The key stays `code`; only its values are ids. `validate`
-reports any other value as `taxonomy-invalid-id`.
+Every `code` (business units, cost centers, projects, apps, their `environments`, and `lzs`) is 3
+to 50 characters from letters, digits and `. + = @ _ -` (`^[A-Za-z0-9.+=@_-]{3,50}$`), for example
+`retail`, `PRJ_Shop`, `b2c-eu` or `x@y=z+1`. The same rule binds `--tenant` and the file's
+`tenant`. `validate` reports any other value (`qa` is too short, `a/b` and `a b` have a character
+that is not allowed) as `taxonomy-invalid-id`.
 
-Three ids are **reserved** for the system nodes `map` and `share` create. `validate` rejects them
-as codes with `taxonomy-reserved-code`:
+- **Case.** Records hold the code as written (`project: PRJ_Shop`); the URN holds it in lowercase
+  (`project_urn: urn:tnt:testtnt:prj:prj_shop`). So two codes in one list that differ only in
+  case (`Shop` and `shop`) are `taxonomy-duplicate-code`, and App tags still match codes in any
+  case. References between sections (`project:`, `cost_center:`, `apps:`) are written exactly as
+  the code is.
+- **URNs** match `^[a-z0-9.:+=@_/-]{11,250}$`.
+
+Three ids are **reserved**, in any case, for the system nodes `map` and `share` create. `validate`
+rejects them as codes with `taxonomy-reserved-code` (`UNALLOC` too):
 
 | Id | Meaning |
 |---|---|
@@ -42,7 +50,8 @@ as codes with `taxonomy-reserved-code`:
 
 `map` and `share` name every node by a URN, written to the `*_urn` fields of `allocation` and
 `cost` ([records.md](records.md)). A URN is `urn:tnt:<tenant>` followed by `:<type>:<id>` for each
-level, where `<tenant>` is the file's `tenant`:
+level, where `<tenant>` is the file's `tenant` and each `<id>` is the code in lowercase (`PRJ_Shop`
+gives `prj_shop`):
 
 | Level | URN |
 |---|---|
@@ -56,11 +65,11 @@ level, where `<tenant>` is the file's `tenant`:
 | Account | `urn:tnt:testtnt:lzc:main:org:workloads/checkout/prod:acc:200000000001` |
 | Service (on `cost` only) | `<account URN>:svc:amazon-elastic-compute-cloud-compute` |
 
-Names that come from the cloud are slugged (D-053). First CamelCase is split: a word break goes
-between a lowercase letter or digit and the uppercase letter after it, and between two uppercase
-letters when the second is followed by a lowercase letter. Then the name is lowercased, every run
-of characters outside `[a-z0-9]` becomes one `-`, and the ends are trimmed. An empty result is
-`unknown`.
+Names that come from the cloud (OU names, service names) are slugged (D-053). First CamelCase is
+split: a word break goes between a lowercase letter or digit and the uppercase letter after it, and
+between two uppercase letters when the second is followed by a lowercase letter. Then the name is
+lowercased, every run of characters outside `[a-z0-9]` becomes one `-`, and the ends are trimmed.
+An empty result is `unknown`.
 
 | Name | Slug |
 |---|---|
@@ -76,6 +85,10 @@ of characters outside `[a-z0-9]` becomes one `-`, and the ends are trimmed. An e
 
 An OU path becomes its slugged segments joined by `/`, without the leading `/`
 (`/Workloads/Checkout/NonProd` is `workloads/checkout/non-prod`); the root `/` is `root`.
+
+A slug can be shorter than a code may be: an OU named `IT` slugs to `it`, which is two characters.
+It is kept as the node's `code` and as its URN segment, and `xops enrich lz-tree` logs a warning
+naming the node.
 
 System nodes build URNs with their reserved ids. An unmapped account's Environment is
 `urn:tnt:testtnt:prj:unalloc:app:unalloc:env:unalloc`; an `invalid` App is
