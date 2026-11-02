@@ -28,12 +28,17 @@ These amend the Contracts of WI-0101 to WI-0107. Where they disagree, this file 
 
 ### Ids (D-047)
 
-- **Id rule**: `^[a-z0-9]+(-[a-z0-9]+)*$`. It applies to `--tenant`, to the taxonomy's `tenant`,
-  and to every `code` in the taxonomy (`business_units`, `cost_centers`, `projects`, `apps`,
-  their `environments`, `lzs`). The key stays `code`; only its values change (`code: shop`).
-- **Reserved ids**: `unalloc`, `unspec`, `invalid`. `validate` rejects them in the file with
-  `taxonomy-reserved-code`. This replaces the reserved `-UNALLOC`, `-UNSPEC` and `-INVALID`
-  endings.
+- **Code rule** ([D-056](../DECISIONS.md#d-056), from WO-0110-B; it replaced the D-047 id rule
+  `^[a-z0-9]+(-[a-z0-9]+)*$`): `^[A-Za-z0-9.+=@_-]{3,50}$`. It applies to `--tenant`, to the
+  taxonomy's `tenant`, and to every `code` in the taxonomy (`business_units`, `cost_centers`,
+  `projects`, `apps`, their `environments`, `lzs`); `validate` reports a code that breaks it as
+  `taxonomy-invalid-id`. Codes in one list that differ only in case are
+  `taxonomy-duplicate-code`. Id fields in records hold the code as written (`project: PRJ_Shop`);
+  the URN holds it lowercased (`prj:prj_shop`).
+- **URN rule** (D-056): every URN matches `^[a-z0-9.:+=@_/-]{11,250}$`.
+- **Reserved ids**: `unalloc`, `unspec`, `invalid`, in any case. `validate` rejects them in
+  the file with `taxonomy-reserved-code`. This replaces the reserved `-UNALLOC`, `-UNSPEC` and
+  `-INVALID` endings.
 - System nodes in records, replacing today's codes:
 
   | Was | Now |

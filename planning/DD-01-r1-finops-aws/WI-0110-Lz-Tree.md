@@ -30,6 +30,10 @@ xops report tree --tenant cvd --from-node tree.jsonl --out cvd-tree.yaml
 - Writes only `node` records, in this order: the LZ node, then the OU nodes sorted by `urn`,
   then the account nodes sorted by `urn`. Input records are not passed through. Two runs over the
   same input give the same output.
+- Every node has a non-empty `code`, `urn` and `name` ([D-056](../DECISIONS.md#d-056), from
+  WO-0110-B). A `urn` that breaks the URN rule (WI-0109 *Ids*) stops the command, naming the
+  node. A `code` that breaks the code rule, such as `it` for an OU named `IT`, is kept, and a
+  warning naming the node goes to stderr.
 - Plain functions for the tree (records in, records out); the command only wires flags and files
   (D-013).
 
@@ -43,9 +47,9 @@ xops report tree --tenant cvd --from-node tree.jsonl --out cvd-tree.yaml
 | `type` | string | `lzc` | `org` | `acc` |
 | `urn` | string | `urn:tnt:<t>:lzc:<lz>` | `…:lzc:<lz>:org:<OU path>` | `<parent OU's urn>:acc:<account id>` |
 | `parent_urn` | string | `""` | the LZ's `urn` for the root; otherwise the parent OU's `urn` | the parent OU's `urn` |
-| `id` | string | the LZ code | the OU path slug (`platform/hub/hub-sit`, `root`) | the account id |
+| `code` | string | the LZ code | the slug of the OU's own name (`hub-sit`, `root`) ([D-056](../DECISIONS.md#d-056)) | the account id |
 | `name` | string | the LZ's `name` | the OU's `name` (`Root` for the root) | the account's `name` |
-| `source_id` | string | the LZ's `management_account` | the AWS OU or root id (`ou-6ibz-…`, `r-6ibz`) | the account id |
+| `ref_id` | string | the LZ's `management_account` | the AWS OU or root id (`ou-6ibz-…`, `r-6ibz`) | the account id |
 | `path` | string | `""` | the OU's `path` (`/Platform/Hub/Hub-SIT`) | the account's `ou_path` |
 | `status` | string | `""` | `""` | the account's `status` |
 | `joined_at` | string | `""` | `""` | the account's `joined_at`, or `""` when the record has none ([D-055](../DECISIONS.md#d-055)) |
@@ -61,34 +65,34 @@ xops report tree --tenant cvd --from-node tree.jsonl --out cvd-tree.yaml
   stdout when `--out` is not given. An existing `--out` file is replaced (a tree is a snapshot,
   not a log to append to).
 - Shape: the LZ at the top, every node's children under `children`, OUs before accounts, each
-  group in `id` order. A node with no children has no `children` key.
+  group in `code` order. A node with no children has no `children` key.
 
   ```yaml
   tenant: cvd
   lz:
     type: lzc
-    id: main
+    code: main
     name: Main
     urn: urn:tnt:cvd:lzc:main
-    source_id: "225989366329"
+    ref_id: "225989366329"
     children:
       - type: org
-        id: root
+        code: root
         name: Root
         urn: urn:tnt:cvd:lzc:main:org:root
-        source_id: r-6ibz
+        ref_id: r-6ibz
         children:
           - type: org
-            id: platform
+            code: platform
             name: Platform
             urn: urn:tnt:cvd:lzc:main:org:platform
-            source_id: ou-6ibz-mhj79kx9
+            ref_id: ou-6ibz-mhj79kx9
             children: [...]
           - type: acc
-            id: "225989366329"
+            code: "225989366329"
             name: cvd-org-mgmt
             urn: urn:tnt:cvd:lzc:main:org:root:acc:225989366329
-            source_id: "225989366329"
+            ref_id: "225989366329"
             status: ACTIVE
             joined_at: "2023-05-08T04:21:10Z"
             joined_method: CREATED
@@ -144,6 +148,59 @@ read the tree (D-054).
   without the two fields gives `""` and no YAML key (test).
 - `xops report tree` writes the demo YAML, matching its golden file.
 - The tests above pass.
+- `go run ./scripts/check` all PASS, with `docs PASS`.
+
+**Verify.** `go run ./scripts/check`
+
+## WO-0110-B — Codes, URNs, names and `ref_id` on every node
+
+**Assignee:** open
+**Depends on:** WO-0110-A
+**Packages:**
+- `record/urn/`, `record/schema/` (the `node` fields) and the `--tenant` check;
+- `finops/enrich/` (`validate.go`, and where taxonomy codes become URN ids),
+  `finops/enrich/share/` (the same), and `finops/enrich/testdata/` (fixtures, and the cases
+  merged from `claude/cases-code`);
+- `xops/enrich/`, `xops/report/tree/`, `xops/enrich/testdata/` and `xops/report/testdata/`;
+- every other fixture and golden file that holds a `node` record;
+- `docs/`, `README.md` and `.vscode/launch.json`.
+
+**Reference cases.** Before dispatch, the planner renamed the codes shorter than 3 characters on
+the branch `claude/cases-code`: Apps `a`, `b`, `c` became `aaa`, `bbb`, `ccc` in the share cases,
+and Environment `qa` became `quality` in map case 05. Merge that branch into yours with a merge
+commit, and don't edit any file under `testdata/cases/`.
+
+**Goal.** The D-056 rules, as amended under *Ids* (WI-0109) and *`node` record* above.
+
+**In scope.**
+- `record/urn`: a code check (`^[A-Za-z0-9.+=@_-]{3,50}$`) and a URN check
+  (`^[a-z0-9.:+=@_/-]{11,250}$`), each table-tested; URN ids built from codes are lowercased.
+- `validate` and `--tenant` use the code check; the case rules for duplicates and reserved ids.
+- `lz-tree`: `code` and `ref_id` as in the table; a node whose URN fails the URN check stops the
+  command naming the node; a code that fails the code check is logged as a warning.
+- `report tree`: the new keys, as in the example.
+- `records.md`, `taxonomy.md`, `commands.md` and `findings.md`: the code and URN rules, with
+  examples, and the renamed `node` fields.
+
+**Out of scope.** A tenant node and the tenant's name. Codes for the Release 2 levels.
+OU URN collisions (Q-009).
+
+**Done when.**
+- Every case under `finops/enrich/testdata/cases/` passes, unchanged from `claude/cases-code`.
+- Tests:
+  - the code check accepts `PRJ_Shop`, `a.b`, `x@y=z+1` and a 50-character code, and rejects
+    `ab`, a 51-character code, `a/b` and `a b`;
+  - the URN check accepts `urn:tnt:cvd` and the longest demo URN, and rejects a 10-character
+    string, a 251-character string and an uppercase letter;
+  - `validate` reports `taxonomy-invalid-id` for `ab`, `taxonomy-duplicate-code` for `Shop`
+    next to `shop`, and `taxonomy-reserved-code` for `UNALLOC`;
+  - `--tenant ab` stops before reading anything;
+  - a project coded `PRJ_Shop` gives `project: PRJ_Shop` and
+    `project_urn: urn:tnt:testtnt:prj:prj_shop`;
+  - an OU named `IT` gives the node code `it`, the URN segment `it` and one warning on stderr.
+- On the mock tree, no node has `id` or `source_id`, every OU node's `code` is the slug of its
+  own name, and every `urn` is unchanged from WO-0110-A's golden file (shown in the PR).
+- Release criteria 1 to 5, 7 and 8 still hold on the branch.
 - `go run ./scripts/check` all PASS, with `docs PASS`.
 
 **Verify.** `go run ./scripts/check`
