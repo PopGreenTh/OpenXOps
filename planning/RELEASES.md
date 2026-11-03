@@ -25,9 +25,10 @@ release is direction, not a commitment.
 
 | Release | Deliverable | Theme | State |
 |---|---|---|---|
-| 1 | [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md) | AWS cost owned by Project › App › Environment, in Excel | Built; tenants and URNs (WI-0109) account join time (WO-0102-B) and the cloud tree (WI-0110) added; tag waits for WI-0109, WO-0102-B, WI-0110 and criterion 6 |
-| 2 | [DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md) | FOCUS, history, trend and impact | Specified; dispatch after Release 1 tag |
-| 3 | not written yet | Enforce | First rules decided (D-033) |
+| 1 | [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md) | AWS cost owned by Project › App › Environment, in Excel | All Work Orders merged; tag waits for criterion 6 (the real Organization) |
+| 2 | [DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md) | FOCUS, history, trend and impact | Specified; refresh for tenants, URNs and the nested taxonomy first (D-066); dispatch after Release 1 tag |
+| 3 | not written yet | Monthly forecast and plan vs actual | Decided (D-062 to D-065); DD-03 after the DD-02 refresh |
+| 4 | not written yet | Enforce | First rules decided (D-033) |
 | Later | — | More clouds, SecOps, CloudOps | Direction only |
 
 ## Release 1 — AWS cost owned by Project › App › Environment
@@ -102,12 +103,30 @@ saved with `--save` on `map`, `share`, `trend` and `impact` ([D-039](DECISIONS.m
 `--as-reported` in Release 2 ([D-040](DECISIONS.md#d-040)), trend depth
 ([D-041](DECISIONS.md#d-041)), and the DD-02 planner defaults ([D-042](DECISIONS.md#d-042)).
 
-## Release 3 — Enforce
+## Release 3 — Monthly forecast and plan vs actual
 
-**Decided by** [D-032](DECISIONS.md#d-032) and [D-033](DECISIONS.md#d-033). One command per rule,
-flags only, never changes the cloud ([D-010](DECISIONS.md#d-010)). First rules: untagged shared
-cost, unallocated cost above a threshold, and Project tag mismatch, each with its action and
-owner. Thresholds and record format are grilled when Release 3 starts.
+**Decided by** [D-062](DECISIONS.md#d-062) to [D-065](DECISIONS.md#d-065). For each month and node,
+actual `cost` beside a run-rate and a manual `forecast` and a `plan`, with variance graded as
+`impact` grades movement.
+
+| Capability | Command (working name) | Already decided |
+|---|---|---|
+| Plan and manual forecast | `finops sense plan-lines` | Read-only from Directus, tenant filtered on the server; `--from-file`, `--mock` ([D-062](DECISIONS.md#d-062)) |
+| Run-rate forecast | `finops analyze forecast` | Average daily cost × days in the month, planned changes on top ([D-062](DECISIONS.md#d-062)) |
+| Kinds | `forecast`, `plan` | `cost` stays actuals; one line per month and node ([D-063](DECISIONS.md#d-063), [D-065](DECISIONS.md#d-065)) |
+| Service category | `map` | `service_categories` in the taxonomy; `sct` in the cloud tree, `geo:global` without a region ([D-064](DECISIONS.md#d-064)) |
+| Variance and report | `finops analyze variance`, `xops report excel` | Plan as saved before the month began ([D-065](DECISIONS.md#d-065)) |
+| Directus lookup | to name | Valid URNs from the taxonomy and the `lz-tree` nodes ([D-062](DECISIONS.md#d-062)) |
+
+DD-03 is written after DD-02 is refreshed ([D-066](DECISIONS.md#d-066)).
+
+## Release 4 — Enforce
+
+**Decided by** [D-032](DECISIONS.md#d-032) and [D-033](DECISIONS.md#d-033); moved from Release 3
+by [D-062](DECISIONS.md#d-062). One command per rule, flags only, never changes the cloud
+([D-010](DECISIONS.md#d-010)). First rules: untagged shared cost, unallocated cost above a
+threshold, and Project tag mismatch, each with its action and owner. Thresholds and record
+format are grilled when Release 4 starts.
 
 ## Later — direction only
 

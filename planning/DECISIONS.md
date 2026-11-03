@@ -431,7 +431,8 @@ impact exists.
 
 ## D-033
 
-**The first Enforce rules, for Release 3** (repo owner, 2026-10-27; Q-005 item 1). Each rule is
+**The first Enforce rules, for Release 3** (repo owner, 2026-10-27; Q-005 item 1). **Moved to
+Release 4 by [D-062](#d-062)** (2026-11-03). Each rule is
 its own command and flags only (D-010):
 
 | Rule | Flags | Action | Owner |
@@ -810,3 +811,75 @@ the WI-0104 Contracts).
   discovered account sits under another OU than the file lists, its `ref_urn_env` still applies,
   its URN follows the discovered OU, and `map` writes `account-ou-mismatch` (warning, subject
   the account id) naming both OUs.
+
+## D-062
+
+**Release 3 is monthly forecast and plan vs actual; Enforce moves to Release 4** (repo owner,
+2026-11-03; amends [D-033](#d-033), whose rules now belong to Release 4). The repo owner's brief
+asks for one monthly view per node that sets actual, a run-rate forecast, a manual forecast and
+a plan side by side, so a FinOps analyst sees variance by BusinessUnit, CostCenter, Project, App,
+Environment, account, service category and service. The brief decided:
+
+- **Plan** is both a budget and planned changes (new projects, ramp-ups).
+- **Run-rate forecast** is the average daily cost × the days in the month, with the planned
+  changes added on top. The open month uses the days elapsed, the rule `trend` uses
+  ([D-035](#d-035)).
+- **Nodes** for comparison include the account level and the service level.
+- **Service category, Project, App, BusinessUnit and CostCenter** come from the taxonomy, not
+  from FOCUS.
+- **Directus** holds the plan and manual forecast lines: one row per month, nodes as URNs, and a
+  `tenant` column. A new Sense command reads them, read-only. Directus offers only valid URNs
+  from a lookup, and filters by tenant on the server. FinOps computes the run-rate forecast
+  itself.
+- Nothing is written back to any cloud or to Directus. `--tenant`, flat records, `--mock` and the
+  5-file limit apply as everywhere.
+
+## D-063
+
+**`cost` stays actuals; forecast and plan are their own kinds** (repo owner, 2026-11-03). `share`
+checks totals against Cost Explorer's and `trend` keeps metrics apart, so `cost` holds actuals
+only.
+
+- **`forecast`**: one record per month and node, with `source` `runrate` (computed by FinOps
+  from actuals) or `manual` (from Directus).
+- **`plan`**: one record per month and node, from Directus.
+- Both carry the brief's line fields: `tenant`, `month_start` (`2026-11-01`), `period`
+  (`2026-11`), the URN columns, `service_category`, `service`, `currency`, `metric` (the cost
+  metric, as on `cost`), `amount` (the month), `daily_cost` (`amount` ÷ `days_in_month`) and
+  `days_in_month`.
+- Reports and variance compare `cost` with `forecast` and `plan` by period and node.
+- **New projects** are planned with one Directus row per month from their go-live month (M+0 or
+  M+1); nothing is generated from a go-live date or a ramp.
+
+## D-064
+
+**The cloud tree gains `sct`, the service category** (repo owner, 2026-11-03; amends
+[D-046](#d-046)). The cloud cost hierarchy becomes:
+
+`tnt` › `lzc` › `org` › `acc` › `geo` › `sct` › `svc` › `rsg` › `sus`
+
+- `sct` is the service category (`compute`), from a new tenant-level `service_categories` list
+  in the taxonomy: `{ code: compute, name: Compute, services: [...] }`, naming the services as the
+  source spells them. A service in no category is `sct:other`, with a warning finding.
+- A cost record without a region (`aws-cost` has none; FOCUS does) is under `geo:global`.
+- `service_urn` becomes `<account_urn>:geo:<region or global>:sct:<category>:svc:<service slug>`
+  **from Release 3**, together with the category mapping. Releases 1 and 2 keep
+  `<account_urn>:svc:<service slug>`.
+
+## D-065
+
+**A forecast or plan line names one node; variance uses the plan saved before the month**
+(repo owner, 2026-11-03).
+
+- A line names its deepest node, for example a new Project's `app_urn` with no account. The URN
+  columns above that node are filled and checked against the taxonomy; those below are blank.
+  Variance rolls actuals up to that node.
+- Each read of Directus is kept with `--save` ([D-034](#d-034)). A closed month is compared with
+  the last plan saved **before the month began**, so later edits in Directus don't rewrite it.
+
+## D-066
+
+**DD-02 is brought up to date before DD-03 is written** (repo owner, 2026-11-03). DD-02 was
+written before tenants and URNs (D-045 to D-049), the code rules (D-056) and the nested
+taxonomy (D-057 to D-061). The planner refreshes its Contracts and reference cases to them, and
+then writes DD-03 for Release 3 on top.
