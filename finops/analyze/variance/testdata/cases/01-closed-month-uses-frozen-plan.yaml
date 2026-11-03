@@ -1,0 +1,31 @@
+name: closed-month-uses-frozen-plan
+why: >
+  November is closed on 2026-12-10. Its plan is the one saved before 2026-11-01 (900), not the
+  edited one passed in now (1200): later edits don't rewrite a month (D-065). The App node's
+  actual rolls up both of its services (600 + 450). The gap of 150 is 16.7% over plan: at least 10%,
+  under 20%, so level 1 with variance's default base factor 1.1 (D-069).
+args: { as_of: "2026-12-10" }
+history:
+  - at: "2026-10-25T08:00:00Z"
+    records:
+      - { kind: plan, source: directus, plan_type: budget, line_id: "5", period: 2026-11, month_start: "2026-11-01",
+          project_urn: "urn:tnt:testtnt:prj:shop", app_urn: "urn:tnt:testtnt:prj:shop:app:chk",
+          node_urn: "urn:tnt:testtnt:prj:shop:app:chk", node_type: app, metric: UnblendedCost, currency: USD, amount: 900 }
+records:
+  - { kind: plan, source: directus, plan_type: budget, line_id: "5", period: 2026-11, month_start: "2026-11-01",
+      project_urn: "urn:tnt:testtnt:prj:shop", app_urn: "urn:tnt:testtnt:prj:shop:app:chk",
+      node_urn: "urn:tnt:testtnt:prj:shop:app:chk", node_type: app, metric: UnblendedCost, currency: USD, amount: 1200 }
+  - { kind: cost, period: 2026-11, metric: UnblendedCost, currency: USD, amount: 600, service: AmazonEC2,
+      project_urn: "urn:tnt:testtnt:prj:shop", app_urn: "urn:tnt:testtnt:prj:shop:app:chk",
+      service_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute:svc:amazon-ec2" }
+  - { kind: cost, period: 2026-11, metric: UnblendedCost, currency: USD, amount: 450, service: AmazonRDS,
+      project_urn: "urn:tnt:testtnt:prj:shop", app_urn: "urn:tnt:testtnt:prj:shop:app:chk",
+      service_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:database:svc:amazon-rds" }
+expect:
+  variances:
+    - { period: 2026-11, month_state: closed, node_urn: "urn:tnt:testtnt:prj:shop:app:chk", node_type: app,
+        metric: UnblendedCost, currency: USD,
+        actual: 1050, forecast_runrate: null, forecast_manual: null, plan: 900,
+        gap_actual: 150, gap_actual_pct: 0.166666667, gap_runrate: null, gap_manual: null,
+        leading_gap: 150, floor: 30, base_factor: 1.1, impact_level: 1, explained_by_change: false }
+  findings: []

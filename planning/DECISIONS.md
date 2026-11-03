@@ -909,3 +909,56 @@ the commands that take `--save`).
   become this run's start for a node the history doesn't have, and `last_changed` becomes it
   when the node's **name** or **parent** (`parent_id`, so a move) differs from the history's.
 - Status and email changes don't count. Without `--from-history`, both fields are `""`.
+
+## Q-010
+
+**Planner defaults in DD-03, to confirm** (planner, 2026-11-03). **Closed by [D-069](#d-069)** (2026-11-03): items 1, 2, 5 and 6 stand; items 3 and 4 changed. DD-03 needs these, and the brief
+and D-062 to D-065 don't settle them:
+
+1. **Directus:** a collection `finops_lines`, one row per month and node, with
+   `line_type` `budget`, `change` or `forecast`. The URL and token come from
+   `OPENXOPS_DIRECTUS_URL` and `OPENXOPS_DIRECTUS_TOKEN`, and the token is never logged. Requests
+   are paged with `GET` only. `--from-file` reads a Directus JSON or CSV export. Service lines
+   give `service_category` and `service` as codes, and `plan-lines` builds their URNs from the
+   line's account (WI-0302).
+2. **Plan vs planned change:** `plan` records carry `plan_type` `budget` or `change`. Only a
+   `change` is added on top of the run rate, as its own `forecast` record with `basis`
+   `planned_change`, at the node it names. Variance's `plan` sums both types (WI-0303,
+   WI-0304).
+3. **Run-rate base:** the open month's cost so far ÷ its days elapsed. With 0 days elapsed (the
+   1st), the last closed month's daily cost. The forecast has one line per `service_urn` node
+   over 12 months from the open month (WI-0303).
+4. **Variance grading:** a closed month compares actual with plan; the open and later months
+   compare the run rate with plan. Gaps are in money and in percent of plan. The leading gap is
+   graded with `impact`'s floor-factor file and levels, on `factor` = (plan + gap) ÷ plan, so
+   with the default base factor 2 only an overrun of 100% or more is graded (WI-0304).
+5. **Lookup export:** `xops report urn-lookup`, CSV by default or JSON, listing the business,
+   project and service-category nodes from the taxonomy and the cloud nodes from `lz-tree`
+   (WI-0305).
+6. **Packages:** the new commands sit in subpackages (`finops/sense/planlines/`,
+   `finops/analyze/forecast/`, `finops/analyze/variance/`, `xops/report/lookup/`), and the
+   Directus client in a new top-level `directus/`, because the stage packages reach the 5-file
+   limit in Release 2.
+
+
+## D-069
+
+**The DD-03 planner defaults, as the repo owner settled them** (repo owner, 2026-11-03; closes
+[Q-010](#q-010)).
+
+- **Items 1, 2, 5 and 6 stand as written** in Q-010:
+  - the Directus collection, fields, environment variables, `GET` only, and the JSON or CSV
+    export;
+  - `plan_type` `budget` or `change`, with only a `change` added on top of the run rate;
+  - `xops report urn-lookup`;
+  - the subpackages and `directus/`.
+- **Item 3, the run-rate base**, is `trend`'s baseline ([D-035](#d-035), WI-0203): the mean
+  daily cost of the node's up to **3** most recent closed months in which it has cost. Recorded
+  by the planner to make it complete:
+  - a node with cost only in the open month uses its cost so far ÷ the days elapsed;
+  - a node with no cost in the last closed month and none so far in the open month has stopped,
+    so it gets no line, and `forecast-no-base` (info) names it.
+- **Item 4, variance grading**, keeps `impact`'s floor and floor-factor file but has its own
+  default base factor, **1.1**. Levels 1 to 4 fall at an overrun of 10%, 20%, 40% and 80% of
+  plan, that is (`f` − 1) × 1, 2, 4 and 8 over plan. An overrun under 10%, a gap under plan, or a
+  gap below the floor is level 0.

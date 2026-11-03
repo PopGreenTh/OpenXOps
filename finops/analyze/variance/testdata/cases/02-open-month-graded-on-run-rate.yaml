@@ -1,0 +1,40 @@
+name: open-month-graded-on-run-rate
+why: >
+  December is open on 2026-12-10, so the actual so far (120) is shown but not compared: the
+  leading gap is the run rate's. The App's two service lines roll up to 400 against a frozen
+  plan of 100: 300 over, an overrun of 300%, which is level 4 (80% or more, D-069).
+args: { as_of: "2026-12-10" }
+history:
+  - at: "2026-11-28T08:00:00Z"
+    records:
+      - { kind: plan, source: directus, plan_type: budget, line_id: "9", period: 2026-12, month_start: "2026-12-01",
+          app_urn: "urn:tnt:testtnt:prj:pay:app:pay", node_urn: "urn:tnt:testtnt:prj:pay:app:pay", node_type: app,
+          metric: UnblendedCost, currency: USD, amount: 100 }
+records:
+  - { kind: plan, source: directus, plan_type: budget, line_id: "9", period: 2026-12, month_start: "2026-12-01",
+      app_urn: "urn:tnt:testtnt:prj:pay:app:pay", node_urn: "urn:tnt:testtnt:prj:pay:app:pay", node_type: app,
+      metric: UnblendedCost, currency: USD, amount: 100 }
+  - { kind: cost, period: 2026-12, metric: UnblendedCost, currency: USD, amount: 120, service: AmazonEC2,
+      app_urn: "urn:tnt:testtnt:prj:pay:app:pay",
+      service_urn: "urn:tnt:testtnt:lzc:main:org:pay:acc:pay-prod:geo:global:sct:compute:svc:amazon-ec2" }
+  - { kind: forecast, source: runrate, basis: run_rate, line_id: "", period: 2026-12, month_start: "2026-12-01",
+      app_urn: "urn:tnt:testtnt:prj:pay:app:pay",
+      node_urn: "urn:tnt:testtnt:lzc:main:org:pay:acc:pay-prod:geo:global:sct:compute:svc:amazon-ec2", node_type: svc,
+      metric: UnblendedCost, currency: USD, amount: 310 }
+  - { kind: forecast, source: runrate, basis: run_rate, line_id: "", period: 2026-12, month_start: "2026-12-01",
+      app_urn: "urn:tnt:testtnt:prj:pay:app:pay",
+      node_urn: "urn:tnt:testtnt:lzc:main:org:pay:acc:pay-prod:geo:global:sct:storage:svc:amazon-s3", node_type: svc,
+      metric: UnblendedCost, currency: USD, amount: 90 }
+expect:
+  variances:
+    - { period: 2026-12, month_state: open, node_urn: "urn:tnt:testtnt:prj:pay:app:pay", node_type: app,
+        actual: 120, forecast_runrate: 400, forecast_manual: null, plan: 100,
+        gap_actual: null, gap_runrate: 300, gap_runrate_pct: 3, gap_manual: null,
+        leading_gap: 300, base_factor: 1.1, impact_level: 4 }
+    - { period: 2026-12, month_state: open,
+        node_urn: "urn:tnt:testtnt:lzc:main:org:pay:acc:pay-prod:geo:global:sct:compute:svc:amazon-ec2", node_type: svc,
+        actual: 120, forecast_runrate: 310, plan: null, gap_runrate: null, gap_runrate_pct: null, impact_level: 0 }
+    - { period: 2026-12, month_state: open,
+        node_urn: "urn:tnt:testtnt:lzc:main:org:pay:acc:pay-prod:geo:global:sct:storage:svc:amazon-s3", node_type: svc,
+        actual: 0, forecast_runrate: 90, plan: null, gap_runrate: null, impact_level: 0 }
+  findings: []

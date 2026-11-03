@@ -27,7 +27,7 @@ release is direction, not a commitment.
 |---|---|---|---|
 | 1 | [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md) | AWS cost owned by Project › App › Environment, in Excel | All Work Orders merged; tag waits for criterion 6 (the real Organization) |
 | 2 | [DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md) | FOCUS, history, trend and impact | Specified; refreshed for tenants, URNs and the nested taxonomy (D-066 to D-068); dispatch after Release 1 tag |
-| 3 | not written yet | Monthly forecast and plan vs actual | Decided (D-062 to D-065); DD-03 after the DD-02 refresh |
+| 3 | [DD-03](DD-03-r3-finops-forecast-plan/DELIVERABLE.md) | Monthly forecast and plan vs actual | Specified; planner defaults settled (D-069); dispatch after Release 2 |
 | 4 | not written yet | Enforce | First rules decided (D-033) |
 | Later | — | More clouds, SecOps, CloudOps | Direction only |
 
@@ -119,7 +119,8 @@ actual `cost` beside a run-rate and a manual `forecast` and a `plan`, with varia
 | Variance and report | `finops analyze variance`, `xops report excel` | Plan as saved before the month began ([D-065](DECISIONS.md#d-065)) |
 | Directus lookup | to name | Valid URNs from the taxonomy and the `lz-tree` nodes ([D-062](DECISIONS.md#d-062)) |
 
-DD-03 is written after DD-02 is refreshed ([D-066](DECISIONS.md#d-066)).
+**Specified in** [DD-03](DD-03-r3-finops-forecast-plan/DELIVERABLE.md); its planner defaults are settled in
+[D-069](DECISIONS.md#d-069).
 
 ## Release 4 — Enforce
 

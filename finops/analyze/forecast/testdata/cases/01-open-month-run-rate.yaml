@@ -1,0 +1,41 @@
+name: open-month-run-rate
+why: >
+  The base daily cost is trend's baseline (D-069): the mean daily cost of the last 3 closed months
+  with cost. August is 10 a day, September 20, October 30, so the base is 20; July (100 a day) is a fourth
+  month and is left out. On 2026-11-10 the
+  open month's 90 so far doesn't change it. November's run rate is 20 × 30, December's 20 × 31.
+args: { as_of: "2026-11-10", months: 2 }
+records:
+  - { kind: cost, period: 2026-07, metric: UnblendedCost, currency: USD, amount: 3100, service: AmazonEC2, service_category: compute,
+      account_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod",
+      service_category_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute",
+      service_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute:svc:amazon-ec2" }
+  - { kind: cost, period: 2026-08, metric: UnblendedCost, currency: USD, amount: 310, service: AmazonEC2, service_category: compute,
+      account_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod",
+      service_category_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute",
+      service_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute:svc:amazon-ec2" }
+  - { kind: cost, period: 2026-09, metric: UnblendedCost, currency: USD, amount: 600, service: AmazonEC2, service_category: compute,
+      account_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod",
+      service_category_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute",
+      service_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute:svc:amazon-ec2" }
+  - { kind: cost, period: 2026-10, metric: UnblendedCost, currency: USD, amount: 930, service: AmazonEC2, service_category: compute,
+      business_unit_urn: "urn:tnt:testtnt:bzu:retail", cost_center_urn: "urn:tnt:testtnt:bzu:retail:cct:ecom",
+      project_urn: "urn:tnt:testtnt:prj:shop", app_urn: "urn:tnt:testtnt:prj:shop:app:chk", environment_urn: "urn:tnt:testtnt:prj:shop:app:chk:env:prod",
+      account_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod",
+      service_category_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute",
+      service_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute:svc:amazon-ec2" }
+  - { kind: cost, period: 2026-11, metric: UnblendedCost, currency: USD, amount: 90, service: AmazonEC2, service_category: compute,
+      business_unit_urn: "urn:tnt:testtnt:bzu:retail", cost_center_urn: "urn:tnt:testtnt:bzu:retail:cct:ecom",
+      project_urn: "urn:tnt:testtnt:prj:shop", app_urn: "urn:tnt:testtnt:prj:shop:app:chk", environment_urn: "urn:tnt:testtnt:prj:shop:app:chk:env:prod",
+      account_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod",
+      service_category_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute",
+      service_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute:svc:amazon-ec2" }
+expect:
+  forecasts:
+    - { period: 2026-11, node_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute:svc:amazon-ec2",
+        node_type: svc, basis: run_rate, source: runrate, metric: UnblendedCost, currency: USD,
+        amount: 600, days_in_month: 30, daily_cost: 20, app_urn: "urn:tnt:testtnt:prj:shop:app:chk", line_id: "" }
+    - { period: 2026-12, node_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute:svc:amazon-ec2",
+        node_type: svc, basis: run_rate, source: runrate, metric: UnblendedCost, currency: USD,
+        amount: 620, days_in_month: 31, daily_cost: 20 }
+  findings: []

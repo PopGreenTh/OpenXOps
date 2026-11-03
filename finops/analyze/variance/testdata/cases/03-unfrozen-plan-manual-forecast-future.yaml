@@ -1,0 +1,42 @@
+name: unfrozen-plan-manual-forecast-future
+why: >
+  No plan-lines run was saved before December began, so December uses the plan passed in, with
+  variance-plan-not-frozen once. January is in the future and always uses the plan passed in,
+  with no finding. At the Project node, the run rate is under plan in December (no level), while
+  the manual forecast is 10% over. January has no manual forecast, so its gap is null.
+args: { as_of: "2026-12-10" }
+records:
+  - { kind: plan, source: directus, plan_type: budget, line_id: "30", period: 2026-12, month_start: "2026-12-01",
+      project_urn: "urn:tnt:testtnt:prj:shop", node_urn: "urn:tnt:testtnt:prj:shop", node_type: prj,
+      metric: UnblendedCost, currency: USD, amount: 1000 }
+  - { kind: plan, source: directus, plan_type: budget, line_id: "31", period: 2027-01, month_start: "2027-01-01",
+      project_urn: "urn:tnt:testtnt:prj:shop", node_urn: "urn:tnt:testtnt:prj:shop", node_type: prj,
+      metric: UnblendedCost, currency: USD, amount: 1000 }
+  - { kind: forecast, source: manual, basis: "", line_id: "32", period: 2026-12, month_start: "2026-12-01",
+      project_urn: "urn:tnt:testtnt:prj:shop", node_urn: "urn:tnt:testtnt:prj:shop", node_type: prj,
+      metric: UnblendedCost, currency: USD, amount: 1100 }
+  - { kind: forecast, source: runrate, basis: run_rate, line_id: "", period: 2026-12, month_start: "2026-12-01",
+      project_urn: "urn:tnt:testtnt:prj:shop",
+      node_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute:svc:amazon-ec2", node_type: svc,
+      metric: UnblendedCost, currency: USD, amount: 950 }
+  - { kind: forecast, source: runrate, basis: run_rate, line_id: "", period: 2027-01, month_start: "2027-01-01",
+      project_urn: "urn:tnt:testtnt:prj:shop",
+      node_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute:svc:amazon-ec2", node_type: svc,
+      metric: UnblendedCost, currency: USD, amount: 980 }
+expect:
+  variances:
+    - { period: 2026-12, month_state: open, node_urn: "urn:tnt:testtnt:prj:shop", node_type: prj,
+        actual: 0, forecast_runrate: 950, forecast_manual: 1100, plan: 1000,
+        gap_actual: null, gap_runrate: -50, gap_runrate_pct: -0.05, gap_manual: 100, gap_manual_pct: 0.1,
+        leading_gap: -50, impact_level: 0 }
+    - { period: 2026-12, month_state: open,
+        node_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute:svc:amazon-ec2", node_type: svc,
+        forecast_runrate: 950, plan: null, impact_level: 0 }
+    - { period: 2027-01, month_state: future, node_urn: "urn:tnt:testtnt:prj:shop", node_type: prj,
+        actual: 0, forecast_runrate: 980, forecast_manual: null, plan: 1000,
+        gap_runrate: -20, gap_runrate_pct: -0.02, gap_manual: null, gap_manual_pct: null, leading_gap: -20, impact_level: 0 }
+    - { period: 2027-01, month_state: future,
+        node_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute:svc:amazon-ec2", node_type: svc,
+        forecast_runrate: 980, plan: null, impact_level: 0 }
+  findings:
+    - { code: variance-plan-not-frozen, subject: 2026-12 }
