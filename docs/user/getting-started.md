@@ -17,40 +17,61 @@ Or with [Task](https://taskfile.dev/): `task check` and `task build`.
 
 ## Mock pipeline
 
-These commands use embedded fixtures only (no AWS credentials). They write intermediate files in
-the current directory and finish with `finops.xlsx`. Every command runs for one tenant, named with
-`--tenant`; the demo taxonomy belongs to tenant `testtnt`, and every record written carries
-`"tenant":"testtnt"`.
+These commands use embedded fixtures only (no AWS credentials needed). Every command runs for one
+tenant, named with `--tenant`; the demo taxonomy belongs to tenant `testtnt`, and every record
+written carries `"tenant":"testtnt"`.
+
+### 1. Step-by-step FinOps pipeline (with intermediate files)
+
+Writing intermediate `.jsonl` files lets you inspect records between stages:
 
 ```bash
+# Discover accounts and validate demo taxonomy
 go run ./xops sense aws-accounts --tenant testtnt --mock > accounts.jsonl
+go run ./finops enrich validate --tenant testtnt --taxonomy finops/enrich/testdata/demo-taxonomy.yaml
+
+# Pull mock Cost Explorer data
 go run ./finops sense aws-cost --tenant testtnt --mock > cost.jsonl
+
+# Map account ownership & cost URNs
 go run ./finops enrich map --tenant testtnt \
   --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
   --from-accounts accounts.jsonl \
   --from-cost cost.jsonl > map.jsonl
+
+# Split shared account costs by app tags
 go run ./finops enrich share --tenant testtnt \
   --taxonomy finops/enrich/testdata/demo-taxonomy.yaml \
   --from-cost map.jsonl > shared.jsonl
+
+# Generate multi-sheet Excel report
 go run ./xops report excel --tenant testtnt --from-cost shared.jsonl --out finops.xlsx
 ```
 
-Open `finops.xlsx`: each sheet is one record kind from the shared cost file.
+Open `finops.xlsx`: each sheet is one record kind from the shared cost file (`cost`, `allocation`, `finding`).
 
-Optional: compare two map runs with `finops analyze changes` (see [commands.md](commands.md)).
+To inspect records directly in the terminal without opening Excel:
+```bash
+go run ./xops report table --tenant testtnt --from-cost shared.jsonl
+```
 
-Optional: see your cloud hierarchy as URNs before any cost is mapped (D-054). `lz-tree` turns the
-accounts into one `node` record per LZ, OU and account, and `report tree` writes them as a nested
-YAML file:
+Optional: compare two map runs over time with `finops analyze changes` (see [commands.md](commands.md)).
+
+### 2. Cloud hierarchy & scaffolding pipeline
+
+See your cloud hierarchy as URNs before cost is mapped (D-054). `lz-tree` turns accounts into `node`
+records per LZ, OU, and account. You can chain commands directly using pipes (`|`):
 
 ```bash
-go run ./xops enrich lz-tree --tenant testtnt \
-  --taxonomy xops/enrich/testdata/demo-taxonomy.yaml \
-  --from-accounts accounts.jsonl > tree.jsonl
-go run ./xops report tree --tenant testtnt --from-node tree.jsonl --out tree.yaml
+# View human-readable nested YAML tree
+go run ./xops sense aws-accounts --tenant testtnt --mock | \
+  go run ./xops enrich lz-tree --tenant testtnt --taxonomy xops/enrich/testdata/demo-taxonomy.yaml | \
+  go run ./xops report tree --tenant testtnt --out tree.yaml
 
 # Or scaffold a taxonomy-compatible landing zone connection block:
-go run ./xops report tree --tenant testtnt --from-node tree.jsonl --format taxonomy --out tree-taxonomy.yaml
+go run ./xops sense aws-accounts --tenant testtnt --mock | \
+  go run ./xops enrich lz-tree --tenant testtnt --taxonomy xops/enrich/testdata/demo-taxonomy.yaml | \
+  go run ./xops report tree --tenant testtnt --format taxonomy --out tree-taxonomy.yaml
 ```
 
 ## Real Organization
@@ -99,16 +120,32 @@ Fix any `error` findings before proceeding.
 Run the live pipeline using your verified taxonomy:
 
 ```bash
+# 1. Discover accounts
 go run ./xops sense aws-accounts --tenant <tenant> > accounts.jsonl
+
+# 2. Sense live AWS Cost Explorer
 go run ./finops sense aws-cost --tenant <tenant> --taxonomy taxonomy.yaml > cost.jsonl
+
+# 3. Enrich ownership and URNs
 go run ./finops enrich map --tenant <tenant> --taxonomy taxonomy.yaml \
   --from-accounts accounts.jsonl --from-cost cost.jsonl > map.jsonl
+
+# 4. Split shared account costs
 go run ./finops enrich share --tenant <tenant> --taxonomy taxonomy.yaml --from-cost map.jsonl > shared.jsonl
+
+# 5. Export multi-sheet Excel report
 go run ./xops report excel --tenant <tenant> --from-cost shared.jsonl --out finops.xlsx
+
+# Optional: preview formatted tables directly in the terminal
+go run ./xops report table --tenant <tenant> --from-cost shared.jsonl
 ```
 
 The second `aws-cost` run over the same closed months makes no new Cost Explorer calls
 (release criterion 5); stderr reports call count and cost.
+
+> [!TIP]
+> After building binaries with `go build -o bin/xops ./xops` and `go build -o bin/finops ./finops` (or `task build`),
+> you can invoke `./bin/xops` and `./bin/finops` directly (`.\bin\xops.exe` on Windows) to skip Go compilation overhead.
 
 ## More detail
 
