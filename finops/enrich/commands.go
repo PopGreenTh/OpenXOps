@@ -78,6 +78,9 @@ func mapCommand() *cobra.Command {
 			if !hasInventory(recs) {
 				return fmt.Errorf("--from-accounts is required (ou and account records)")
 			}
+			if err := CheckCollisions(tax, recs); err != nil {
+				return err
+			}
 			out := Map(tax, recs)
 			record.SetTenantOwn(recs, out, tenant)
 			return record.Write(cmd.OutOrStdout(), out)
@@ -138,8 +141,7 @@ func loadTaxonomy(path, tenant string) (taxonomy.Taxonomy, error) {
 	return tax, nil
 }
 
-// shareOptions hands share what it needs from the taxonomy. A cost center code that two business
-// units share maps to the first one.
+// shareOptions hands share what it needs from the taxonomy.
 func shareOptions(t taxonomy.Taxonomy) share.Options {
 	key, _ := t.TagKeys()
 	var codes []string
@@ -148,15 +150,7 @@ func shareOptions(t taxonomy.Taxonomy) share.Options {
 			codes = append(codes, a.Code)
 		}
 	}
-	ccBU := map[string]string{}
-	for _, bu := range t.BusinessUnits {
-		for _, cc := range bu.CostCenters {
-			if _, dup := ccBU[cc.Code]; !dup {
-				ccBU[cc.Code] = bu.Code
-			}
-		}
-	}
-	return share.Options{Tenant: t.Tenant.Code, AppTagKey: key, AppCodes: codes, CostCenterBU: ccBU}
+	return share.Options{Tenant: t.Tenant.Code, AppTagKey: key, AppCodes: codes}
 }
 
 func hasInventory(recs []record.Record) bool {

@@ -59,7 +59,7 @@ func TestCostCenterURNSitsUnderItsOwnBusinessUnit(t *testing.T) {
 		"business_unit_urn": "urn:tnt:testtnt:bzu:retail",
 		"cost_center_urn":   "urn:tnt:testtnt:bzu:digital:cct:pay",
 		"ou_urn":            "urn:tnt:testtnt:lzc:main:org:shared-services",
-		"account_urn":       "urn:tnt:testtnt:lzc:main:org:shared-services:acc:200000000001",
+		"account_urn":       "urn:tnt:testtnt:lzc:main:org:shared-services:acc:a",
 		"tenant":            "testtnt",
 	}
 	for k, v := range want {
@@ -76,7 +76,7 @@ func TestServiceURNIsAccountURNPlusServiceSlug(t *testing.T) {
 		t.Fatalf("costs = %v", costs)
 	}
 	got := costs[0]["service_urn"]
-	want := "urn:tnt:testtnt:lzc:main:org:shared-services:acc:200000000001:svc:amazon-simple-storage-service"
+	want := "urn:tnt:testtnt:lzc:main:org:shared-services:acc:a:svc:amazon-simple-storage-service"
 	if got != want {
 		t.Fatalf("service_urn = %v, want %s", got, want)
 	}
@@ -195,4 +195,46 @@ func validateTaxonomyOK(tax taxonomy.Taxonomy) string {
 		}
 	}
 	return strings.Join(out, ", ")
+}
+
+// TestShareCopiesTheCostCenterURNOfTheAllocation uses a cost center code that two business units
+// share: share must not rebuild the URN from the code (D-059, found in #85).
+func TestShareCopiesTheCostCenterURNOfTheAllocation(t *testing.T) {
+	tax := urnTaxonomy()
+	tax.BusinessUnits = []taxonomy.BusinessUnit{
+		{Node: nd("retail", "Retail"), CostCenters: []taxonomy.CostCenter{{Node: nd("ops", "Retail ops")}}},
+		{Node: nd("digital", "Digital"), CostCenters: []taxonomy.CostCenter{{Node: nd("ops", "Digital ops")}}},
+	}
+	tax.Projects[0].Apps[0].RefURNCCT = "urn:tnt:testtnt:bzu:digital:cct:ops"
+	tax.Projects[0].Apps = append(tax.Projects[0].Apps, taxonomy.App{
+		Node: nd("pay", "Payments"), RefURNCCT: "urn:tnt:testtnt:bzu:retail:cct:ops",
+		Environments: []taxonomy.Environment{{Node: nd("prod", "Prod")}},
+	})
+	tax.LZs[0].OUPaths = []taxonomy.OUPath{{
+		Node: nd("shared-services", "Shared Services"), Path: "/Shared Services",
+		Accounts: []taxonomy.Account{{
+			Node: nd("shared-account", "a"), RefID: "200000000001",
+			RefURNApps: []string{"urn:tnt:testtnt:prj:shop:app:chk", "urn:tnt:testtnt:prj:shop:app:pay"},
+		}},
+	}}
+	recs := append(urnInventory(), costRow("200000000001", "AmazonEC2"))
+	recs[len(recs)-1]["app_tag"] = "chk,pay"
+	shared, err := share.Split(Map(tax, recs), shareOptions(tax))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{"chk": "urn:tnt:testtnt:bzu:digital:cct:ops", "pay": "urn:tnt:testtnt:bzu:retail:cct:ops"}
+	n := 0
+	for _, c := range byKind(shared, "cost") {
+		app := strID(c["app"])
+		if w, ok := want[app]; ok {
+			n++
+			if c["cost_center_urn"] != w {
+				t.Errorf("app %s: cost_center_urn = %v, want %s", app, c["cost_center_urn"], w)
+			}
+		}
+	}
+	if n != 2 {
+		t.Fatalf("found %d cost rows for chk and pay, want 2: %v", n, byKind(shared, "cost"))
+	}
 }

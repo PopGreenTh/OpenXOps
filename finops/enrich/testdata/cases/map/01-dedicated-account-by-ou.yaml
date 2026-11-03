@@ -55,6 +55,6 @@ expect:
         business_unit_urn: "urn:tnt:testtnt:bzu:retail", cost_center_urn: "urn:tnt:testtnt:bzu:retail:cct:ecom",
         project_urn: "urn:tnt:testtnt:prj:shop", app_urn: "urn:tnt:testtnt:prj:shop:app:chk",
         environment_urn: "urn:tnt:testtnt:prj:shop:app:chk:env:prod", lz_urn: "urn:tnt:testtnt:lzc:main",
-        ou_urn: "urn:tnt:testtnt:lzc:main:org:workloads/checkout/prod",
-        account_urn: "urn:tnt:testtnt:lzc:main:org:workloads/checkout/prod:acc:200000000001" }
+        ou_urn: "urn:tnt:testtnt:lzc:main:org:prod",
+        account_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod" }
   findings: []

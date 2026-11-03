@@ -564,3 +564,60 @@ func TestStarterTemplateValidates(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateLZRefID(t *testing.T) {
+	wantFinding(t, validateBody(t, change(t, "    management_account: \"111111111111\"\n", "    management_account: \"111111111111\"\n    ref_id: \"999999999999\"\n")),
+		"taxonomy-lz-ref-id", "error", "urn:tnt:testtnt:lzc:main")
+	same := change(t, "    management_account: \"111111111111\"\n", "    management_account: \"111111111111\"\n    ref_id: \"111111111111\"\n")
+	if f := findCode(validateBody(t, same), "taxonomy-lz-ref-id"); len(f) != 0 {
+		t.Fatalf("unexpected %v", f)
+	}
+	// A ref_id with no management_account is the management account.
+	only := strings.Replace(change(t, "    management_account: \"111111111111\"\n", "    ref_id: \"111111111111\"\n"), "defaults:", "defaults:", 1)
+	if f := validateBody(t, only); len(f) != 0 {
+		t.Fatalf("unexpected %v", f)
+	}
+}
+
+func TestValidateCodeRuleOnOUAndAccountCodes(t *testing.T) {
+	cases := []struct {
+		name, old, new, code, subject string
+	}{
+		{"ou too short", "      - code: checkout\n", "      - code: ab\n", "taxonomy-invalid-id", "ab"},
+		{"ou with a slash", "      - code: checkout\n", "      - code: a/b\n", "taxonomy-invalid-id", "a/b"},
+		{"ou reserved", "      - code: checkout\n", "      - code: Unalloc\n", "taxonomy-reserved-code", "Unalloc"},
+		{"account too short", "          - code: chk-prod\n", "          - code: xy\n", "taxonomy-invalid-id", "xy"},
+		{"account with a space", "          - code: chk-prod\n", "          - code: chk prod\n", "taxonomy-invalid-id", "chk prod"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			wantFinding(t, validateBody(t, change(t, tc.old, tc.new)), tc.code, "error", tc.subject)
+		})
+	}
+}
+
+func TestValidateWrittenOUAndAccountURNs(t *testing.T) {
+	cases := []struct {
+		name, old, new, subject string // subject "" for a URN that matches
+	}{
+		{"ou, built from its code", "      - code: checkout\n", "      - code: checkout\n        urn: urn:tnt:testtnt:lzc:main:org:checkout\n", ""},
+		{"ou, built from its path (the old form)", "      - code: checkout\n", "      - code: checkout\n        urn: urn:tnt:testtnt:lzc:main:org:workloads/checkout\n", "urn:tnt:testtnt:lzc:main:org:workloads/checkout"},
+		{"account, under its ou", "          - code: chk-prod\n", "          - code: chk-prod\n            urn: urn:tnt:testtnt:lzc:main:org:checkout:acc:chk-prod\n", ""},
+		{"account, with its id (the old form)", "          - code: chk-prod\n", "          - code: chk-prod\n            urn: urn:tnt:testtnt:lzc:main:org:checkout:acc:200000000001\n", "urn:tnt:testtnt:lzc:main:org:checkout:acc:200000000001"},
+		{"account, under another ou", "          - code: chk-prod\n", "          - code: chk-prod\n            urn: urn:tnt:testtnt:lzc:main:org:other:acc:chk-prod\n", "urn:tnt:testtnt:lzc:main:org:other:acc:chk-prod"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := findCode(validateBody(t, change(t, tc.old, tc.new)), "taxonomy-urn-mismatch")
+			if tc.subject == "" {
+				if len(f) != 0 {
+					t.Fatalf("unexpected %v", f)
+				}
+				return
+			}
+			if len(f) != 1 || f[0]["severity"] != "error" || f[0]["subject"] != tc.subject {
+				t.Fatalf("want one error with subject %q, got %v", tc.subject, f)
+			}
+		})
+	}
+}

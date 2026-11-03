@@ -54,7 +54,7 @@ expect:
     - { account_id: "200000000001", lz: main, app: chk, environment: unspec, app_rule: "ou:/Workloads",
         environment_rule: unspec, shared: false,
         environment_urn: "urn:tnt:testtnt:prj:shop:app:chk:env:unspec",
-        ou_urn: "urn:tnt:testtnt:lzc:main:org:workloads/team" }
+        ou_urn: "urn:tnt:testtnt:lzc:main:org:team" }
     - { account_id: "200000000002", lz: main, app: chk, environment: unspec, app_rule: account,
         environment_rule: unspec, shared: true }
     - { account_id: "200000000002", lz: main, app: pay, environment: unspec, app_rule: account,

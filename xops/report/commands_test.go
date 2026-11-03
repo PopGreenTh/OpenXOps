@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/record/taxonomy"
+	"github.com/PopGreenTh/OpenXOps/record/urn"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -159,7 +161,15 @@ func TestReportTreeFailsWritingNothing(t *testing.T) {
 	}
 	noLZ := write("no-lz.jsonl", lines[1:])
 	twoLZ := write("two-lz.jsonl", append(append([]string{}, lines...), strings.Replace(lines[0], "lzc:main", "lzc:other", 2)))
-	dangling := write("dangling.jsonl", append([]string{lines[0]}, strings.Replace(lines[1], `"parent_urn":"urn:tnt:testtnt:lzc:main"`, `"parent_urn":"urn:tnt:testtnt:lzc:gone"`, 1)))
+	// The first node under the LZ gets a parent that is not there.
+	child := 1
+	for i := 1; i < len(lines); i++ {
+		if strings.Contains(lines[i], `"parent_urn":"urn:tnt:testtnt:lzc:main"`) {
+			child = i
+			break
+		}
+	}
+	dangling := write("dangling.jsonl", append([]string{lines[0]}, strings.Replace(lines[child], `"parent_urn":"urn:tnt:testtnt:lzc:main"`, `"parent_urn":"urn:tnt:testtnt:lzc:gone"`, 1)))
 
 	cases := []struct {
 		name, file string
@@ -260,9 +270,9 @@ func TestDemoYAMLAccountsCarryNameAndJoined(t *testing.T) {
 		t.Fatalf("%d accounts in the YAML, %d account records", len(accs), len(want))
 	}
 	for _, a := range accs {
-		r, ok := want[a.Code]
+		r, ok := want[a.RefID]
 		if !ok {
-			t.Fatalf("account %s is not in the account records", a.Code)
+			t.Fatalf("account %s (%s) is not in the account records", a.RefID, a.Code)
 		}
 		if a.Name != r["name"] || a.JoinedAt != r["joined_at"] || a.JoinedMethod != r["joined_method"] || a.JoinedAt == "" || a.JoinedMethod == "" {
 			t.Errorf("account %s: YAML %q %q %q, record %v %v %v", a.Code, a.Name, a.JoinedAt, a.JoinedMethod, r["name"], r["joined_at"], r["joined_method"])
@@ -275,7 +285,59 @@ type yamlNode struct {
 	Code         string     `yaml:"code"`
 	Name         string     `yaml:"name"`
 	URN          string     `yaml:"urn"`
+	RefID        string     `yaml:"ref_id"`
 	JoinedAt     string     `yaml:"joined_at"`
 	JoinedMethod string     `yaml:"joined_method"`
 	Children     []yamlNode `yaml:"children"`
+}
+
+// TestTaxonomyScaffoldReadsBackWithTheSameURNs checks that the scaffold writes each OU's and
+// account's code as its slug (or listed code), so reading it back passes the code rule and builds
+// the URNs lz-tree wrote (D-059).
+func TestTaxonomyScaffoldReadsBackWithTheSameURNs(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "scaffold.yaml")
+	if _, err := runTree(t, "--tenant", "testtnt", "--from-node", demoTreeJSONL, "--format", "taxonomy", "--out", out); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tax, err := taxonomy.Parse(data)
+	if err != nil {
+		t.Fatalf("the scaffold is not a taxonomy: %v", err)
+	}
+	nodes, err := record.ReadFile(demoTreeJSONL, map[string]struct{}{"node": {}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	have := map[string]bool{}
+	for _, n := range nodes {
+		have[n["urn"].(string)] = true
+	}
+	lz := urn.Tenant("testtnt").Child("lzc", tax.LZs[0].Code)
+	cloud := tax.Cloud(tax.LZs[0].Code)
+	var accounts int
+	for _, ou := range tax.LZs[0].OUPaths {
+		if !urn.ValidCode(ou.Code) {
+			t.Errorf("OU code %q breaks the code rule", ou.Code)
+		}
+		ouURN := cloud.OUURN(lz, taxonomy.DiscoveredOU{ID: ou.RefID, Path: ou.Path, Name: ou.Name})
+		if !have[ouURN.String()] || ou.URN != ouURN.String() {
+			t.Errorf("OU %s: written urn %q, built %q, in the tree: %v", ou.Path, ou.URN, ouURN, have[ouURN.String()])
+		}
+		for _, a := range ou.Accounts {
+			accounts++
+			if !urn.ValidCode(a.Code) {
+				t.Errorf("account code %q breaks the code rule", a.Code)
+			}
+			built := cloud.AccountURN(lz, taxonomy.DiscoveredOU{ID: ou.RefID, Path: ou.Path, Name: ou.Name}, taxonomy.DiscoveredAccount{ID: a.RefID, Name: a.Name})
+			if !have[built.String()] || a.URN != built.String() {
+				t.Errorf("account %s: written urn %q, built %q, in the tree: %v", a.RefID, a.URN, built, have[built.String()])
+			}
+		}
+	}
+	if accounts == 0 {
+		t.Fatal("the scaffold has no accounts")
+	}
 }

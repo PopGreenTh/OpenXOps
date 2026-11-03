@@ -7,7 +7,6 @@ import (
 	"sort"
 
 	"github.com/PopGreenTh/OpenXOps/record"
-	"github.com/PopGreenTh/OpenXOps/record/urn"
 	"gopkg.in/yaml.v3"
 )
 
@@ -253,11 +252,10 @@ func BuildTaxonomy(tenant, source string, recs []record.Record) (TaxonomyDoc, er
 			return TaxonomyDoc{}, fmt.Errorf("%s: parent_urn %q of accounts names no OU node", source, ouURN)
 		}
 
+		// A node's code is its OU or account code (D-059), the slug of its name unless the taxonomy
+		// listed one, so a scaffold read back passes the code rule and gives the same URNs.
 		ouName := str(ouNode, "name")
-		ouCode := ouName
-		if ouCode == "" {
-			ouCode = str(ouNode, "code")
-		}
+		ouCode := str(ouNode, "code")
 
 		sort.SliceStable(accs, func(i, j int) bool {
 			return str(accs[i], "ref_id") < str(accs[j], "ref_id")
@@ -265,15 +263,10 @@ func BuildTaxonomy(tenant, source string, recs []record.Record) (TaxonomyDoc, er
 
 		var accounts []*TaxonomyAccount
 		for _, a := range accs {
-			accCode := str(a, "name")
-			if accCode == "" {
-				accCode = str(a, "code")
-			}
-			accURN := str(ouNode, "urn") + ":acc:" + urn.Slug(accCode)
 			accounts = append(accounts, &TaxonomyAccount{
-				Code:  accCode,
-				URN:   accURN,
-				Name:  accCode,
+				Code:  str(a, "code"),
+				URN:   str(a, "urn"),
+				Name:  str(a, "name"),
 				Alias: str(a, "alias"),
 				RefID: str(a, "ref_id"),
 			})

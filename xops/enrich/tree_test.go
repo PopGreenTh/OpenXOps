@@ -6,10 +6,12 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/record/taxonomy"
 	"github.com/PopGreenTh/OpenXOps/record/urn"
 	"github.com/PopGreenTh/OpenXOps/xops/sense"
 	"github.com/spf13/cobra"
@@ -66,16 +68,16 @@ func TestLZTreeNodes(t *testing.T) {
 			"type": "lzc", "parent_urn": "", "code": "main", "name": "Main", "ref_id": "111111111111", "path": "", "status": "", "csp": "aws"}},
 		{"the root OU", "urn:tnt:testtnt:lzc:main:org:root", map[string]string{
 			"type": "org", "parent_urn": "urn:tnt:testtnt:lzc:main", "code": "root", "name": "Root", "ref_id": "r-1", "path": "/", "status": ""}},
-		{"a nested OU", "urn:tnt:testtnt:lzc:main:org:workloads/checkout", map[string]string{
+		{"a nested OU", "urn:tnt:testtnt:lzc:main:org:checkout", map[string]string{
 			"type": "org", "parent_urn": "urn:tnt:testtnt:lzc:main:org:workloads", "code": "checkout", "name": "Checkout",
 			"ref_id": "ou-2", "path": "/Workloads/Checkout"}},
-		{"an account in the root OU", "urn:tnt:testtnt:lzc:main:org:root:acc:111111111111", map[string]string{
-			"type": "acc", "parent_urn": "urn:tnt:testtnt:lzc:main:org:root", "code": "111111111111", "name": "management",
+		{"an account in the root OU", "urn:tnt:testtnt:lzc:main:org:root:acc:management", map[string]string{
+			"type": "acc", "parent_urn": "urn:tnt:testtnt:lzc:main:org:root", "code": "management", "name": "management",
 			"ref_id": "111111111111", "path": "/", "status": "ACTIVE"}},
-		{"an account in a CamelCase OU", "urn:tnt:testtnt:lzc:main:org:workloads/checkout/non-prod:acc:200000000003", map[string]string{
-			"type": "acc", "parent_urn": "urn:tnt:testtnt:lzc:main:org:workloads/checkout/non-prod", "code": "200000000003",
+		{"an account in a CamelCase OU", "urn:tnt:testtnt:lzc:main:org:non-prod:acc:chk-nonprod", map[string]string{
+			"type": "acc", "parent_urn": "urn:tnt:testtnt:lzc:main:org:non-prod", "code": "chk-nonprod",
 			"name": "chk-nonprod", "path": "/Workloads/Checkout/NonProd"}},
-		{"the CamelCase OU", "urn:tnt:testtnt:lzc:main:org:workloads/checkout/non-prod", map[string]string{
+		{"the CamelCase OU", "urn:tnt:testtnt:lzc:main:org:non-prod", map[string]string{
 			"type": "org", "code": "non-prod", "name": "NonProd", "ref_id": "ou-3"}},
 	}
 	for _, tc := range cases {
@@ -317,7 +319,7 @@ func TestLZTreeJoined(t *testing.T) {
 	in := []record.Record{ou("r-1", "Root", "", "/"), ou("ou-1", "Workloads", "r-1", "/Workloads"), without, with}
 	m := byURN(LZTree("testtnt", testLZ, in))
 
-	n := m["urn:tnt:testtnt:lzc:main:org:root:acc:111111111111"]
+	n := m["urn:tnt:testtnt:lzc:main:org:root:acc:management"]
 	if str(n, "joined_at") != "" || str(n, "joined_method") != "" {
 		t.Errorf("an account record without the fields: joined_at = %q, joined_method = %q, want both empty", n["joined_at"], n["joined_method"])
 	}
@@ -326,10 +328,7 @@ func TestLZTreeJoined(t *testing.T) {
 			t.Errorf("node.%s = %v (present: %v), want an empty string", k, v, ok)
 		}
 	}
-	n = m["urn:tnt:testtnt:lzc:main:org:workloads:acc:200000000003"]
-	if n == nil {
-		n = m["urn:tnt:testtnt:lzc:main:org:workloads/checkout/non-prod:acc:200000000003"]
-	}
+	n = m["urn:tnt:testtnt:lzc:main:org:non-prod:acc:chk-nonprod"]
 	if str(n, "joined_at") != "2020-01-15T08:22:07Z" || str(n, "joined_method") != "INVITED" {
 		t.Errorf("account node joined = %q %q, want the account record's", n["joined_at"], n["joined_method"])
 	}
@@ -352,7 +351,7 @@ func TestDemoAccountNodesCarryNameAndJoined(t *testing.T) {
 	nodes := map[string]record.Record{}
 	for _, n := range out {
 		if str(n, "type") == "acc" {
-			nodes[str(n, "code")] = n
+			nodes[str(n, "ref_id")] = n
 		}
 	}
 	checked := 0
@@ -494,6 +493,9 @@ func TestCheckNodesEmptyNameStops(t *testing.T) {
 	}
 }
 
+// twelveDigits finds an AWS account id in a URN.
+var twelveDigits = regexp.MustCompile(`[0-9]{12}`)
+
 func TestEveryDemoNodeHasCodeURNAndName(t *testing.T) {
 	out, err := record.ReadFile(demoTreeFile, map[string]struct{}{"node": {}})
 	if err != nil {
@@ -515,8 +517,17 @@ func TestEveryDemoNodeHasCodeURNAndName(t *testing.T) {
 		if !urn.ValidURN(str(n, "urn")) || !urn.ValidCode(str(n, "code")) {
 			t.Errorf("node %s breaks the URN or code rule", str(n, "urn"))
 		}
-		if str(n, "type") == "org" && str(n, "code") != urn.Slug(str(n, "name")) {
-			t.Errorf("OU %s: code %q, want the slug of its name %q", str(n, "urn"), str(n, "code"), urn.Slug(str(n, "name")))
+		// A code is the one the demo taxonomy lists or the slug of the name (D-059), and it ends the URN.
+		if typ := str(n, "type"); typ == "org" || typ == "acc" {
+			if !strings.HasSuffix(str(n, "urn"), ":"+typ+":"+strings.ToLower(str(n, "code"))) {
+				t.Errorf("%s node %s does not end in its code %q", typ, str(n, "urn"), str(n, "code"))
+			}
+			if str(n, "code") != urn.Slug(str(n, "name")) && !strings.Contains(str(n, "code"), "-") {
+				t.Errorf("%s node %s: code %q is neither listed nor the slug of %q", typ, str(n, "urn"), str(n, "code"), str(n, "name"))
+			}
+		}
+		if twelveDigits.MatchString(str(n, "urn")) && str(n, "type") != "lzc" {
+			t.Errorf("node %s holds an account id", str(n, "urn"))
 		}
 		if len(str(n, "urn")) > len(longest) {
 			longest = str(n, "urn")
@@ -576,4 +587,91 @@ lzs:
 			t.Errorf("node %s has alias %q, want %q", id, got[id], alias)
 		}
 	}
+}
+
+func TestLZTreeStopsOnTwoOUsWithOneURN(t *testing.T) {
+	in := []record.Record{
+		ou("r-1", "Root", "", "/"),
+		ou("ou-a", "Checkout", "r-1", "/Checkout"),
+		ou("ou-b", "Payments", "r-1", "/Payments"),
+		ou("ou-ap", "Prod", "ou-a", "/Checkout/Prod"),
+		ou("ou-bp", "Prod", "ou-b", "/Payments/Prod"),
+	}
+	_, err := CheckNodes(LZTree("testtnt", testLZ, in))
+	if err == nil {
+		t.Fatal("two OUs named Prod under different parents should stop lz-tree")
+	}
+	for _, want := range []string{"/Checkout/Prod", "/Payments/Prod", "urn:tnt:testtnt:lzc:main:org:prod"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error %q should contain %q", err, want)
+		}
+	}
+}
+
+func TestLZTreeStopsOnTwoAccountsWithOneURN(t *testing.T) {
+	in := []record.Record{
+		ou("r-1", "Root", "", "/"),
+		account("200000000001", "chk-prod", "r-1", "/"),
+		account("200000000002", "Chk Prod", "r-1", "/"), // slugs to chk-prod
+	}
+	_, err := CheckNodes(LZTree("testtnt", testLZ, in))
+	if err == nil {
+		t.Fatal("two accounts named alike in one OU should stop lz-tree")
+	}
+	for _, want := range []string{"200000000001", "200000000002", "org:root:acc:chk-prod"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error %q should contain %q", err, want)
+		}
+	}
+}
+
+func TestListingBreaksTheTieInLZTree(t *testing.T) {
+	lz := testLZ
+	lz.Cloud = taxonomyCloud(t, `tenant: { code: testtnt, name: T }
+lzs:
+  - code: main
+    name: Main
+    csp: aws
+    currency: USD
+    management_account: "111111111111"
+    ou_paths:
+      - { code: payments-prod, name: Prod, path: /Payments/Prod }
+      - code: root
+        name: Root
+        path: /
+        accounts:
+          - { code: chk-prod-two, name: second, ref_id: "200000000002" }
+`)
+	in := []record.Record{
+		ou("r-1", "Root", "", "/"),
+		ou("ou-a", "Checkout", "r-1", "/Checkout"),
+		ou("ou-b", "Payments", "r-1", "/Payments"),
+		ou("ou-ap", "Prod", "ou-a", "/Checkout/Prod"),
+		ou("ou-bp", "Prod", "ou-b", "/Payments/Prod"),
+		account("200000000001", "chk-prod", "r-1", "/"),
+		account("200000000002", "chk-prod", "r-1", "/"),
+	}
+	nodes := LZTree("testtnt", lz, in)
+	if _, err := CheckNodes(nodes); err != nil {
+		t.Fatal(err)
+	}
+	m := byURN(nodes)
+	for _, u := range []string{
+		"urn:tnt:testtnt:lzc:main:org:prod", "urn:tnt:testtnt:lzc:main:org:payments-prod",
+		"urn:tnt:testtnt:lzc:main:org:root:acc:chk-prod", "urn:tnt:testtnt:lzc:main:org:root:acc:chk-prod-two",
+	} {
+		if _, ok := m[u]; !ok {
+			t.Errorf("no node %s", u)
+		}
+	}
+}
+
+// taxonomyCloud parses a taxonomy and returns the codes it lists for its LZ main.
+func taxonomyCloud(t *testing.T, body string) taxonomy.Cloud {
+	t.Helper()
+	tax, err := taxonomy.Parse([]byte(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return tax.Cloud("main")
 }
