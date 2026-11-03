@@ -2,6 +2,7 @@ package enrich
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -48,7 +49,15 @@ func lzTreeCommand() *cobra.Command {
 			if err := CheckManagement(source, recs, lz); err != nil {
 				return err
 			}
-			return record.Write(cmd.OutOrStdout(), LZTree(tenant, lz, recs))
+			nodes := LZTree(tenant, lz, recs)
+			warnings, err := CheckNodes(nodes)
+			for _, w := range warnings {
+				slog.Warn(w)
+			}
+			if err != nil {
+				return err
+			}
+			return record.Write(cmd.OutOrStdout(), nodes)
 		},
 	}
 	record.AddTenantFlag(cmd, &tenant)

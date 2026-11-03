@@ -165,16 +165,18 @@ lzs:
 }
 
 func TestValidateIDRule(t *testing.T) {
+	long := strings.Repeat("x", 51)
 	cases := []struct {
 		name string
 		tax  Taxonomy
 	}{
-		{"business unit", Taxonomy{BusinessUnits: []BusinessUnit{{Code: "BU-RETAIL", Name: "Retail"}}}},
-		{"cost center", Taxonomy{CostCenters: []CostCenter{{Code: "cc_1", Name: "C", BusinessUnit: "bu"}}}},
-		{"project", Taxonomy{Projects: []Project{{Code: "-shop", Name: "P", BusinessUnit: "bu"}}}},
-		{"app", Taxonomy{Apps: []App{{Code: "chk--out", Name: "A", Project: "p", CostCenter: "c"}}}},
-		{"environment", Taxonomy{Apps: []App{{Code: "a", Name: "A", Project: "p", CostCenter: "c", Environments: []Environment{{Code: "Prod", Name: "P"}}}}}},
-		{"lz", Taxonomy{LZs: []LZ{{Code: "LZ-MAIN", Name: "L", CSP: "aws", Currency: "USD", ManagementAccount: "1"}}}},
+		{"business unit too short", Taxonomy{BusinessUnits: []BusinessUnit{{Code: "ab", Name: "Retail"}}}},
+		{"cost center with a slash", Taxonomy{CostCenters: []CostCenter{{Code: "a/b", Name: "C", BusinessUnit: "bu"}}}},
+		{"project with a space", Taxonomy{Projects: []Project{{Code: "my shop", Name: "P", BusinessUnit: "bu"}}}},
+		{"app 51 characters", Taxonomy{Apps: []App{{Code: long, Name: "A", Project: "p", CostCenter: "c"}}}},
+		{"environment too short", Taxonomy{Apps: []App{{Code: "app", Name: "A", Project: "p", CostCenter: "c", Environments: []Environment{{Code: "qa", Name: "P"}}}}}},
+		{"lz with a colon", Taxonomy{LZs: []LZ{{Code: "main:1", Name: "L", CSP: "aws", Currency: "USD", ManagementAccount: "1"}}}},
+		{"non-ASCII", Taxonomy{BusinessUnits: []BusinessUnit{{Code: "caf\u00e9", Name: "Retail"}}}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -194,35 +196,78 @@ func TestValidateIDRule(t *testing.T) {
 	}
 }
 
-func TestValidateIDsThatPassTheRule(t *testing.T) {
+func TestValidateCodesThatPassTheRule(t *testing.T) {
 	tax := Taxonomy{
-		BusinessUnits: []BusinessUnit{{Code: "retail", Name: "Retail"}, {Code: "b2c-1", Name: "B2C"}},
-		LZs:           []LZ{{Code: "main", Name: "L", CSP: "aws", Currency: "USD", ManagementAccount: "1"}},
+		BusinessUnits: []BusinessUnit{{Code: "Retail", Name: "Retail"}, {Code: "b2c-1", Name: "B2C"}, {Code: "a.b", Name: "AB"}},
+		Projects:      []Project{{Code: "PRJ_Shop", Name: "P", BusinessUnit: "Retail"}, {Code: "x@y=z+1", Name: "X", BusinessUnit: "Retail"}},
+		Apps:          []App{{Code: strings.Repeat("a", 50), Name: "A", Project: "PRJ_Shop", CostCenter: "c"}},
+		LZs:           []LZ{{Code: "Main", Name: "L", CSP: "aws", Currency: "USD", ManagementAccount: "1"}},
 	}
 	for _, f := range ValidateTaxonomy(tax) {
-		if f["code"] == "taxonomy-invalid-id" || f["code"] == "taxonomy-reserved-code" {
+		if f["code"] == "taxonomy-invalid-id" || f["code"] == "taxonomy-reserved-code" || f["code"] == "taxonomy-duplicate-code" {
 			t.Fatalf("unexpected finding %v", f)
 		}
 	}
 }
 
-func TestUppercaseUnallocIsNoLongerReservedButNotAnID(t *testing.T) {
-	findings := ValidateTaxonomy(Taxonomy{BusinessUnits: []BusinessUnit{{Code: "BU-UNALLOC", Name: "Old"}}})
-	var codes []string
-	for _, f := range findings {
-		codes = append(codes, strID(f["code"]))
-	}
-	for _, c := range codes {
-		if c == "taxonomy-reserved-code" {
-			t.Fatalf("BU-UNALLOC is not a reserved id any more: %v", codes)
+func TestValidateReservedIDsInAnyCase(t *testing.T) {
+	for _, code := range []string{"unalloc", "UNALLOC", "Unspec", "uNsPeC", "invalid", "INVALID"} {
+		findings := ValidateTaxonomy(Taxonomy{BusinessUnits: []BusinessUnit{{Code: code, Name: "Bad"}}})
+		var reserved, invalid int
+		for _, f := range findings {
+			switch f["code"] {
+			case "taxonomy-reserved-code":
+				reserved++
+			case "taxonomy-invalid-id":
+				invalid++
+			}
+		}
+		if reserved != 1 || invalid != 0 {
+			t.Errorf("code %q: %d taxonomy-reserved-code and %d taxonomy-invalid-id findings, want 1 and 0", code, reserved, invalid)
 		}
 	}
-	found := false
-	for _, c := range codes {
-		found = found || c == "taxonomy-invalid-id"
+	// A longer code that merely contains one is fine.
+	for _, f := range ValidateTaxonomy(Taxonomy{BusinessUnits: []BusinessUnit{{Code: "unalloc-eu", Name: "EU"}}}) {
+		if f["code"] == "taxonomy-reserved-code" {
+			t.Fatalf("unalloc-eu is not reserved: %v", f)
+		}
 	}
-	if !found {
-		t.Fatalf("want taxonomy-invalid-id for BU-UNALLOC, got %v", codes)
+}
+
+func TestValidateDuplicateCodesDifferingInCase(t *testing.T) {
+	cases := []struct {
+		name string
+		tax  Taxonomy
+		want int
+	}{
+		{"projects Shop and shop", Taxonomy{Projects: []Project{{Code: "shop", Name: "A", BusinessUnit: "bu"}, {Code: "Shop", Name: "B", BusinessUnit: "bu"}}}, 1},
+		{"business units", Taxonomy{BusinessUnits: []BusinessUnit{{Code: "retail", Name: "A"}, {Code: "RETAIL", Name: "B"}}}, 1},
+		{"cost centers", Taxonomy{CostCenters: []CostCenter{{Code: "ecom", Name: "A", BusinessUnit: "bu"}, {Code: "Ecom", Name: "B", BusinessUnit: "bu"}}}, 1},
+		{"apps, exact duplicate", Taxonomy{Apps: []App{{Code: "chk", Name: "A", Project: "p", CostCenter: "c"}, {Code: "chk", Name: "B", Project: "p", CostCenter: "c"}}}, 1},
+		{"lzs", Taxonomy{LZs: []LZ{{Code: "main", Name: "A", CSP: "aws", Currency: "USD", ManagementAccount: "1"}, {Code: "MAIN", Name: "B", CSP: "aws", Currency: "USD", ManagementAccount: "2"}}}, 1},
+		{"environments under one app", Taxonomy{Apps: []App{{Code: "chk", Name: "A", Project: "p", CostCenter: "c", Environments: []Environment{{Code: "prod", Name: "A"}, {Code: "Prod", Name: "B"}}}}}, 1},
+		{"same environment under two apps", Taxonomy{Apps: []App{
+			{Code: "chk", Name: "A", Project: "p", CostCenter: "c", Environments: []Environment{{Code: "prod", Name: "A"}}},
+			{Code: "pay", Name: "B", Project: "p", CostCenter: "c", Environments: []Environment{{Code: "prod", Name: "A"}}}}}, 0},
+		{"same code in two different lists", Taxonomy{
+			Projects: []Project{{Code: "pay", Name: "P", BusinessUnit: "bu"}},
+			Apps:     []App{{Code: "pay", Name: "A", Project: "pay", CostCenter: "c"}}}, 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			n := 0
+			for _, f := range ValidateTaxonomy(tc.tax) {
+				if f["code"] == "taxonomy-duplicate-code" {
+					if f["severity"] != "error" {
+						t.Fatalf("severity = %v", f["severity"])
+					}
+					n++
+				}
+			}
+			if n != tc.want {
+				t.Fatalf("%d taxonomy-duplicate-code findings, want %d", n, tc.want)
+			}
+		})
 	}
 }
 
@@ -400,4 +445,57 @@ func findCode(findings []record.Record, code string) []record.Record {
 		}
 	}
 	return out
+}
+
+func TestCodeRulesApplyToCodesReadThroughTheNestedReader(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "nested-taxonomy.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	load := func(name, body string) Taxonomy {
+		path := filepath.Join(t.TempDir(), name)
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		tax, err := LoadTaxonomy(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return tax
+	}
+	has := func(tax Taxonomy, code, subject string) bool {
+		for _, f := range ValidateTaxonomy(tax) {
+			if f["code"] == code && (subject == "" || f["subject"] == subject) {
+				return true
+			}
+		}
+		return false
+	}
+
+	// The nested reader takes a node's code from its URN segment, so that is what the rules see.
+	// A business unit whose URN id is ab breaks the code rule.
+	short := strings.Replace(string(data), "urn: urn:tnt:nesttnt:bzu:retail\n", "urn: urn:tnt:nesttnt:bzu:ab\n", 1)
+	if short == string(data) {
+		t.Fatal("the fixture's first business unit URN changed; update this test")
+	}
+	if tax := load("short.yaml", short); !has(tax, "taxonomy-invalid-id", "ab") {
+		t.Errorf("want taxonomy-invalid-id for ab, got %v", ValidateTaxonomy(tax))
+	}
+
+	// A reserved id.
+	reserved := strings.Replace(string(data), "urn: urn:tnt:nesttnt:bzu:retail\n", "urn: urn:tnt:nesttnt:bzu:unalloc\n", 1)
+	if tax := load("reserved.yaml", reserved); !has(tax, "taxonomy-reserved-code", "unalloc") {
+		t.Errorf("want taxonomy-reserved-code for unalloc, got %v", ValidateTaxonomy(tax))
+	}
+
+	// Two business units whose URN ids differ only in case.
+	dup := strings.Replace(string(data), "urn: urn:tnt:nesttnt:bzu:digital\n", "urn: urn:tnt:nesttnt:bzu:RETAIL\n", 1)
+	if tax := load("dup.yaml", dup); !has(tax, "taxonomy-duplicate-code", "") {
+		t.Errorf("want taxonomy-duplicate-code for retail and RETAIL, got %v", ValidateTaxonomy(tax))
+	}
+
+	// The unchanged fixture stays clean.
+	if tax := load("clean.yaml", string(data)); has(tax, "taxonomy-invalid-id", "") || has(tax, "taxonomy-reserved-code", "") || has(tax, "taxonomy-duplicate-code", "") {
+		t.Errorf("the fixture should pass the code rules, got %v", ValidateTaxonomy(tax))
+	}
 }

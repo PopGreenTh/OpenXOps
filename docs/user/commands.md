@@ -4,9 +4,10 @@ Every command is `<binary> <stage> <thing>`. Stages: **Sense › Enrich › Anal
 All commands accept `--log-level` on stderr; records go to stdout (except `report table` without
 `--out`).
 
-**Tenant (D-045).** Every command except `version` takes a required `--tenant ID`: lowercase
-letters and digits, joined by single dashes (`^[a-z0-9]+(-[a-z0-9]+)*$`, for example `testtnt` or
-`acme-retail`). A missing or malformed id stops the command before it reads anything.
+**Tenant (D-045).** Every command except `version` takes a required `--tenant ID`, a code of 3 to
+50 characters from letters, digits and `. + = @ _ -` (`^[A-Za-z0-9.+=@_-]{3,50}$`, for example
+`testtnt`, `Acme_Retail` or `acme-retail`; D-056). A missing or malformed id stops the command
+before it reads anything. Records hold the tenant as written; URNs hold it in lowercase.
 
 - Every record a command writes has `tenant` set to `--tenant`. Records passed through are
   unchanged.
@@ -135,6 +136,15 @@ command stops with the file (or `stdin`), the line and both accounts.
 
 **Writes:** only `node` records: the LZ node, then the OU nodes sorted by `urn`, then the account
 nodes sorted by `urn`. Input records are not passed through. The same input gives the same output.
+Every node has a non-empty `code`, `urn` and `name` ([records.md](records.md#node)): the `code` is
+the LZ code, the slug of an OU's own name (`hub-sit`, `root`) or the account id, and `ref_id` is the
+id of the cloud resource (D-056).
+
+- A node whose `urn` breaks the URN rule (`^[a-z0-9.:+=@_/-]{11,250}$`), or that has an empty
+  `code` or `name`, stops the command, naming the node. Nothing is written.
+- A `code` that breaks the code rule (`^[A-Za-z0-9.+=@_-]{3,50}$`) is kept as it is, and a
+  warning naming the node goes to stderr. An OU named `IT` slugs to `it`, which is two characters:
+  its node has `code: it`, the URN segment `it`, and one warning.
 
 **Example:**
 
@@ -146,12 +156,14 @@ go run ./xops enrich lz-tree --tenant testtnt --taxonomy xops/enrich/testdata/de
 
 ## `xops report tree`
 
-Write the `node` records as a nested YAML document.
+Write the `node` records as a nested YAML document. Each node shows `type`, `code`, `name`, `urn`
+and `ref_id`, then `alias` when it has one (D-056, D-057).
 
 **Formats:**
 - `--format tree` (default): Human-readable tree view with the LZ at the top and every node's `children`
-  under it (OUs before accounts, each group in `id` order). A node without children has no `children` key.
-  An account shows its `name`, `status`, `joined_at`, and `joined_method` (D-055).
+  under it (OUs before accounts, each group in `code` order). A node without children has no `children` key.
+  An account also shows its `status`, `joined_at` and `joined_method` (D-055); a field that is `""`
+  is left out, and the LZ and OUs never show the join fields.
 - `--format taxonomy`: Scaffolds a hierarchical landing zone connection tree (`lz_conns`) compatible
   with nested taxonomy format (`cvie-taxonomy.yaml`). Only leaf OUs containing accounts are emitted under
   `ou_paths`. Each node emits `code`, `urn` (constructed from codes), `name`, `ref_id` (cloud resource ID,

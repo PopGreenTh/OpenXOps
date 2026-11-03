@@ -1,29 +1,65 @@
 package urn
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
-func TestValidID(t *testing.T) {
+func TestValidCode(t *testing.T) {
 	cases := []struct {
-		id   string
+		code string
 		want bool
 	}{
+		{"PRJ_Shop", true},
+		{"a.b", true},
+		{"x@y=z+1", true},
 		{"testtnt", true},
 		{"acme-retail", true},
-		{"a1-b2-c3", true},
-		{"0", true},
+		{"-ab", true}, // leading and trailing dashes are allowed
+		{"abc", true},
+		{strings.Repeat("a", 50), true},
 		{"", false},
-		{"Acme", false},
-		{"-acme", false},
-		{"acme-", false},
-		{"acme--retail", false},
-		{"acme_retail", false},
-		{"acme retail", false},
-		{"LZ-MAIN", false},
+		{"ab", false},
+		{"a", false},
+		{strings.Repeat("a", 51), false},
+		{"a/b", false},
+		{"a b", false},
+		{"abc:def", false},
+		{"caf\u00e9", false},
 	}
 	for _, tc := range cases {
-		if got := ValidID(tc.id); got != tc.want {
-			t.Errorf("ValidID(%q) = %v, want %v", tc.id, got, tc.want)
+		if got := ValidCode(tc.code); got != tc.want {
+			t.Errorf("ValidCode(%q) = %v, want %v", tc.code, got, tc.want)
 		}
+	}
+}
+
+func TestValidURN(t *testing.T) {
+	cases := []struct {
+		urn  string
+		want bool
+	}{
+		{"urn:tnt:cvd", true},
+		{"urn:tnt:testtnt:lzc:main:org:workloads/checkout/non-prod:acc:200000000003:svc:amazon-elastic-compute-cloud-compute", true},
+		{"urn:tnt:testtnt:prj:prj_shop", true},
+		{"urn:tnt:a.b:x@y=z+1", true},
+		{"urn:" + strings.Repeat("a", 246), true}, // 250 characters
+		{"", false},
+		{"urn:tnt:cv", false}, // 10 characters
+		{strings.Repeat("a", 10), false},
+		{"urn:" + strings.Repeat("a", 247), false}, // 251 characters
+		{strings.Repeat("a", 251), false},
+		{"urn:tnt:Testtnt", false}, // an uppercase letter
+		{"urn:tnt:test tnt", false},
+		{"urn:tnt:testtnt:prj:caf\u00e9", false},
+	}
+	for _, tc := range cases {
+		if got := ValidURN(tc.urn); got != tc.want {
+			t.Errorf("ValidURN(%q) = %v, want %v", tc.urn, got, tc.want)
+		}
+	}
+	if n := len("urn:" + strings.Repeat("a", 246)); n != 250 {
+		t.Fatalf("test URN is %d characters, want 250", n)
 	}
 }
 
@@ -79,6 +115,16 @@ func TestOUPath(t *testing.T) {
 		if got := OUPath(tc.in); got != tc.want {
 			t.Errorf("OUPath(%q) = %q, want %q", tc.in, got, tc.want)
 		}
+	}
+}
+
+func TestURNIdsAreLowercased(t *testing.T) {
+	got := Tenant("TestTnt").Child("prj", "PRJ_Shop").Child("app", "Chk.v2")
+	if want := "urn:tnt:testtnt:prj:prj_shop:app:chk.v2"; got.String() != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+	if !ValidURN(got.String()) {
+		t.Fatalf("%q breaks the URN rule", got)
 	}
 }
 

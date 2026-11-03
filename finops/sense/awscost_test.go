@@ -346,7 +346,7 @@ func TestAwsCostCommandWithoutTenantFailsBeforeReading(t *testing.T) {
 	for _, args := range [][]string{
 		{"--mock"},
 		{"--region", "us-east-1"},
-		{"--tenant", "-bad", "--mock"},
+		{"--tenant", "ab", "--mock"},
 	} {
 		out, err := runCostCommand(t, args...)
 		if err == nil || !strings.Contains(err.Error(), "tenant") {

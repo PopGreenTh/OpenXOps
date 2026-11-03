@@ -164,9 +164,10 @@ func TestAccountJoinedFieldsOptionalStrings(t *testing.T) {
 }
 
 func TestNodeFieldsAllRequiredStrings(t *testing.T) {
-	want := []string{"kind", "tenant", "csp", "type", "urn", "parent_urn", "id", "name", "source_id", "path", "status", "joined_at", "joined_method"}
-	if got := len(ByKind["node"].Fields); got != len(want) {
-		t.Fatalf("node has %d fields, want %d", got, len(want))
+	want := []string{"kind", "tenant", "csp", "type", "urn", "parent_urn", "code", "name", "ref_id", "path", "status", "joined_at", "joined_method"}
+	// The 13 required fields, and the optional alias (D-057).
+	if got := len(ByKind["node"].Fields); got != len(want)+1 {
+		t.Fatalf("node has %d fields, want %d", got, len(want)+1)
 	}
 	for _, name := range want {
 		f, ok := fieldOf("node", name)
@@ -179,7 +180,7 @@ func TestNodeFieldsAllRequiredStrings(t *testing.T) {
 func TestValidateNodeMissingField(t *testing.T) {
 	rec := map[string]any{
 		"kind": "node", "tenant": "testtnt", "csp": "aws", "type": "lzc", "urn": "urn:tnt:testtnt:lzc:main",
-		"parent_urn": "", "id": "main", "name": "Main", "source_id": "111111111111", "path": "",
+		"parent_urn": "", "code": "main", "name": "Main", "ref_id": "111111111111", "path": "",
 		"joined_at": "", "joined_method": "",
 	}
 	err := Validate("tree.jsonl", 3, rec, map[string]struct{}{"node": {}})
@@ -189,5 +190,29 @@ func TestValidateNodeMissingField(t *testing.T) {
 	rec["status"] = ""
 	if err := Validate("tree.jsonl", 3, rec, map[string]struct{}{"node": {}}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestNodeAliasIsAnOptionalString(t *testing.T) {
+	f, ok := fieldOf("node", "alias")
+	if !ok || f.Type != TypeString || f.Required {
+		t.Fatalf("node.alias = %+v, want an optional string", f)
+	}
+	rec := map[string]any{
+		"kind": "node", "tenant": "testtnt", "csp": "aws", "type": "lzc", "urn": "urn:tnt:testtnt:lzc:main",
+		"parent_urn": "", "code": "main", "name": "Main", "ref_id": "111111111111", "path": "",
+		"status": "", "joined_at": "", "joined_method": "",
+	}
+	check := map[string]struct{}{"node": {}}
+	if err := Validate("tree.jsonl", 1, rec, check); err != nil {
+		t.Fatalf("a node without alias must pass: %v", err)
+	}
+	rec["alias"] = "prod-lz"
+	if err := Validate("tree.jsonl", 1, rec, check); err != nil {
+		t.Fatalf("a node with a string alias must pass: %v", err)
+	}
+	rec["alias"] = 5.0
+	if err := Validate("tree.jsonl", 1, rec, check); err == nil {
+		t.Fatal("a non-string alias must be rejected")
 	}
 }

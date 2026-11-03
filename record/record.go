@@ -39,8 +39,8 @@ func CheckTenantID(id string) error {
 	if id == "" {
 		return fmt.Errorf("--tenant is required")
 	}
-	if !urn.ValidID(id) {
-		return fmt.Errorf("invalid --tenant %q (want lowercase letters and digits, joined by single dashes)", id)
+	if !urn.ValidCode(id) {
+		return fmt.Errorf("invalid --tenant %q (want 3 to 50 characters: letters, digits and . + = @ _ -)", id)
 	}
 	return nil
 }
@@ -51,8 +51,8 @@ func CheckTaxonomyTenant(path, fileTenant, tenant string) error {
 	if fileTenant == "" {
 		return fmt.Errorf("taxonomy %s: missing tenant (the file must start with `tenant: <id>`)", path)
 	}
-	if !urn.ValidID(fileTenant) {
-		return fmt.Errorf("taxonomy %s: invalid tenant %q (want lowercase letters and digits, joined by single dashes)", path, fileTenant)
+	if !urn.ValidCode(fileTenant) {
+		return fmt.Errorf("taxonomy %s: invalid tenant %q (want 3 to 50 characters: letters, digits and . + = @ _ -)", path, fileTenant)
 	}
 	if fileTenant != tenant {
 		return fmt.Errorf("taxonomy %s is for tenant %q, not --tenant %q", path, fileTenant, tenant)

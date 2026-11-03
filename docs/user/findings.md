@@ -9,10 +9,10 @@ warnings do not stop other commands. Subjects that name a taxonomy node use its 
 | Code | Severity | Command | Subject | Meaning | What to do |
 |---|---|---|---|---|---|
 | `taxonomy-missing-field` | error | `finops enrich validate` | Section or code | A required field is empty in the taxonomy YAML. | Fill in the missing field. |
-| `taxonomy-invalid-id` | error | `finops enrich validate` | Code | A `code` is not an id: ids are lowercase letters and digits joined by single dashes (`^[a-z0-9]+(-[a-z0-9]+)*$`). | Rename the code (`BU-RETAIL` becomes `retail`). |
+| `taxonomy-invalid-id` | error | `finops enrich validate` | Code | A `code` breaks the code rule: 3 to 50 characters from letters, digits and `. + = @ _ -` (`^[A-Za-z0-9.+=@_-]{3,50}$`). | Rename the code (`qa` becomes `quality`, `my shop` becomes `my_shop`). |
 | `taxonomy-lz-count` | error | `finops enrich validate` | `lzs` | The taxonomy does not have exactly one LZ: a tenant has one landing zone (D-052). | Keep one entry under `lzs`. |
-| `taxonomy-reserved-code` | error | `finops enrich validate` | Code | A `code` is a reserved id: `unalloc`, `unspec` or `invalid`. | Rename the code. |
-| `taxonomy-duplicate-code` | error | `finops enrich validate` | Code | The same code appears twice in a section. | Remove or rename the duplicate. |
+| `taxonomy-reserved-code` | error | `finops enrich validate` | Code | A `code` is a reserved id: `unalloc`, `unspec` or `invalid`, in any case (`UNALLOC` too). | Rename the code. |
+| `taxonomy-duplicate-code` | error | `finops enrich validate` | Code | The same code appears twice in a list (business units, cost centers, owner teams, projects, apps, an app's environments, `lzs`), or two codes in one list differ only in case (`Shop` and `shop`): App tags already match codes in any case. | Remove or rename the duplicate. |
 | `taxonomy-duplicate-alias` | error | `finops enrich validate` | Code or path | The same alias appears twice on nodes of the same type. | Remove or rename the duplicate alias. |
 | `taxonomy-unknown-reference` | error | `finops enrich validate` | Code or path | A reference points to a code that does not exist (for example unknown `business_unit`). | Fix the reference or add the target. |
 | `taxonomy-duplicate-ou-link` | error | `finops enrich validate` | OU path | Two `ou_links` rows set the same App or Environment for one LZ and OU. | Keep one link per OU and field. |

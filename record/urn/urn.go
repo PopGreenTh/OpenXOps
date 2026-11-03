@@ -1,4 +1,5 @@
-// Package urn holds the id rule, the slug rule, the OU path rule and a URN builder (D-046, D-047).
+// Package urn holds the code rule, the URN rule, the slug rule, the OU path rule and a URN builder
+// (D-046, D-053, D-056).
 package urn
 
 import (
@@ -7,11 +8,22 @@ import (
 	"unicode"
 )
 
-var idRule = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+var (
+	codeRule = regexp.MustCompile(`^[A-Za-z0-9.+=@_-]{3,50}$`)
+	urnRule  = regexp.MustCompile(`^[a-z0-9.:+=@_/-]{11,250}$`)
+)
 
-// ValidID reports whether id follows the id rule: `^[a-z0-9]+(-[a-z0-9]+)*$`.
-func ValidID(id string) bool {
-	return idRule.MatchString(id)
+// ValidCode reports whether code follows the code rule (D-056): 3 to 50 characters from letters,
+// digits and `.` `+` `=` `@` `_` `-`. It binds --tenant, the taxonomy's tenant and every taxonomy
+// code.
+func ValidCode(code string) bool {
+	return codeRule.MatchString(code)
+}
+
+// ValidURN reports whether u follows the URN rule (D-056): 11 to 250 characters from lowercase
+// letters, digits and `.` `:` `+` `=` `@` `_` `/` `-`.
+func ValidURN(u string) bool {
+	return urnRule.MatchString(u)
 }
 
 // Slug turns a name from the cloud into an id (D-053). It first splits CamelCase: a word break
@@ -68,14 +80,16 @@ func OUPath(path string) string {
 // URN is a node name: `urn:tnt:<tenant>` followed by `:<type>:<id>` for each level.
 type URN string
 
-// Tenant returns the URN of a tenant, `urn:tnt:<tenant>`.
+// Tenant returns the URN of a tenant, `urn:tnt:<tenant>`. The tenant is lowercased: a URN id is
+// the code in lowercase (D-056).
 func Tenant(tenant string) URN {
-	return URN("urn:tnt:" + tenant)
+	return URN("urn:tnt:" + strings.ToLower(tenant))
 }
 
-// Child returns u followed by `:<typ>:<id>`.
+// Child returns u followed by `:<typ>:<id>`. The id is lowercased: a URN id is the code in
+// lowercase (`PRJ_Shop` gives `prj_shop`), and a slug already is.
 func (u URN) Child(typ, id string) URN {
-	return u + URN(":"+typ+":"+id)
+	return u + URN(":"+typ+":"+strings.ToLower(id))
 }
 
 // String returns the URN as a string.

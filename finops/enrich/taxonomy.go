@@ -615,9 +615,13 @@ func urnSegment(u, typ string) string {
 	return ""
 }
 
-// reservedCode reports whether code is one of the reserved system ids (D-047).
+// reservedCode reports whether code is one of the reserved system ids, in any case (D-056).
 func reservedCode(code string) bool {
-	return code == "unalloc" || code == "unspec" || code == "invalid"
+	switch strings.ToLower(code) {
+	case "unalloc", "unspec", "invalid":
+		return true
+	}
+	return false
 }
 
 func strID(v any) string {

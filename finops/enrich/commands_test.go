@@ -75,7 +75,7 @@ func TestCommandsWithoutTenantFailBeforeReading(t *testing.T) {
 		{"share", shareCommand, []string{"--taxonomy", missing, "--from-cost", missing}},
 	}
 	for _, tc := range cases {
-		for _, tenant := range [][]string{nil, {"--tenant", "Bad_Tenant"}, {"--tenant", ""}} {
+		for _, tenant := range [][]string{nil, {"--tenant", "ab"}, {"--tenant", ""}} {
 			t.Run(tc.name, func(t *testing.T) {
 				_, err := execute(t, tc.cmd(), append(tenant, tc.args...)...)
 				if err == nil || !strings.Contains(err.Error(), "tenant") {

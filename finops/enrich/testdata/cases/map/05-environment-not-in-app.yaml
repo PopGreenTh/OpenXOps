@@ -1,7 +1,7 @@
 name: environment-not-in-app
 why: >
   A resolved Environment that is not defined under the account's App becomes unspec with a
-  finding. Here the global default qa exists only under pay.
+  finding. Here the global default quality exists only under pay.
 taxonomy:
   tenant: testtnt
   business_units: [{ code: retail, name: Retail }]
@@ -13,11 +13,11 @@ taxonomy:
     - { code: chk, name: Checkout, project: shop, cost_center: ecom,
         environments: [{ code: prod, name: Production }] }
     - { code: pay, name: Payments, project: pay, cost_center: ecom,
-        environments: [{ code: qa, name: Quality }] }
+        environments: [{ code: quality, name: Quality }] }
   lzs: [{ code: main, name: Main, csp: aws, currency: USD, management_account: "111111111111" }]
   ou_links:
     - { lz: main, ou: /Workloads/Checkout, app: chk }
-  defaults: { environment: qa }
+  defaults: { environment: quality }
 records:
   - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: r-1, name: Root, parent_id: "", path: /, id_path: r-1, has_children: true }
   - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: ou-1, name: Workloads, parent_id: r-1, path: /Workloads, id_path: r-1/ou-1, has_children: true }

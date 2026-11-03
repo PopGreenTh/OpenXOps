@@ -85,7 +85,7 @@ func LZTree(tenant string, lz LZ, recs []record.Record) []record.Record {
 					alias = a
 				}
 			}
-			ous = append(ous, node(tenant, str(r, "csp"), typeOU, ouURN(path), parent, urn.OUPath(path), name, id, path, "", "", "", alias))
+			ous = append(ous, node(tenant, str(r, "csp"), typeOU, ouURN(path), parent, urn.Slug(name), name, id, path, "", "", "", alias))
 		case "account":
 			parent := ouURN(str(r, "ou_path"))
 			id := str(r, "id")
@@ -111,7 +111,9 @@ func LZTree(tenant string, lz LZ, recs []record.Record) []record.Record {
 }
 
 // node builds one node record. joinedAt and joinedMethod are the account's (D-055), "" elsewhere.
-func node(tenant, csp, typ string, u, parent urn.URN, id, name, sourceID, path, status, joinedAt, joinedMethod, alias string) record.Record {
+// code is the LZ code, the slug of an OU's own name, or the account id; refID is the id of the
+// cloud resource the node stands for (D-056). alias is the optional alias of the node (D-057).
+func node(tenant, csp, typ string, u, parent urn.URN, code, name, refID, path, status, joinedAt, joinedMethod, alias string) record.Record {
 	r := record.Record{
 		"kind":          "node",
 		"tenant":        tenant,
@@ -119,9 +121,9 @@ func node(tenant, csp, typ string, u, parent urn.URN, id, name, sourceID, path, 
 		"type":          typ,
 		"urn":           u.String(),
 		"parent_urn":    parent.String(),
-		"id":            id,
+		"code":          code,
 		"name":          name,
-		"source_id":     sourceID,
+		"ref_id":        refID,
 		"path":          path,
 		"status":        status,
 		"joined_at":     joinedAt,
@@ -131,6 +133,30 @@ func node(tenant, csp, typ string, u, parent urn.URN, id, name, sourceID, path, 
 		r["alias"] = alias
 	}
 	return r
+}
+
+// CheckNodes checks the node records LZTree made (D-056). It returns an error naming the node when
+// a node has an empty code, urn or name, or a urn that breaks the URN rule. It returns one warning
+// per node whose code breaks the code rule (an OU named `IT` slugs to `it`); such a code is kept.
+func CheckNodes(nodes []record.Record) (warnings []string, err error) {
+	for _, n := range nodes {
+		who := fmt.Sprintf("%s node %q", str(n, "type"), str(n, "urn"))
+		if str(n, "urn") == "" {
+			who = fmt.Sprintf("%s node named %q", str(n, "type"), str(n, "name"))
+		}
+		for _, f := range []string{"code", "urn", "name"} {
+			if str(n, f) == "" {
+				return warnings, fmt.Errorf("%s has an empty %s", who, f)
+			}
+		}
+		if !urn.ValidURN(str(n, "urn")) {
+			return warnings, fmt.Errorf("%s: the urn breaks the URN rule (11 to 250 characters from a-z 0-9 . : + = @ _ / -)", who)
+		}
+		if !urn.ValidCode(str(n, "code")) {
+			warnings = append(warnings, fmt.Sprintf("%s: code %q breaks the code rule (3 to 50 characters from letters, digits and . + = @ _ -); kept as it is", who, str(n, "code")))
+		}
+	}
+	return warnings, nil
 }
 
 // parentPath returns the path of the OU above path ("/Platform/Hub" gives "/Platform").

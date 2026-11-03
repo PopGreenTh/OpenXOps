@@ -233,10 +233,14 @@ func TestTenantIDRule(t *testing.T) {
 	}{
 		{"testtnt", ""},
 		{"acme-retail", ""},
+		{"Acme_Retail", ""},
+		{"a.b", ""},
+		{strings.Repeat("a", 50), ""},
 		{"", "--tenant is required"},
-		{"Acme", "invalid --tenant"},
-		{"acme_retail", "invalid --tenant"},
-		{"acme--retail", "invalid --tenant"},
+		{"ab", "invalid --tenant"},
+		{strings.Repeat("a", 51), "invalid --tenant"},
+		{"a/b", "invalid --tenant"},
+		{"a b", "invalid --tenant"},
 	}
 	for _, tc := range cases {
 		err := CheckTenantID(tc.id)
@@ -259,7 +263,9 @@ func TestCheckTaxonomyTenant(t *testing.T) {
 	}{
 		{"same", "testtnt", nil},
 		{"missing", "", []string{"tax.yaml", "missing tenant"}},
-		{"malformed", "Test_Tnt", []string{"tax.yaml", "invalid tenant", "Test_Tnt"}},
+		{"malformed", "te st", []string{"tax.yaml", "invalid tenant", "te st"}},
+		{"too short", "ab", []string{"tax.yaml", "invalid tenant", `"ab"`}},
+		{"valid but another case", "TestTnt", []string{"tax.yaml", `"TestTnt"`, `"testtnt"`}},
 		{"other tenant", "othertnt", []string{"tax.yaml", `"othertnt"`, `"testtnt"`}},
 	}
 	for _, tc := range cases {
@@ -378,7 +384,8 @@ func TestTenantFlagStopsBeforeRun(t *testing.T) {
 		want string
 	}{
 		{"missing", nil, "tenant"},
-		{"malformed", []string{"--tenant", "Bad_Tenant"}, "invalid --tenant"},
+		{"too short", []string{"--tenant", "ab"}, "invalid --tenant"},
+		{"slash", []string{"--tenant", "a/b"}, "invalid --tenant"},
 		{"empty", []string{"--tenant", ""}, "--tenant is required"},
 	}
 	for _, tc := range cases {

@@ -205,13 +205,14 @@ var nodeSchema = Schema{
 		{Name: "type", Type: TypeString, Required: true},
 		{Name: "urn", Type: TypeString, Required: true},
 		{Name: "parent_urn", Type: TypeString, Required: true},
-		{Name: "id", Type: TypeString, Required: true},
+		{Name: "code", Type: TypeString, Required: true},
 		{Name: "name", Type: TypeString, Required: true},
-		{Name: "source_id", Type: TypeString, Required: true},
+		{Name: "ref_id", Type: TypeString, Required: true},
 		{Name: "path", Type: TypeString, Required: true},
 		{Name: "status", Type: TypeString, Required: true},
 		{Name: "joined_at", Type: TypeString, Required: true},
 		{Name: "joined_method", Type: TypeString, Required: true},
+		{Name: "alias", Type: TypeString},
 	},
 }
 

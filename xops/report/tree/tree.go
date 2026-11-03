@@ -19,13 +19,13 @@ type Doc struct {
 
 // Node is one LZ, OU or account in the tree. Field order is the order in the YAML.
 type Node struct {
-	Type     string `yaml:"type"`
-	ID       string `yaml:"id"`
-	Name     string `yaml:"name"`
-	URN      string `yaml:"urn"`
-	SourceID string `yaml:"source_id"`
-	Alias    string `yaml:"alias,omitempty"`
-	Status   string `yaml:"status,omitempty"`
+	Type   string `yaml:"type"`
+	Code   string `yaml:"code"`
+	Name   string `yaml:"name"`
+	URN    string `yaml:"urn"`
+	RefID  string `yaml:"ref_id"`
+	Alias  string `yaml:"alias,omitempty"`
+	Status string `yaml:"status,omitempty"`
 	// JoinedAt and JoinedMethod are an account's (D-055); they are left out when empty.
 	JoinedAt     string  `yaml:"joined_at,omitempty"`
 	JoinedMethod string  `yaml:"joined_method,omitempty"`
@@ -42,7 +42,7 @@ type entry struct {
 // are that input's records in file order, so a record's line is its position plus one. Records of
 // other kinds are ignored. It fails, naming source, the line and the URN, when there isn't exactly
 // one lzc node, when two nodes share a urn, or when a node's parent_urn names no node or the node
-// is not under the lzc node. Children are the OUs, then the accounts, each group in id order.
+// is not under the lzc node. Children are the OUs, then the accounts, each group in code order.
 func Build(tenant, source string, recs []record.Record) (Doc, error) {
 	byURN := map[string]*entry{}
 	var all []*entry
@@ -53,8 +53,8 @@ func Build(tenant, source string, recs []record.Record) (Doc, error) {
 		}
 		e := &entry{
 			node: &Node{
-				Type: str(r, "type"), ID: str(r, "id"), Name: str(r, "name"), URN: str(r, "urn"),
-				SourceID: str(r, "source_id"), Alias: str(r, "alias"), Status: str(r, "status"),
+				Type: str(r, "type"), Code: str(r, "code"), Name: str(r, "name"), URN: str(r, "urn"),
+				RefID: str(r, "ref_id"), Alias: str(r, "alias"), Status: str(r, "status"),
 				JoinedAt: str(r, "joined_at"), JoinedMethod: str(r, "joined_method"),
 			},
 			parent: str(r, "parent_urn"),
@@ -131,7 +131,7 @@ func reachable(from, want *Node) bool {
 	return false
 }
 
-// sortChildren orders every node's children: OUs, then accounts, then anything else, each by id.
+// sortChildren orders every node's children: OUs, then accounts, then anything else, each by code.
 func sortChildren(n *Node) {
 	rank := func(typ string) int {
 		switch typ {
@@ -147,7 +147,7 @@ func sortChildren(n *Node) {
 		if ra, rb := rank(a.Type), rank(b.Type); ra != rb {
 			return ra < rb
 		}
-		return a.ID < b.ID
+		return a.Code < b.Code
 	})
 	for _, c := range n.Children {
 		sortChildren(c)
@@ -223,12 +223,12 @@ func BuildTaxonomy(tenant, source string, recs []record.Record) (TaxonomyDoc, er
 	}
 
 	lzURN := str(lzRecord, "urn")
-	mgmtID := str(lzRecord, "source_id")
+	mgmtID := str(lzRecord, "ref_id")
 
 	accsByOU := map[string][]record.Record{}
 	for _, acc := range accRecords {
 		pURN := str(acc, "parent_urn")
-		if (pURN == lzURN || pURN == lzURN+":org:root") && str(acc, "source_id") == mgmtID {
+		if (pURN == lzURN || pURN == lzURN+":org:root") && str(acc, "ref_id") == mgmtID {
 			continue
 		}
 		accsByOU[pURN] = append(accsByOU[pURN], acc)
@@ -244,18 +244,18 @@ func BuildTaxonomy(tenant, source string, recs []record.Record) (TaxonomyDoc, er
 		ouName := str(ouNode, "name")
 		ouCode := ouName
 		if ouCode == "" {
-			ouCode = str(ouNode, "id")
+			ouCode = str(ouNode, "code")
 		}
 
 		sort.SliceStable(accs, func(i, j int) bool {
-			return str(accs[i], "source_id") < str(accs[j], "source_id")
+			return str(accs[i], "ref_id") < str(accs[j], "ref_id")
 		})
 
 		var accounts []*TaxonomyAccount
 		for _, a := range accs {
 			accCode := str(a, "name")
 			if accCode == "" {
-				accCode = str(a, "id")
+				accCode = str(a, "code")
 			}
 			accURN := str(ouNode, "urn") + ":acc:" + urn.Slug(accCode)
 			accounts = append(accounts, &TaxonomyAccount{
@@ -263,7 +263,7 @@ func BuildTaxonomy(tenant, source string, recs []record.Record) (TaxonomyDoc, er
 				URN:    accURN,
 				Name:   accCode,
 				Alias:  str(a, "alias"),
-				RefID:  str(a, "source_id"),
+				RefID:  str(a, "ref_id"),
 				Status: str(a, "status"),
 			})
 		}
@@ -273,7 +273,7 @@ func BuildTaxonomy(tenant, source string, recs []record.Record) (TaxonomyDoc, er
 			URN:      str(ouNode, "urn"),
 			Name:     ouName,
 			Alias:    str(ouNode, "alias"),
-			RefID:    str(ouNode, "source_id"),
+			RefID:    str(ouNode, "ref_id"),
 			Path:     str(ouNode, "path"),
 			Accounts: accounts,
 		})
@@ -283,7 +283,7 @@ func BuildTaxonomy(tenant, source string, recs []record.Record) (TaxonomyDoc, er
 		return ouPaths[i].Path < ouPaths[j].Path
 	})
 
-	lzCode := str(lzRecord, "id")
+	lzCode := str(lzRecord, "code")
 	lzName := str(lzRecord, "name")
 	csp := str(lzRecord, "csp")
 	if csp == "" {

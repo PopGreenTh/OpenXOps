@@ -130,3 +130,44 @@ func TestEveryCostAfterShareHasAllNineURNs(t *testing.T) {
 		}
 	}
 }
+
+func TestMixedCaseCodeKeepsCaseInRecordsAndLowercasesInURNs(t *testing.T) {
+	tax := urnTaxonomy()
+	tax.Projects = []Project{{Code: "PRJ_Shop", Name: "Shop", BusinessUnit: "retail"}}
+	tax.Apps = []App{{Code: "Chk_App", Name: "Checkout", Project: "PRJ_Shop", CostCenter: "pay",
+		Environments: []Environment{{Code: "Prod", Name: "Prod"}}}}
+	tax.Defaults = &Defaults{App: "Chk_App", Environment: "Prod"}
+	out := Map(tax, urnInventory())
+	allocs := byKind(out, "allocation")
+	if len(allocs) != 1 {
+		t.Fatalf("allocations = %v", allocs)
+	}
+	a := allocs[0]
+	want := map[string]string{
+		"project":         "PRJ_Shop",
+		"app":             "Chk_App",
+		"environment":     "Prod",
+		"project_urn":     "urn:tnt:testtnt:prj:prj_shop",
+		"app_urn":         "urn:tnt:testtnt:prj:prj_shop:app:chk_app",
+		"environment_urn": "urn:tnt:testtnt:prj:prj_shop:app:chk_app:env:prod",
+	}
+	for k, v := range want {
+		if a[k] != v {
+			t.Errorf("%s = %v, want %s", k, a[k], v)
+		}
+	}
+	if problems := validateTaxonomyOK(tax); problems != "" {
+		t.Errorf("the taxonomy should validate: %s", problems)
+	}
+}
+
+// validateTaxonomyOK returns the error findings of ValidateTaxonomy as a string, "" for none.
+func validateTaxonomyOK(tax Taxonomy) string {
+	var out []string
+	for _, f := range ValidateTaxonomy(tax) {
+		if f["severity"] == "error" {
+			out = append(out, strID(f["code"])+":"+strID(f["subject"]))
+		}
+	}
+	return strings.Join(out, ", ")
+}
