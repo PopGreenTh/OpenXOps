@@ -120,6 +120,7 @@ WI-0107 Contracts clarified 2026-10-27 during PR #24's review: `environment` and
 | Work Order | Assignee | Depends on | Status | Issue | PR | Branch | Revisions |
 |---|---|---|---|---|---|---|---|
 | [WO-0201-A](DD-02-r2-finops-history-trend/WI-0201-History.md#wo-0201-a--history-store-and---save) | open | Release 1, WO-0101-B | not started | — | — | — | 0 |
+| [WO-0201-B](DD-02-r2-finops-history-trend/WI-0201-History.md#wo-0201-b--first_seen-and-last_changed-on-the-inventory) | open | WO-0201-A | not started | — | — | — | 0 |
 | [WO-0202-A](DD-02-r2-finops-history-trend/WI-0202-Focus.md#wo-0202-a--focus-cost-and-duckdb) | open | Release 1, WO-0101-B | not started | — | — | — | 0 |
 | [WO-0202-B](DD-02-r2-finops-history-trend/WI-0202-Focus.md#wo-0202-b--aws-focus) | open | WO-0202-A | not started | — | — | — | 0 |
 | [WO-0203-A](DD-02-r2-finops-history-trend/WI-0203-Analyze-Trend.md#wo-0203-a--trend) | open | WO-0201-A, WO-0105-A | not started | — | — | — | 0 |
@@ -127,6 +128,8 @@ WI-0107 Contracts clarified 2026-10-27 during PR #24's review: `environment` and
 | [WO-0205-A](DD-02-r2-finops-history-trend/WI-0205-As-Reported.md#wo-0205-a--snapshots-and---as-reported) | open | WO-0201-A, WO-0105-A | not started | — | — | — | 0 |
 
 DD-02 written 2026-10-27 with 8 reference cases (`finops/analyze/testdata/cases/trend/`, `…/impact/`); Q-006 closed by D-042; dispatch waits for the Release 1 tag.
+
+DD-02 refreshed 2026-11-03 ([D-066](DECISIONS.md#d-066)) for tenants, URNs, the code rules and the nested taxonomy. Two new decisions came out of it: `trend` and `impact` name nodes by URN, and floor-factor entries choose nodes by URN prefix ([D-067](DECISIONS.md#d-067)); `aws-accounts` gains `--save` and `--from-history` for `first_seen` and `last_changed`, where a change is a new name or parent ([D-068](DECISIONS.md#d-068), WO-0201-B). The 8 trend and impact reference cases now use ids and URN nodes, with no number changed.
 
 Release 3 grilled 2026-11-03 from the repo owner's brief: monthly forecast and plan vs actual ([D-062](DECISIONS.md#d-062) to [D-065](DECISIONS.md#d-065)), with Enforce moving to Release 4. Before DD-03 is written, the planner brings DD-02 up to date for tenants, URNs, the code rules and the nested taxonomy ([D-066](DECISIONS.md#d-066)).
 

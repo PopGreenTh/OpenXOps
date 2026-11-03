@@ -10,15 +10,18 @@ Cost can be shown as it was reported at the time, not only restated with today's
 ### Snapshots (D-007)
 
 - `map --save` also saves what it mapped with: the taxonomy file, byte for byte, as
-  `data/history/taxonomy/<run timestamp>.yaml`, and its `ou` and `account` input as
-  `data/history/inventory/<run timestamp>.jsonl`. Same timestamp as the run's `map` history file
+  `data/history/<tenant>/taxonomy/<run timestamp>.yaml`, and its `ou` and `account` input as
+  `data/history/<tenant>/inventory/<run timestamp>.jsonl` (D-045). Same timestamp as the run's `map`
+  history file
   (WI-0201).
 
-### `finops enrich map … --as-reported [--history-dir DIR]`
+### `finops enrich map --tenant ID … --as-reported [--history-dir DIR]`
 
 - For each `cost` record, the **snapshot of its period** is the newest snapshot saved before the
   end of that period (the first instant of the next month, UTC). That snapshot's taxonomy and
-  inventory map the record, instead of today's.
+  inventory map the record, instead of today's. A snapshot is read through `record/taxonomy`
+  like today's; a snapshot that no longer loads (saved before the nested layout, D-060) counts as
+  missing for its periods.
 - A period with no snapshot before its end is mapped with today's taxonomy and inventory, with
   finding `as-reported-missing` (warning, subject: the period), once per period.
 - Every `cost` record gains `snapshot`: the snapshot timestamp used, or `""` for today's.
