@@ -8,7 +8,7 @@ project trees come from the taxonomy, the cloud tree from the `node` records `lz
 
 ## Contracts
 
-### `xops report urn-lookup --tenant ID --taxonomy FILE [--from-node FILE] [--format csv|json] --out FILE` (planner default, [Q-010](../DECISIONS.md#q-010) item 5)
+### `xops report urn-lookup --tenant ID --taxonomy FILE [--from-node FILE] [--format csv|json] --out FILE` ([D-069](../DECISIONS.md#d-069))
 
 - **Rows**, one per node, in this order:
   - the business tree: `bzu`, `cct`;

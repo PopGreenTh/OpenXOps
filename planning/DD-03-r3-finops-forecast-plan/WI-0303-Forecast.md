@@ -15,16 +15,19 @@ Reads `cost` records after `map` or `share`, and optionally `plan` records (`pla
 output; only `plan_type` `change` is used). Writes `forecast` records with `source` `runrate`,
 then findings, then the input records (pass-through).
 
-### Run rate (planner default, [Q-010](../DECISIONS.md#q-010) item 3)
+### Run rate ([D-069](../DECISIONS.md#d-069))
 
 - **The open month** is the month of `--as-of` (default today, UTC, from a clock tests can set).
   Its days elapsed are the days before `--as-of`, as in `trend` (WI-0203).
 - **Nodes:** one per `service_urn` (the finest actual node), keeping all the URN columns of its
   `cost` records. Nodes are kept apart by `metric` and `currency`.
-- **Base daily cost** of a node:
-  - the open month's cost so far ÷ its days elapsed, when at least one day has elapsed;
-  - else, on the first of a month, the last closed month's cost ÷ its days.
-  - A node with no cost in that month has no base and no run-rate line.
+- **Base daily cost** of a node, as `trend`'s baseline (WI-0203): the mean of the daily cost
+  (`amount` ÷ the month's days) of its up to **3** most recent closed months in which it has
+  cost.
+  - A node with cost only in the open month uses its cost so far ÷ the days elapsed (at least
+    one day); with 0 days elapsed it has no base yet.
+  - A node with no cost in the last closed month and none so far in the open month has stopped:
+    no run-rate line.
 - **Horizon:** the open month and the `--months` − 1 months after it (`--months` default 12).
 - For each node and month in the horizon: one `forecast` record, `basis` `run_rate`, `amount`
   = base daily cost × `days_in_month`.
@@ -34,8 +37,8 @@ then findings, then the input records (pass-through).
 - `daily_cost` = `amount` ÷ `days_in_month`; `line_id` is `""` for `run_rate` and the plan's
   `line_id` for `planned_change`.
 - Records are sorted by `period`, `node_urn`, `basis`.
-- **Finding** `forecast-no-base` (info, subject the node URN) for a node with cost in the last
-  three closed months but none in the base month.
+- **Finding** `forecast-no-base` (info, subject the node URN) for each node that has cost in the
+  input but no run-rate line: stopped, or new with 0 days elapsed.
 
 ### Reference cases
 
@@ -65,8 +68,8 @@ full set of findings.
 
 **Done when.**
 - Every `cases/` case passes, unchanged.
-- On the mock pipeline with `--as-of` the 10th of the open month, a node's open-month forecast
-  equals its cost so far ÷ 9 × the month's days, and the mock's new Project has
+- On the mock pipeline, a node's open-month forecast equals the mean daily cost of its last
+  three closed months × the month's days, and the mock's new Project has
   `planned_change` lines from M+1 (shown in the PR).
 - `go run -tags=no_duckdb_arrow ./scripts/check` all PASS, with `docs PASS`.
 

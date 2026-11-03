@@ -3,7 +3,8 @@ why: >
   A new Project goes live in December, with no account and no cost yet. Its plan `change` line
   becomes a planned_change forecast for December, at the App node it names. Its `budget` line is
   ignored: a budget is not a change. The February change line is outside the horizon (November
-  to January). The running Project keeps its run rate.
+  to January). The running Project has cost only in the open month, so its run rate is its cost
+  so far: 90 over 9 days, 10 a day (D-069).
 args: { as_of: "2026-11-10", months: 3 }
 records:
   - { kind: cost, period: 2026-11, metric: UnblendedCost, currency: USD, amount: 90, service: AmazonEC2, service_category: compute,

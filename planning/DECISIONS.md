@@ -912,7 +912,7 @@ the commands that take `--save`).
 
 ## Q-010
 
-**Planner defaults in DD-03, to confirm** (planner, 2026-11-03). DD-03 needs these, and the brief
+**Planner defaults in DD-03, to confirm** (planner, 2026-11-03). **Closed by [D-069](#d-069)** (2026-11-03): items 1, 2, 5 and 6 stand; items 3 and 4 changed. DD-03 needs these, and the brief
 and D-062 to D-065 don't settle them:
 
 1. **Directus:** a collection `finops_lines`, one row per month and node, with
@@ -940,4 +940,25 @@ and D-062 to D-065 don't settle them:
    Directus client in a new top-level `directus/`, because the stage packages reach the 5-file
    limit in Release 2.
 
-Open.
+
+## D-069
+
+**The DD-03 planner defaults, as the repo owner settled them** (repo owner, 2026-11-03; closes
+[Q-010](#q-010)).
+
+- **Items 1, 2, 5 and 6 stand as written** in Q-010:
+  - the Directus collection, fields, environment variables, `GET` only, and the JSON or CSV
+    export;
+  - `plan_type` `budget` or `change`, with only a `change` added on top of the run rate;
+  - `xops report urn-lookup`;
+  - the subpackages and `directus/`.
+- **Item 3, the run-rate base**, is `trend`'s baseline ([D-035](#d-035), WI-0203): the mean
+  daily cost of the node's up to **3** most recent closed months in which it has cost. Recorded
+  by the planner to make it complete:
+  - a node with cost only in the open month uses its cost so far ÷ the days elapsed;
+  - a node with no cost in the last closed month and none so far in the open month has stopped,
+    so it gets no line, and `forecast-no-base` (info) names it.
+- **Item 4, variance grading**, keeps `impact`'s floor and floor-factor file but has its own
+  default base factor, **1.1**. Levels 1 to 4 fall at an overrun of 10%, 20%, 40% and 80% of
+  plan, that is (`f` − 1) × 1, 2, 4 and 8 over plan. An overrun under 10%, a gap under plan, or a
+  gap below the floor is level 0.

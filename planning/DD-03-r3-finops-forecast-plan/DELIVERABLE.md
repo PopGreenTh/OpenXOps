@@ -1,8 +1,8 @@
 # DD-03 — Release 3: monthly forecast and plan vs actual
 
 Scope: [D-062](../DECISIONS.md#d-062) to [D-065](../DECISIONS.md#d-065), on top of Release 2
-(DD-02, refreshed by D-066 to D-068). The planner defaults listed in
-[Q-010](../DECISIONS.md#q-010) wait for the repo owner.
+(DD-02, refreshed by D-066 to D-068). Its planner defaults were settled by
+[D-069](../DECISIONS.md#d-069).
 
 ## Goal
 
@@ -54,7 +54,7 @@ node:
 | `kind` | `plan` | `forecast` |
 | `tenant` | the tenant | the tenant |
 | `source` | `directus` | `manual` (Directus) or `runrate` (computed) |
-| `plan_type` | `budget` or `change` ([Q-010](../DECISIONS.md#q-010) item 2) | — |
+| `plan_type` | `budget` or `change` ([D-069](../DECISIONS.md#d-069)) | — |
 | `basis` | — | `runrate`: `run_rate` or `planned_change`; `manual`: `""` |
 | `line_id` | the Directus row id | the Directus row id; `""` for `runrate` |
 | `month_start`, `period` | `2026-11-01`, `2026-11` | same |

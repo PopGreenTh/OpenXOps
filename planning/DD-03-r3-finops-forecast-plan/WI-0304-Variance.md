@@ -37,16 +37,18 @@ Reads `cost`, `forecast` (both sources), `plan` and, optionally, `change` record
   Later months always use `--from-plan`.
 - `month_state`: `closed`, `open` (the month of `--as-of`) or `future`.
 
-### Gaps and grading (planner default, [Q-010](../DECISIONS.md#q-010) item 4)
+### Gaps and grading ([D-069](../DECISIONS.md#d-069))
 
 - `gap_actual` = `actual` − `plan`, for a closed month only (else `null`).
 - `gap_runrate` = `forecast_runrate` − `plan`; `gap_manual` = `forecast_manual` − `plan`.
 - Each gap also has a `_pct`: the gap ÷ `plan`, or `null` when `plan` is `null` or 0.
 - `leading_gap` is `gap_actual` for a closed month and `gap_runrate` otherwise. It is graded with
-  `impact`'s rules and floor-factor file (WI-0204, D-067), using `factor` = (`plan` +
-  `leading_gap`) ÷ `plan`:
-  - below the floor, or with a gap under plan, the level is 0;
-  - otherwise levels 1 to 4, at `factor` ≥ `f`, 2`f`, 4`f` and 8`f`.
+  `impact`'s floor and floor-factor file (WI-0204, D-067), with variance's own default base factor
+  `f` = **1.1**:
+  - the overrun is `leading_gap` ÷ `plan`;
+  - levels 1 to 4 fall at an overrun ≥ (`f` − 1) × 1, 2, 4 and 8, which is 10%, 20%, 40% and
+    80% by default;
+  - a gap below the floor, a gap under plan, a smaller overrun or no plan is level 0.
 - `explained_by_change`: true when a `change` record touches the node, as in WI-0204.
 
 ### `variance` records

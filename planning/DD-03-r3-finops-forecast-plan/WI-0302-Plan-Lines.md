@@ -10,7 +10,7 @@ saved, so a month is compared with the plan as it stood before the month began
 
 ## Contracts
 
-### Directus collection (planner default, [Q-010](../DECISIONS.md#q-010) item 1)
+### Directus collection ([D-069](../DECISIONS.md#d-069))
 
 One collection, `finops_lines` by default, one row per month and node:
 
