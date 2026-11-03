@@ -7,24 +7,27 @@ daily cost** so months of different lengths compare fairly (D-035).
 
 ## Contracts
 
-### `finops analyze trend --hierarchy cost|project [--as-of DATE] [--from-cost FILE] [--save]`
+### `finops analyze trend --tenant ID --hierarchy cost|project [--as-of DATE] [--from-cost FILE] [--save]`
 
-Reads `cost` records (after `map` or `share`) and, for the cost hierarchy, `account` records
-(their `ou_path`), from the pipe or `--from-cost`. Writes `trend` records, then findings, then the
-input records (pass-through).
+Reads `cost` records after `map` or `share`, from the pipe or `--from-cost`. It needs their URN
+fields (WI-0109): a `cost` record without the ones its hierarchy uses stops the command, naming
+the file and line. Writes `trend` records, then findings, then the input records (pass-through).
 
-### Hierarchies and nodes (D-010, D-041)
+### Hierarchies and nodes (D-010, D-041, D-067)
 
-| `--hierarchy` | Levels, top to bottom | Fields |
-|---|---|---|
-| `cost` | `ou` › `account` › `region` › `service` | `ou_path` (the account's, from its `account` record), `account_id`, `region`, `service` |
-| `project` | `project` › `app` › `environment` › `feature` | `project`, `app`, `environment`, `feature_tag` |
+| `--hierarchy` | Levels, top to bottom | Level fields | Node URN |
+|---|---|---|---|
+| `cost` | `ou` › `account` › `region` › `service` | `ou_urn`, `account_id`, `region`, `service` | `ou_urn`; `account_urn`; `<account node>:geo:<slug of region>`; `<parent node>:svc:<slug of service>` |
+| `project` | `project` › `app` › `environment` › `feature` | `project`, `app`, `environment`, `feature_tag` | `project_urn`; `app_urn`; `environment_urn`; `<environment node>:ftr:<slug of feature_tag>` |
 
 - `region` and `feature` are levels only when at least one input `cost` record has a non-empty
   `region` / `feature_tag` (that is, FOCUS input); otherwise they are skipped.
 - A **node** is one combination of the fields from the top level down to its level. Its `node`
-  field joins those values with ` > ` (`PRJ-SHOP > APP-CHK`). A `cost` record counts towards one
-  node at every level.
+  field is its URN ([D-067](../DECISIONS.md#d-067)): `urn:tnt:testtnt:prj:shop:app:chk`. A `cost`
+  record counts towards one node at every level.
+- Without a region level, a service node's URN is the `cost` record's `service_urn`
+  (`<account_urn>:svc:<slug>`). With one, the region sits between them, as in the cloud tree
+  (D-046, [D-064](../DECISIONS.md#d-064)).
 - Nodes are kept apart by `metric` and `currency`, never summed across them.
 
 ### Trend records
@@ -47,13 +50,14 @@ One `trend` record per node, level, metric, currency and **period in which the n
 - `--as-of` (`YYYY-MM-DD`) defaults to today (UTC), read from a clock tests can set.
 - Months later than `--as-of`'s month are an error naming the record.
 - Sorted by `hierarchy`, `metric`, `currency`, level (top first), `node`, `period`.
-- **Finding** `trend-no-baseline` (info, subject `<hierarchy>:<node>`) for each node whose latest
+- **Finding** `trend-no-baseline` (info, subject the node URN) for each node whose latest
   period has no baseline (D-035); its trend records still appear, with `factor` `null`.
 
 ### Reference cases
 
-`finops/analyze/testdata/cases/trend/*.yaml`, written by Claude: `args` (`hierarchy`, `as_of`),
-input `records`, and `expect.trends`: the trend records to find, matched on `level`, `node`,
+`finops/analyze/testdata/cases/trend/*.yaml`, written by Claude, refreshed for D-067: `args`
+(`hierarchy`, `as_of`), input `records` (run with `--tenant testtnt`; records may leave out
+`tenant`), and `expect.trends`: the trend records to find, matched on `level`, `node`,
 `metric`, `currency` and `period` and compared on the fields listed (numbers within `1e-6`, `null`
 as written); trend records not listed are not checked. `expect.findings` (`code`, `subject`) is
 the full set of findings. The test reads every case in place.
@@ -81,8 +85,8 @@ the full set of findings. The test reads every case in place.
 
 **Done when.**
 - Every `cases/trend/` case passes, unchanged.
-- `finops analyze trend --hierarchy project` on the fixture prints trend records whose
-  `daily_avg` for a 28-day February and a 31-day March of equal daily spend are equal (shown in the
+- `finops analyze trend --tenant testtnt --hierarchy project` on the fixture prints trend
+  records whose `daily_avg` for a 28-day February and a 31-day March of equal daily spend are equal (shown in the
   PR).
 
 **Verify.** `go run -tags=no_duckdb_arrow ./scripts/check`

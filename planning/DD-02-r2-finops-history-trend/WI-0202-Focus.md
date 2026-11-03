@@ -9,7 +9,7 @@ works unchanged. FOCUS is opt-in; `aws-cost` stays the default (D-035).
 
 ## Contracts
 
-### `xops sense focus-cost [--from-focus FILE] [--file PATH]... [--metric M] [--app-tag KEY] [--project-tag KEY] [--feature-tag KEY]`
+### `xops sense focus-cost --tenant ID [--from-focus FILE] [--file PATH]... [--metric M] [--app-tag KEY] [--project-tag KEY] [--feature-tag KEY]`
 
 - **Input:** `focus_file` records (pipe or `--from-focus`), or FOCUS files named with `--file`.
   A file ending `.parquet` or `.csv` is read with DuckDB (`read_parquet`, `read_csv`); anything
@@ -29,13 +29,17 @@ works unchanged. FOCUS is opt-in; `aws-cost` stays the default (D-035).
   missing tag is `""`.
 - **Tag keys:** `--app-tag` `App`, `--project-tag` `Project`, `--feature-tag` `Feature` by default.
 - Every input `focus_file` record passes through after the output (pass-through rule).
+- Every record it writes has `tenant` (`--tenant`); a `focus_file` record of another tenant stops
+  the command, as WI-0109 says. `service_urn` and the other URN fields are `map`'s to add; the
+  region doesn't enter `service_urn` until Release 3 ([D-064](../DECISIONS.md#d-064)).
 
-### `finops sense aws-focus --taxonomy FILE --lz CODE [--from P] [--to P] [--refresh] [--profile P] [--mock]`
+### `finops sense aws-focus --tenant ID --taxonomy FILE [--lz CODE] [--from P] [--to P] [--refresh] [--profile P] [--mock]`
 
-- **Where the export lives:** a new optional `focus` entry on the LZ in the taxonomy (D-035):
-  `lzs: [{ code: LZ-MAIN, …, focus: { bucket: my-bucket, prefix: exports/focus/data } }]`. The
-  prefix is the export's `data/` folder; months are its `BILLING_PERIOD=YYYY-MM/` subfolders. No
-  `focus` entry on that LZ is an error naming the LZ.
+- **Where the export lives:** a new optional `focus` entry on the LZ in the nested taxonomy
+  (D-035, WI-0111): `lzs: [{ code: main, …, focus: { bucket: my-bucket, prefix: exports/focus/data } }]`
+  (or under `lz_conns`). The prefix is the export's `data/` folder; months are its
+  `BILLING_PERIOD=YYYY-MM/` subfolders. No `focus` entry on that LZ is an error naming the LZ.
+- **LZ:** the taxonomy's one LZ; `--lz` is optional and must name it when given (D-052).
 - **Cache (D-038):** `data/cache/aws/focus/<management_account>/<YYYY-MM>/<file name>`. A closed
   month (before the current one) is downloaded once and never again; the open month is downloaded
   again on every run into a fresh `<YYYY-MM>@<UTC timestamp>/` folder, the newest of which is
@@ -44,7 +48,7 @@ works unchanged. FOCUS is opt-in; `aws-cost` stays the default (D-035).
 - **Range:** `--from`/`--to` `YYYY-MM`, inclusive; default the 24 complete months before the
   current one plus the current month (as `aws-cost`).
 - **Output:** one `focus_file` record per file in the cache used for each month in range:
-  `csp` `aws`, `lz`, `management_account`, `period`, `path` (the local file), `bytes`, `closed`
+  `tenant`, `csp` `aws`, `lz`, `management_account`, `period`, `path` (the local file), `bytes`, `closed`
   (bool). Sorted by `period`, then `path`.
 - stderr shows the number of files downloaded and their total size (any log level).
 - **IAM:** `s3:ListBucket` and `s3:GetObject` on the export's bucket and prefix.
@@ -86,7 +90,8 @@ criterion 4).
 
 **Done when.**
 - The tests above pass on Linux CI with CGO and `no_duckdb_arrow`.
-- `xops sense focus-cost --file xops/sense/testdata/focus/<a month>.csv | finops enrich map …`
+- `xops sense focus-cost --tenant testtnt --file xops/sense/testdata/focus/<a month>.csv |
+  finops enrich map --tenant testtnt …`
   runs end to end (shown in the PR).
 
 **Verify.** `go run -tags=no_duckdb_arrow ./scripts/check`
@@ -96,15 +101,15 @@ criterion 4).
 **Assignee:** open
 **Depends on:** WO-0202-A
 **Packages:** `finops/sense/` (one new file), `aws/focus/` (new: the S3 client behind an interface,
-listing and download through `aws/`'s retry wrapper), `finops/enrich/taxonomy.go` (the optional
-`focus` entry on an LZ, and its validation), `Taskfile.yml`, `.vscode/launch.json`, `README.md`,
+listing and download through `aws/`'s retry wrapper), `record/taxonomy/` and `finops/enrich/validate.go` (the
+optional `focus` entry on an LZ, and its validation), `Taskfile.yml`, `.vscode/launch.json`, `README.md`,
 `go.mod`, `go.sum`
 
 **Goal.** `aws-focus` as specified.
 
 **In scope.**
 - The LZ `focus` entry in the taxonomy: `bucket` and `prefix`, both required when `focus` is set;
-  `validate` reports a missing one as an error. WI-0104's taxonomy contract gains the entry.
+  `validate` reports a missing one as an error. WI-0111's *Taxonomy file* gains the entry.
 - The command, the cache, `--refresh`, `--mock`.
 - Tests with a counting fake S3 client (never a real endpoint): a second run over closed months
   downloads nothing; the open month is downloaded again each run into a new `@` folder and the
@@ -116,7 +121,7 @@ listing and download through `aws/`'s retry wrapper), `finops/enrich/taxonomy.go
 
 **Done when.**
 - The tests above pass.
-- `finops sense aws-focus --mock --taxonomy … --lz LZ-MAIN | xops sense focus-cost` prints `cost`
-  records for 25 months (shown in the PR).
+- `finops sense aws-focus --tenant testtnt --mock --taxonomy … | xops sense focus-cost --tenant
+  testtnt` prints `cost` records for 25 months (shown in the PR).
 
 **Verify.** `go run -tags=no_duckdb_arrow ./scripts/check`

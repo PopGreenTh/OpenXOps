@@ -26,7 +26,7 @@ release is direction, not a commitment.
 | Release | Deliverable | Theme | State |
 |---|---|---|---|
 | 1 | [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md) | AWS cost owned by Project › App › Environment, in Excel | All Work Orders merged; tag waits for criterion 6 (the real Organization) |
-| 2 | [DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md) | FOCUS, history, trend and impact | Specified; refresh for tenants, URNs and the nested taxonomy first (D-066); dispatch after Release 1 tag |
+| 2 | [DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md) | FOCUS, history, trend and impact | Specified; refreshed for tenants, URNs and the nested taxonomy (D-066 to D-068); dispatch after Release 1 tag |
 | 3 | not written yet | Monthly forecast and plan vs actual | Decided (D-062 to D-065); DD-03 after the DD-02 refresh |
 | 4 | not written yet | Enforce | First rules decided (D-033) |
 | Later | — | More clouds, SecOps, CloudOps | Direction only |
@@ -92,14 +92,15 @@ Cost Explorer calls on a cached rerun, the user and developer docs with a passin
 | FOCUS export | `finops sense aws-focus` | Opt-in; reads the FOCUS export from the bucket and prefix in the LZ's `focus` entry ([D-014](DECISIONS.md#d-014), [D-035](DECISIONS.md#d-035)) |
 | FOCUS to cost | `xops sense focus-cost` | Any cloud's FOCUS rows become `cost` records, adding region, `Feature` and other tags ([D-014](DECISIONS.md#d-014)) |
 | History | `data/history/<command>/<run>.jsonl`, `--as-reported` | Record files, written once, kept forever; DuckDB reads them ([D-034](DECISIONS.md#d-034), [D-007](DECISIONS.md#d-007)) |
-| Trend | `finops analyze trend` | Monthly, on **average daily cost**; 3-month baseline, or fewer; `trend-no-baseline` with none ([D-035](DECISIONS.md#d-035)) |
+| Trend | `finops analyze trend` | Monthly, on **average daily cost**; 3-month baseline, or fewer; `trend-no-baseline` with none ([D-035](DECISIONS.md#d-035)); nodes named by URN ([D-067](DECISIONS.md#d-067)) |
 | Impact | `finops analyze impact` | Floor 30; levels at factor ≥ 2, 4, 8, 16, on average daily cost; new, ongoing or resolved against history ([D-017](DECISIONS.md#d-017), [D-035](DECISIONS.md#d-035)) |
 | Embedded SQL | DuckDB, CGO, build tag `no_duckdb_arrow` | Arrives with FOCUS ([D-022](DECISIONS.md#d-022)) |
 
 `aws-cost` stays the default source of cost; FOCUS adds detail when asked for.
 
 Also decided: FOCUS files cached once per closed month ([D-038](DECISIONS.md#d-038)), history
-saved with `--save` on `map`, `share`, `trend` and `impact` ([D-039](DECISIONS.md#d-039)),
+saved with `--save` on `map`, `share`, `trend` and `impact` ([D-039](DECISIONS.md#d-039)) and `aws-accounts`
+([D-068](DECISIONS.md#d-068): `first_seen` and `last_changed`),
 `--as-reported` in Release 2 ([D-040](DECISIONS.md#d-040)), trend depth
 ([D-041](DECISIONS.md#d-041)), and the DD-02 planner defaults ([D-042](DECISIONS.md#d-042)).
 

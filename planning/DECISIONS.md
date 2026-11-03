@@ -883,3 +883,29 @@ only.
 written before tenants and URNs (D-045 to D-049), the code rules (D-056) and the nested
 taxonomy (D-057 to D-061). The planner refreshes its Contracts and reference cases to them, and
 then writes DD-03 for Release 3 on top.
+
+## D-067
+
+**`trend` and `impact` name nodes by URN** (repo owner, 2026-11-03; amends the WI-0203 and
+WI-0204 Contracts, refreshed by [D-066](#d-066)).
+
+- A trend node's `node` is its URN ([D-046](#d-046)), taken from the URN fields `map` writes on
+  `cost` (`ou_urn`, `account_urn`, `project_urn`, `app_urn`, `environment_urn`). The levels below
+  them are added as children: `geo:<region>` and `svc:<service>` in the cost hierarchy, and
+  `ftr:<Feature tag>` in the project hierarchy, each slugged. History and `impact` match on it.
+- The floor-factor file chooses nodes by **URN prefix**: an entry `{ urn: …, floor: …, factor: … }`
+  applies to the node with that URN and every node under it. The most specific is the longest
+  matching URN, chosen separately for floor and for factor.
+
+## D-068
+
+**`first_seen` and `last_changed` come from `aws-accounts`' own history** (repo owner,
+2026-11-03; specifies the Release 2 part of [D-051](#d-051); amends [D-039](#d-039), which listed
+the commands that take `--save`).
+
+- `xops sense aws-accounts` takes `--save`, and `--from-history FILE`, an earlier saved run.
+- With `--from-history`, each `ou` and `account` record gets `first_seen` and `last_changed`
+  (RFC 3339 UTC, to the second). They carry over from the history record with the same id. They
+  become this run's start for a node the history doesn't have, and `last_changed` becomes it
+  when the node's **name** or **parent** (`parent_id`, so a move) differs from the history's.
+- Status and email changes don't count. Without `--from-history`, both fields are `""`.

@@ -8,7 +8,7 @@ changes that may explain it (D-010).
 
 ## Contracts
 
-### `finops analyze impact [--from-trend FILE] [--from-change FILE] [--from-history FILE] [--floor-factor FILE] [--period P] [--save]`
+### `finops analyze impact --tenant ID [--from-trend FILE] [--from-change FILE] [--from-history FILE] [--floor-factor FILE] [--period P] [--save]`
 
 Reads `trend` records (pipe or `--from-trend`) and, optionally, `change` records (`finops analyze
 changes`) and the previous run's output (`--from-history`, an `impact` file). Writes `impact`
@@ -26,21 +26,22 @@ with a baseline:
   ≥ 8`f` → 4. Below `f`, not graded.
 - Only rises are graded; a node whose cost fell is not graded.
 
-### Floor-factor file (D-010, D-017)
+### Floor-factor file (D-010, D-017, D-067)
 
 ```yaml
-cost:
-  - { ou_path: /Workloads, floor: 100 }
-  - { account_id: "200000000001", service: AmazonEC2, factor: 3 }
-project:
-  - { project: PRJ-SHOP, floor: 500 }
-  - { project: PRJ-SHOP, app: APP-CHK, factor: 3 }
+- { urn: "urn:tnt:testtnt:lzc:main:org:workloads", floor: 100 }
+- { urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:svc:amazon-ec2", factor: 3 }
+- { urn: "urn:tnt:testtnt:prj:shop", floor: 500 }
+- { urn: "urn:tnt:testtnt:prj:shop:app:chk", factor: 3 }
 ```
 
-- An entry applies to a node when every field it names equals the node's field.
+- An entry applies to a node when its `urn` is the node's URN or a prefix of it ending at a
+  segment (`…:prj:shop` applies to `…:prj:shop:app:chk`, not to `…:prj:shopping`).
 - **Floor and factor are chosen separately:** each comes from the most specific applying entry that
-  sets it (the one naming the most fields), else the default. Two equally specific applying entries
-  that both set the same value are an error naming both.
+  sets it (the longest `urn`), else the default. Two entries with the same `urn` that both set the
+  same value are an error naming both.
+- An entry's `urn` must follow the URN rule (WI-0109) and belong to `--tenant`; otherwise the
+  command stops, naming the entry.
 - Unknown keys are an error (strict YAML).
 
 ### Impact records
@@ -56,17 +57,18 @@ One `impact` record per graded node, plus one per node `resolved` (below):
 | `status` | `new`: not graded in the history; `ongoing`: graded in the history too; `resolved`: graded in the history, not now |
 | `explained_by_change` | true when a `change` record touches the node (below) |
 
-- History is matched on `hierarchy`, `node`, `metric` and `currency`. Without `--from-history`,
+- History is matched on `hierarchy`, `node` (the URN), `metric` and `currency`. Without `--from-history`,
   every graded node is `new` and nothing is `resolved`.
 - **A change touches a node** when its account (the `change` `subject` up to `/`) is the node's
-  `account_id` (cost hierarchy), or its `old` or `new` value equals the node's value for the
+  `account_id` level field (cost hierarchy: the account node and those under it), or its `old` or `new` value equals the node's value for the
   changed `field` (project hierarchy: `project`, `app`, `environment`).
 - Sorted by `impact_level` (highest first), `hierarchy`, `node`, `metric`, `currency`.
 
 ### Reference cases
 
 `finops/analyze/testdata/cases/impact/*.yaml`, written by Claude: `args` (`period`, optional
-`floor_factor` inline YAML), input `records` (`trend`, `change`), optional `history` (`impact`
+`floor_factor` inline YAML, as above), input `records` (`trend`, `change`; run with
+`--tenant testtnt`), optional `history` (`impact`
 records), and `expect.impacts`: the **full** set of impact records, matched on `hierarchy`,
 `node`, `metric`, `currency` and compared on the fields listed (numbers within `1e-6`).
 
@@ -84,12 +86,13 @@ records), and `expect.impacts`: the **full** set of impact records, matched on `
 **In scope.**
 - The command, grading, the floor-factor file, history status, `explained_by_change`, `--save`.
 - Debug logging; deterministic output; pass-through.
-- Tests: every impact reference case; a floor-factor file with two equally specific entries
-  setting the same value is an error; unknown keys are an error.
+- Tests: every impact reference case; a floor-factor file with two entries of the same `urn`
+  setting the same value is an error; a URN prefix that stops mid-segment doesn't apply; an entry
+  of another tenant is an error; unknown keys are an error.
 - Task and launch entry on a fixture of `trend` output.
 - README: impact, the levels and the floor-factor file.
 
-**Out of scope.** Enforce (Release 3).
+**Out of scope.** Enforce (Release 4).
 
 **Done when.**
 - Every `cases/impact/` case passes, unchanged.
