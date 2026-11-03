@@ -1,4 +1,4 @@
-tenant: testtnt
+tenant: { code: testtnt, name: Test tenant }
 lzs:
   - code: main
     name: Main

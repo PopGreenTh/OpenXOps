@@ -1,0 +1,52 @@
+name: app-on-leaf-ou-applies
+why: >
+  An App on an OU with no child OUs applies like an App on any other OU (D-061), and it beats
+  the LZ default. The same OU's Environment applies too.
+taxonomy:
+  tenant: { code: testtnt, name: Test tenant }
+  business_units:
+    - code: retail
+      name: Retail
+      cost_centers:
+        - { code: ecom, name: E-commerce }
+  projects:
+    - code: shop
+      name: Online shop
+      ref_urn_bu: urn:tnt:testtnt:bzu:retail
+      apps:
+        - code: chk
+          name: Checkout
+          ref_urn_cct: urn:tnt:testtnt:bzu:retail:cct:ecom
+          environments: [{ code: prod, name: Production }, { code: dev, name: Development }]
+    - code: pay
+      name: Payments
+      ref_urn_bu: urn:tnt:testtnt:bzu:retail
+      apps:
+        - code: pay
+          name: Payments
+          ref_urn_cct: urn:tnt:testtnt:bzu:retail:cct:ecom
+          environments: [{ code: prod, name: Production }, { code: dev, name: Development }]
+  lzs:
+    - code: main
+      name: Main
+      csp: aws
+      currency: USD
+      management_account: "111111111111"
+      default: { app: chk }
+      ou_paths:
+        - code: prod
+          name: Prod
+          path: /Workloads/Checkout/Prod
+          ref_urn_apps: [urn:tnt:testtnt:prj:pay:app:pay]
+          ref_urn_env: urn:tnt:testtnt:prj:pay:app:pay:env:prod
+records:
+  - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: r-1, name: Root, parent_id: "", path: /, id_path: r-1, has_children: true }
+  - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: ou-1, name: Workloads, parent_id: r-1, path: /Workloads, id_path: r-1/ou-1, has_children: true }
+  - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: ou-2, name: Checkout, parent_id: ou-1, path: /Workloads/Checkout, id_path: r-1/ou-1/ou-2, has_children: true }
+  - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: ou-3, name: Prod, parent_id: ou-2, path: /Workloads/Checkout/Prod, id_path: r-1/ou-1/ou-2/ou-3, has_children: false }
+  - { kind: account, csp: aws, org_id: o-main, management_account: "111111111111", id: "200000000001", name: chk-prod, email: chk-prod@example.com, status: ACTIVE, parent_id: ou-3, ou_path: /Workloads/Checkout/Prod, ou_id_path: r-1/ou-1/ou-2/ou-3 }
+expect:
+  allocations:
+    - { account_id: "200000000001", lz: main, app: pay, environment: prod, app_rule: "ou:/Workloads/Checkout/Prod",
+        environment_rule: "ou:/Workloads/Checkout/Prod", shared: false }
+  findings: []

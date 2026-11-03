@@ -3,21 +3,44 @@ why: >
   The App comes from the deepest OU with an App link that has child OUs, the Environment from the
   deepest OU with an Environment link, each recording the OU path that decided it (D-015).
 taxonomy:
-  tenant: testtnt
-  business_units: [{ code: retail, name: Retail }]
-  cost_centers: [{ code: ecom, name: E-commerce, business_unit: retail }]
+  tenant: { code: testtnt, name: Test tenant }
+  business_units:
+    - code: retail
+      name: Retail
+      cost_centers:
+        - { code: ecom, name: E-commerce }
   projects:
-    - { code: shop, name: Online shop, business_unit: retail }
-    - { code: pay, name: Payments, business_unit: retail }
-  apps:
-    - { code: chk, name: Checkout, project: shop, cost_center: ecom,
-        environments: [{ code: prod, name: Production }, { code: dev, name: Development }] }
-    - { code: pay, name: Payments, project: pay, cost_center: ecom,
-        environments: [{ code: prod, name: Production }, { code: dev, name: Development }] }
-  lzs: [{ code: main, name: Main, csp: aws, currency: USD, management_account: "111111111111" }]
-  ou_links:
-    - { lz: main, ou: /Workloads/Checkout, app: chk }
-    - { lz: main, ou: /Workloads/Checkout/Prod, environment: prod }
+    - code: shop
+      name: Online shop
+      ref_urn_bu: urn:tnt:testtnt:bzu:retail
+      apps:
+        - code: chk
+          name: Checkout
+          ref_urn_cct: urn:tnt:testtnt:bzu:retail:cct:ecom
+          environments: [{ code: prod, name: Production }, { code: dev, name: Development }]
+    - code: pay
+      name: Payments
+      ref_urn_bu: urn:tnt:testtnt:bzu:retail
+      apps:
+        - code: pay
+          name: Payments
+          ref_urn_cct: urn:tnt:testtnt:bzu:retail:cct:ecom
+          environments: [{ code: prod, name: Production }, { code: dev, name: Development }]
+  lzs:
+    - code: main
+      name: Main
+      csp: aws
+      currency: USD
+      management_account: "111111111111"
+      ou_paths:
+        - code: checkout
+          name: Checkout
+          path: /Workloads/Checkout
+          ref_urn_apps: [urn:tnt:testtnt:prj:shop:app:chk]
+        - code: prod
+          name: Prod
+          path: /Workloads/Checkout/Prod
+          ref_urn_env: urn:tnt:testtnt:prj:shop:app:chk:env:prod
 records:
   - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: r-1, name: Root, parent_id: "", path: /, id_path: r-1, has_children: true }
   - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: ou-1, name: Workloads, parent_id: r-1, path: /Workloads, id_path: r-1/ou-1, has_children: true }

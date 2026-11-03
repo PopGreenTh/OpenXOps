@@ -6,6 +6,7 @@ import (
 
 	"github.com/PopGreenTh/OpenXOps/finops/enrich"
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/record/taxonomy"
 )
 
 func TestChangesAccountAddedRemoved(t *testing.T) {
@@ -136,11 +137,11 @@ func TestChangesDemoEnvironmentRemapped(t *testing.T) {
 		t.Fatal(err)
 	}
 	in := append(accounts, costs...)
-	taxBefore, err := enrich.LoadTaxonomy(filepath.Join("..", "enrich", "testdata", "demo-taxonomy.yaml"))
+	taxBefore, err := taxonomy.Load(filepath.Join("..", "enrich", "testdata", "demo-taxonomy.yaml"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	taxNow, err := enrich.LoadTaxonomy(filepath.Join("testdata", "demo-taxonomy-env-changed.yaml"))
+	taxNow, err := taxonomy.Load(filepath.Join("testdata", "demo-taxonomy-env-changed.yaml"))
 	if err != nil {
 		t.Fatal(err)
 	}

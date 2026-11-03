@@ -154,10 +154,24 @@ func sortChildren(n *Node) {
 	}
 }
 
-// TaxonomyDoc is the YAML document for --format taxonomy.
+// TaxonomyDoc is the YAML document for --format taxonomy. It is written in the layout
+// record/taxonomy reads: the tenant as a mapping (its name is its code, for you to change) and keys
+// the loader knows.
 type TaxonomyDoc struct {
 	Tenant  string            `yaml:"tenant"`
 	LZConns []*TaxonomyLZConn `yaml:"lz_conns"`
+}
+
+// MarshalYAML writes the tenant as `{ code, name }`.
+func (d TaxonomyDoc) MarshalYAML() (any, error) {
+	type tenantNode struct {
+		Code string `yaml:"code"`
+		Name string `yaml:"name"`
+	}
+	return struct {
+		Tenant  tenantNode        `yaml:"tenant"`
+		LZConns []*TaxonomyLZConn `yaml:"lz_conns"`
+	}{tenantNode{d.Tenant, d.Tenant}, d.LZConns}, nil
 }
 
 type TaxonomyLZConn struct {
@@ -165,7 +179,6 @@ type TaxonomyLZConn struct {
 	URN               string            `yaml:"urn"`
 	Name              string            `yaml:"name"`
 	Alias             string            `yaml:"alias,omitempty"`
-	Tenant            string            `yaml:"tenant"`
 	CSP               string            `yaml:"csp"`
 	Currency          string            `yaml:"currency"`
 	ManagementAccount string            `yaml:"management_account"`
@@ -184,12 +197,11 @@ type TaxonomyOUPath struct {
 }
 
 type TaxonomyAccount struct {
-	Code   string `yaml:"code"`
-	URN    string `yaml:"urn"`
-	Name   string `yaml:"name"`
-	Alias  string `yaml:"alias,omitempty"`
-	RefID  string `yaml:"ref_id"`
-	Status string `yaml:"status,omitempty"`
+	Code  string `yaml:"code"`
+	URN   string `yaml:"urn"`
+	Name  string `yaml:"name"`
+	Alias string `yaml:"alias,omitempty"`
+	RefID string `yaml:"ref_id"`
 }
 
 // BuildTaxonomy builds the taxonomy lz_conns structure from node records.
@@ -259,12 +271,11 @@ func BuildTaxonomy(tenant, source string, recs []record.Record) (TaxonomyDoc, er
 			}
 			accURN := str(ouNode, "urn") + ":acc:" + urn.Slug(accCode)
 			accounts = append(accounts, &TaxonomyAccount{
-				Code:   accCode,
-				URN:    accURN,
-				Name:   accCode,
-				Alias:  str(a, "alias"),
-				RefID:  str(a, "ref_id"),
-				Status: str(a, "status"),
+				Code:  accCode,
+				URN:   accURN,
+				Name:  accCode,
+				Alias: str(a, "alias"),
+				RefID: str(a, "ref_id"),
 			})
 		}
 
@@ -295,7 +306,6 @@ func BuildTaxonomy(tenant, source string, recs []record.Record) (TaxonomyDoc, er
 		URN:               str(lzRecord, "urn"),
 		Name:              lzName,
 		Alias:             str(lzRecord, "alias"),
-		Tenant:            tenant,
 		CSP:               csp,
 		Currency:          "USD",
 		ManagementAccount: mgmtID,
