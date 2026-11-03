@@ -110,7 +110,7 @@ cost by the App tag on each `cost` row.
 OpenXOps supports two taxonomy layouts:
 
 1. **Flat format** (`finops/enrich/testdata/demo-taxonomy.yaml`) — top-level lists with explicit reference fields (`cost_centers` reference `business_unit`, `apps` reference `project` and `cost_center`, `ou_links` map OUs to apps, `accounts` list overrides).
-2. **Nested hierarchical format** (`data/real/cvie-taxonomy.yaml`) — structured representation of the three organizational trees:
+2. **Nested hierarchical format** (`finops/enrich/testdata/nested-taxonomy.yaml`) — structured representation of the three organizational trees:
 
 ### The Three Taxonomy Trees
 
@@ -138,7 +138,7 @@ Organizes cloud provider tenancies, landing zones, and account inventory:
 ### Common Node Fields and Identifier Conventions
 
 Every node in each tree contains:
-- `code`: Node identifier matching `^[A-Za-z0-9.+=@_-]{3,30}$` (e.g., `CIF`, `CC-CIF01`, `cvd-aws`).
+- `code`: Node identifier matching `^[A-Za-z0-9.+=@_-]{3,50}$` (e.g., `CIF`, `CC-CIF01`, `cvd-aws`).
 - `urn`: Stable URN matching `^[a-z0-9.:+=@_/-]{11,250}$` built strictly from slugged node codes down the hierarchy.
 - `name`: Human-readable display label.
 - `alias`: (Optional) Short alternative identifier.
