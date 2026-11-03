@@ -5,3 +5,9 @@ lzs:
     csp: aws
     currency: USD
     management_account: "111111111111"
+    ou_paths:
+      # Two OUs named Prod and two named NonProd would get one URN each: list them with codes.
+      - { code: checkout-prod, name: Prod, path: /Workloads/Checkout/Prod }
+      - { code: checkout-nonprod, name: NonProd, path: /Workloads/Checkout/NonProd }
+      - { code: payments-prod, name: Prod, path: /Workloads/Payments/Prod }
+      - { code: payments-nonprod, name: NonProd, path: /Workloads/Payments/NonProd }

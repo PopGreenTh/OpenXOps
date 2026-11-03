@@ -40,7 +40,7 @@ func TestValidURN(t *testing.T) {
 		want bool
 	}{
 		{"urn:tnt:cvd", true},
-		{"urn:tnt:testtnt:lzc:main:org:workloads/checkout/non-prod:acc:200000000003:svc:amazon-elastic-compute-cloud-compute", true},
+		{"urn:tnt:testtnt:lzc:main:org:non-prod:acc:chk-nonprod:svc:amazon-elastic-compute-cloud-compute", true},
 		{"urn:tnt:testtnt:prj:prj_shop", true},
 		{"urn:tnt:a.b:x@y=z+1", true},
 		{"urn:" + strings.Repeat("a", 246), true}, // 250 characters
@@ -100,24 +100,6 @@ func TestSlug(t *testing.T) {
 	}
 }
 
-func TestOUPath(t *testing.T) {
-	cases := []struct {
-		in, want string
-	}{
-		{"/Workloads/Checkout/Prod", "workloads/checkout/prod"},
-		{"/", "root"},
-		{"", "root"},
-		{"/Shared Services", "shared-services"},
-		{"/Workloads/Checkout/NonProd", "workloads/checkout/non-prod"},
-		{"/Workloads/!!!", "workloads/unknown"},
-	}
-	for _, tc := range cases {
-		if got := OUPath(tc.in); got != tc.want {
-			t.Errorf("OUPath(%q) = %q, want %q", tc.in, got, tc.want)
-		}
-	}
-}
-
 func TestURNIdsAreLowercased(t *testing.T) {
 	got := Tenant("TestTnt").Child("prj", "PRJ_Shop").Child("app", "Chk.v2")
 	if want := "urn:tnt:testtnt:prj:prj_shop:app:chk.v2"; got.String() != want {
@@ -129,7 +111,7 @@ func TestURNIdsAreLowercased(t *testing.T) {
 }
 
 func TestURN(t *testing.T) {
-	acc := Tenant("testtnt").Child("lzc", "main").Child("org", OUPath("/Workloads/Checkout/Prod")).Child("acc", "200000000001")
+	acc := Tenant("testtnt").Child("lzc", "main").Child("org", "checkout-prod").Child("acc", "chk-prod")
 	cases := []struct {
 		name string
 		got  URN
@@ -140,10 +122,10 @@ func TestURN(t *testing.T) {
 		{"cost center", Tenant("testtnt").Child("bzu", "retail").Child("cct", "ecom"), "urn:tnt:testtnt:bzu:retail:cct:ecom"},
 		{"environment", Tenant("testtnt").Child("prj", "unalloc").Child("app", "unalloc").Child("env", "unalloc"),
 			"urn:tnt:testtnt:prj:unalloc:app:unalloc:env:unalloc"},
-		{"root ou", Tenant("testtnt").Child("lzc", "main").Child("org", OUPath("/")), "urn:tnt:testtnt:lzc:main:org:root"},
-		{"account", acc, "urn:tnt:testtnt:lzc:main:org:workloads/checkout/prod:acc:200000000001"},
+		{"root ou", Tenant("testtnt").Child("lzc", "main").Child("org", "root"), "urn:tnt:testtnt:lzc:main:org:root"},
+		{"account", acc, "urn:tnt:testtnt:lzc:main:org:checkout-prod:acc:chk-prod"},
 		{"service", acc.Child("svc", Slug("Amazon Simple Storage Service")),
-			"urn:tnt:testtnt:lzc:main:org:workloads/checkout/prod:acc:200000000001:svc:amazon-simple-storage-service"},
+			"urn:tnt:testtnt:lzc:main:org:checkout-prod:acc:chk-prod:svc:amazon-simple-storage-service"},
 	}
 	for _, tc := range cases {
 		if tc.got.String() != tc.want {

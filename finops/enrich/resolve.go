@@ -20,14 +20,11 @@ const (
 	buUnalloc  = "unalloc"
 	ccUnalloc  = "unalloc"
 	cmdMap     = "finops enrich map"
-
-	// ouUnknown is the OU path of a cost row whose account is not in the inventory.
-	ouUnknown = "/unknown"
 )
 
 type ouInfo struct {
-	id, path string
-	children bool
+	id, path, name string
+	children       bool
 }
 
 type inv struct {
@@ -58,7 +55,7 @@ func buildInventory(recs []record.Record) inv {
 		case "ou":
 			id := strID(r["id"])
 			path := strID(r["path"])
-			in.ous[id] = ouInfo{id: id, path: path, children: childCount[id] > 0}
+			in.ous[id] = ouInfo{id: id, path: path, name: strID(r["name"]), children: childCount[id] > 0}
 			in.byPath[path] = id
 			org := strID(r["org_id"])
 			if org != "" {
@@ -173,7 +170,6 @@ func (r *resolver) resolveAccount(ac record.Record, lzUnknownOrgs map[string]str
 	mgmt := strID(ac["management_account"])
 	org := strID(ac["org_id"])
 	ouPath := strID(ac["ou_path"])
-	name := strID(ac["name"])
 
 	lz, ok := r.lzByMgmt(mgmt)
 	if !ok {
@@ -187,7 +183,7 @@ func (r *resolver) resolveAccount(ac record.Record, lzUnknownOrgs map[string]str
 			findings = append(findings, record.Finding("warning", "lz-unknown", org,
 				fmt.Sprintf("no LZ for management account %s", mgmt), cmdMap))
 		}
-		rec := r.allocationRecord(acctID, name, lzUnalloc, ouPath, unallocPlace, "unalloc", "unalloc", false)
+		rec := r.allocationRecord(ac, lzUnalloc, unallocPlace, "unalloc", "unalloc", false)
 		return []record.Record{rec}, findings
 	}
 
@@ -249,7 +245,7 @@ func (r *resolver) resolveAccount(ac record.Record, lzUnknownOrgs map[string]str
 			envOut, envRuleOut = envUnspec, "unspec"
 		}
 		p.env = envOut
-		allocs = append(allocs, r.allocationRecord(acctID, name, lz.Code, ouPath, p, appRule, envRuleOut, shared))
+		allocs = append(allocs, r.allocationRecord(ac, lz.Code, p, appRule, envRuleOut, shared))
 	}
 	return allocs, findings
 }
@@ -303,12 +299,13 @@ func (r *resolver) placeOf(pick appPick) place {
 	return p
 }
 
-func (r *resolver) allocationRecord(acctID, name, lz, ouPath string, p place, appRule, envRule string, shared bool) record.Record {
+func (r *resolver) allocationRecord(ac record.Record, lz string, p place, appRule, envRule string, shared bool) record.Record {
+	acctID, ouPath := strID(ac["id"]), strID(ac["ou_path"])
 	rec := record.Record{
 		"kind":             "allocation",
 		"tenant":           r.t.Tenant.Code,
 		"account_id":       acctID,
-		"account_name":     name,
+		"account_name":     strID(ac["name"]),
 		"lz":               lz,
 		"ou_path":          ouPath,
 		"project":          p.project,
@@ -320,23 +317,46 @@ func (r *resolver) allocationRecord(acctID, name, lz, ouPath string, p place, ap
 		"environment_rule": envRule,
 		"shared":           shared,
 	}
-	r.setURNs(rec, acctID, lz, ouPath, p)
+	ouURN, acctURN := r.cloudURNs(lz, ac)
+	r.setURNs(rec, lz, ouURN, acctURN, p)
 	return rec
 }
 
-// setURNs sets the eight URN fields of an allocation on rec (D-046, D-048). The cost center's
-// URN sits under the cost center's own business unit, which can differ from the project's.
-func (r *resolver) setURNs(rec record.Record, acctID, lz, ouPath string, p place) {
+// discoveredOU finds the OU an account sits in, from the inventory. An account whose OU is not in
+// the inventory gets an OU made from its path.
+func (in inv) discoveredOU(ac record.Record) taxonomy.DiscoveredOU {
+	if info, ok := in.ous[strID(ac["parent_id"])]; ok {
+		return taxonomy.DiscoveredOU{ID: info.id, Path: info.path, Name: info.name}
+	}
+	path := strID(ac["ou_path"])
+	if id, ok := in.byPath[path]; ok {
+		info := in.ous[id]
+		return taxonomy.DiscoveredOU{ID: info.id, Path: info.path, Name: info.name}
+	}
+	return taxonomy.DiscoveredOU{Path: path, Name: taxonomy.PathName(path)}
+}
+
+// cloudURNs builds the OU and account URNs of a discovered account under the LZ (D-059). Under an
+// LZ the taxonomy does not list, the codes come from the discovered names.
+func (r *resolver) cloudURNs(lz string, ac record.Record) (ouURN, acctURN string) {
+	cloud := r.t.Cloud(lz)
+	ou := r.in.discoveredOU(ac)
+	acct := taxonomy.DiscoveredAccount{ID: strID(ac["id"]), Name: strID(ac["name"])}
+	return cloud.OUURN(r.t.LZURN(lz), ou).String(), cloud.AccountURN(r.t.LZURN(lz), ou, acct).String()
+}
+
+// setURNs sets the eight URN fields of an allocation on rec (D-046, D-048, D-059). The cost
+// center's URN sits under the cost center's own business unit, which can differ from the project's.
+func (r *resolver) setURNs(rec record.Record, lz, ouURN, acctURN string, p place) {
 	t := r.t
-	ou := t.LZURN(lz).Child("org", urn.OUPath(ouPath))
 	rec["business_unit_urn"] = t.BUURN(p.bu).String()
 	rec["cost_center_urn"] = t.CCURN(p.ccBU, p.cc).String()
 	rec["project_urn"] = t.ProjectURN(p.project).String()
 	rec["app_urn"] = t.AppURN(p.project, p.app).String()
 	rec["environment_urn"] = t.EnvURN(p.project, p.app, p.env).String()
 	rec["lz_urn"] = t.LZURN(lz).String()
-	rec["ou_urn"] = ou.String()
-	rec["account_urn"] = ou.Child("acc", acctID).String()
+	rec["ou_urn"] = ouURN
+	rec["account_urn"] = acctURN
 }
 
 // urnFields are the URN fields a cost row copies from its allocation.
@@ -369,7 +389,8 @@ func (r *resolver) enrichCost(cost record.Record, byAcct map[string][]record.Rec
 		out["app_rule"] = "unalloc"
 		out["environment_rule"] = "unalloc"
 		out["shared"] = false
-		r.setURNs(out, acctID, lzCode, ouUnknown, unallocPlace)
+		lzURN := r.t.LZURN(lzCode)
+		r.setURNs(out, lzCode, taxonomy.UnknownOUURN(lzURN).String(), r.t.Cloud(lzCode).UnknownAccountURN(lzURN, acctID).String(), unallocPlace)
 		setServiceURN(out)
 		findings = append(findings, record.Finding("warning", "account-not-in-inventory", acctID,
 			fmt.Sprintf("cost for unknown account %s", acctID), cmdMap))

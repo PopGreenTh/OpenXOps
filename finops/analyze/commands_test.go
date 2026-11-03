@@ -15,7 +15,7 @@ const accountLine = `{"kind":"account","csp":"aws","email":"a@example.com","id":
 
 // allocationLine is one dedicated allocation in environment env, written for tenant.
 func allocationLine(env, tenant string) string {
-	return fmt.Sprintf(`{"kind":"allocation","account_id":"200000000001","account_name":"a","account_urn":"urn:tnt:testtnt:lzc:main:org:root:acc:200000000001","app":"chk","app_rule":"ou:/","app_urn":"urn:tnt:testtnt:prj:shop:app:chk","business_unit":"retail","business_unit_urn":"urn:tnt:testtnt:bzu:retail","cost_center":"ecom","cost_center_urn":"urn:tnt:testtnt:bzu:retail:cct:ecom","environment":%q,"environment_rule":"ou:/","environment_urn":"urn:tnt:testtnt:prj:shop:app:chk:env:%s","lz":"main","lz_urn":"urn:tnt:testtnt:lzc:main","ou_path":"/","ou_urn":"urn:tnt:testtnt:lzc:main:org:root","project":"shop","project_urn":"urn:tnt:testtnt:prj:shop","shared":false,"tenant":%q}`, env, env, tenant)
+	return fmt.Sprintf(`{"kind":"allocation","account_id":"200000000001","account_name":"a","account_urn":"urn:tnt:testtnt:lzc:main:org:root:acc:a","app":"chk","app_rule":"ou:/","app_urn":"urn:tnt:testtnt:prj:shop:app:chk","business_unit":"retail","business_unit_urn":"urn:tnt:testtnt:bzu:retail","cost_center":"ecom","cost_center_urn":"urn:tnt:testtnt:bzu:retail:cct:ecom","environment":%q,"environment_rule":"ou:/","environment_urn":"urn:tnt:testtnt:prj:shop:app:chk:env:%s","lz":"main","lz_urn":"urn:tnt:testtnt:lzc:main","ou_path":"/","ou_urn":"urn:tnt:testtnt:lzc:main:org:root","project":"shop","project_urn":"urn:tnt:testtnt:prj:shop","shared":false,"tenant":%q}`, env, env, tenant)
 }
 
 var (

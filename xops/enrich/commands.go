@@ -104,6 +104,7 @@ func loadLZ(path, tenant string) (LZ, error) {
 		CSP:               strings.ToLower(l.CSP),
 		ManagementAccount: l.Management(),
 		Alias:             l.Alias,
+		Cloud:             tax.Cloud(l.Code),
 		OUAliases:         ouAliases,
 		AccountAliases:    accountAliases,
 	}, nil

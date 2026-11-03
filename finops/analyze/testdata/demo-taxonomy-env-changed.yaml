@@ -60,6 +60,13 @@ lzs:
         name: NonProd
         path: /Workloads/Payments/NonProd
         ref_urn_env: urn:tnt:testtnt:prj:pay:app:pay:env:nonprod
+      - code: root
+        name: Root
+        path: /
+        accounts:
+          # The mock cost has rows for an account outside the inventory. Its URN holds this code
+          # instead of the account id.
+          - { code: outside-inventory, name: Outside the inventory, ref_id: "299999999999" }
       - code: shared
         name: Shared
         path: /Shared

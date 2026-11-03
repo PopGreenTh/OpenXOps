@@ -216,6 +216,10 @@ func (v *validator) lzs() {
 		dupLZ(lz.Code)
 		v.checkURN(lz.URN, t.LZURN(lz.Code))
 		v.checkAlias("lzc", lz.Code, lz.Alias)
+		if lz.RefID != "" && lz.ManagementAccount != "" && lz.RefID != lz.ManagementAccount {
+			v.err("taxonomy-lz-ref-id", t.LZURN(lz.Code).String(),
+				fmt.Sprintf("ref_id %q differs from management_account %q", lz.RefID, lz.ManagementAccount))
+		}
 		v.defaults(lz.Default, lz.Code+" default")
 
 		dupOU := v.dup(t.LZURN(lz.Code))
@@ -228,7 +232,9 @@ func (v *validator) lzs() {
 			if ou.Path == "" && ou.RefID == "" {
 				v.missing(ou.Code, "OU entry needs a path or a ref_id")
 			}
+			v.checkCode(ou.Code, "OU")
 			dupOU(ou.Code)
+			v.checkURN(ou.URN, t.LZURN(lz.Code).Child("org", ou.Code))
 			v.checkAlias("org", ou.Code, ou.Alias)
 			v.duplicateOU(ou, seenPath, seenID)
 			v.refs(ou.Code, ou.RefURNApps, ou.RefURNEnv)
@@ -242,7 +248,9 @@ func (v *validator) lzs() {
 				if a.RefID == "" {
 					v.missing(a.Code, "account entry missing ref_id (the account id)")
 				}
+				v.checkCode(a.Code, "account")
 				dupAcct(a.Code)
+				v.checkURN(a.URN, t.LZURN(lz.Code).Child("org", ou.Code).Child("acc", a.Code))
 				v.checkAlias("acc", a.Code, a.Alias)
 				v.refs(a.Code, a.RefURNApps, a.RefURNEnv)
 				v.envInApps(a)

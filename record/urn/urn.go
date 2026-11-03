@@ -1,5 +1,5 @@
-// Package urn holds the code rule, the URN rule, the slug rule, the OU path rule and a URN builder
-// (D-046, D-053, D-056).
+// Package urn holds the code rule, the URN rule, the slug rule and a URN builder (D-046, D-053,
+// D-056).
 package urn
 
 import (
@@ -60,21 +60,6 @@ func Slug(s string) string {
 		return "unknown"
 	}
 	return b.String()
-}
-
-// OUPath turns an OU path into its segments, each slugged, joined by `/`, without the leading `/`
-// (`/Workloads/Checkout/Prod` → `workloads/checkout/prod`). The root `/` is `root`.
-func OUPath(path string) string {
-	var segs []string
-	for _, s := range strings.Split(path, "/") {
-		if s != "" {
-			segs = append(segs, Slug(s))
-		}
-	}
-	if len(segs) == 0 {
-		return "root"
-	}
-	return strings.Join(segs, "/")
 }
 
 // URN is a node name: `urn:tnt:<tenant>` followed by `:<type>:<id>` for each level.

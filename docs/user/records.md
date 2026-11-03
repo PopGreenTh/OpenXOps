@@ -97,8 +97,8 @@ Service and App tag cost from Cost Explorer (level 2), or enriched after `map` /
 | `app_urn` | string | no | URN of the App, `urn:tnt:<tenant>:prj:<id>:app:<id>`. `""` on a shared account's row until `share`. |
 | `environment_urn` | string | no | URN of the Environment under its App, `…:app:<id>:env:<id>`. `""` on a shared account's row until `share`. |
 | `lz_urn` | string | no | URN of the landing zone, `urn:tnt:<tenant>:lzc:<id>`. |
-| `ou_urn` | string | no | URN of the OU, `…:lzc:<id>:org:<OU path>`. The path is slugged and has no leading `/` (`/Workloads/Checkout` is `workloads/checkout`); the root is `root`; an account missing from the inventory is `unknown`. |
-| `account_urn` | string | no | URN of the account, `<ou_urn>:acc:<account_id>`. |
+| `ou_urn` | string | no | URN of the OU, `…:lzc:<id>:org:<OU code>` (D-059): the `code` of its `ou_paths` entry when the taxonomy lists it, else the slug of its name; the root is `root`; an account missing from the inventory is `unknown`. The OU's path is not in the URN. |
+| `account_urn` | string | no | URN of the account, `<ou_urn>:acc:<account code>`: the `code` of its `accounts` entry when listed, else the slug of its name. An account missing from the inventory has its listed code, else its id. |
 | `service_urn` | string | no | URN of the service in that account, `<account_urn>:svc:<slug of service>`. |
 
 ## `allocation`
@@ -124,8 +124,8 @@ One row per account (and App) after `map`: who owns cost in that account.
 | `app_urn` | string | yes | URN of the App, `urn:tnt:<tenant>:prj:<id>:app:<id>`. |
 | `environment_urn` | string | yes | URN of the Environment under its App, `…:app:<id>:env:<id>`. |
 | `lz_urn` | string | yes | URN of the landing zone, `urn:tnt:<tenant>:lzc:<id>`. |
-| `ou_urn` | string | yes | URN of the OU, `…:lzc:<id>:org:<OU path>`. The path is slugged and has no leading `/`; the root is `root`. |
-| `account_urn` | string | yes | URN of the account, `<ou_urn>:acc:<account_id>`. |
+| `ou_urn` | string | yes | URN of the OU, `…:lzc:<id>:org:<OU code>`; the root is `root`. |
+| `account_urn` | string | yes | URN of the account, `<ou_urn>:acc:<account code>`. |
 | `app_rule` | string | yes | How App was resolved (rule name). |
 | `environment_rule` | string | yes | How Environment was resolved. |
 | `shared` | bool | yes | Whether the account is treated as shared. |
@@ -161,9 +161,9 @@ every OU and every account. Nodes are named by the same URNs `finops enrich map`
 | `tenant` | string | yes | Tenant id, the `--tenant` of the command that wrote the record (D-045). |
 | `csp` | string | yes | Cloud provider (`aws`): the LZ's, or the `ou` or `account` record's. |
 | `type` | string | yes | The URN type of the level: `lzc` (the LZ), `org` (an OU) or `acc` (an account). |
-| `urn` | string | yes | The node's URN: `urn:tnt:<tenant>:lzc:<lz>`, `…:org:<OU path>` or `<parent OU URN>:acc:<account id>`. It matches `^[a-z0-9.:+=@_/-]{11,250}$`, and the OU path stays the slugged path from the root, so the URN is not built from `code`. |
+| `urn` | string | yes | The node's URN: `urn:tnt:<tenant>:lzc:<lz>`, `…:org:<OU code>` or `<parent OU URN>:acc:<account code>`. It matches `^[a-z0-9.:+=@_/-]{11,250}$`. An OU's or account's URN ends in its `code`, in lowercase. |
 | `parent_urn` | string | yes | The parent's URN: `""` for the LZ, the LZ for the root OU, otherwise the parent OU. |
-| `code` | string | yes | The LZ code, the slug of the OU's own name (`hub-sit`, `root`) or the account id (D-056). It is never empty. A slug that breaks the code rule (an OU named `IT` gives `it`) is kept, with a warning on stderr. |
+| `code` | string | yes | The LZ code; for an OU or account, the `code` of its taxonomy entry when listed, else the slug of its name (`hub-sit`, `root`) (D-056, D-059). It is never empty. A slug that breaks the code rule (an OU named `IT` gives `it`) is kept, with a warning on stderr. |
 | `name` | string | yes | The LZ's name, the OU's name (`Root` for the root) or the account's name. |
 | `ref_id` | string | yes | The id of the cloud resource the node stands for: the LZ's management account, the AWS OU or root id (`ou-6ibz-…`, `r-6ibz`), or the account id. |
 | `path` | string | yes | `""` for the LZ; the OU's `path`; the account's `ou_path`. |

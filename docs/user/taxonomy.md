@@ -116,11 +116,18 @@ gives `prj_shop`):
 | App | `urn:tnt:testtnt:prj:shop:app:chk` |
 | Environment | `urn:tnt:testtnt:prj:shop:app:chk:env:prod` |
 | Landing zone | `urn:tnt:testtnt:lzc:main` |
-| OU | `urn:tnt:testtnt:lzc:main:org:workloads/checkout/prod` |
-| Account | `urn:tnt:testtnt:lzc:main:org:workloads/checkout/prod:acc:200000000001` |
+| OU | `urn:tnt:testtnt:lzc:main:org:checkout-prod` (its `ou_paths` code; unlisted, the slug of its name: `prod`) |
+| Account | `urn:tnt:testtnt:lzc:main:org:checkout-prod:acc:chk-prod` (its `accounts` code; unlisted, the slug of its name) |
 | Service (on `cost` only) | `<account URN>:svc:amazon-elastic-compute-cloud-compute` |
 
-Names that come from the cloud (OU names, service names) are slugged (D-053). First CamelCase is
+An OU's code is the `code` of its `ou_paths` entry when the taxonomy lists it, else the slug of its
+name; the root is `root`. An account's code is the `code` of its `accounts` entry when listed, else
+the slug of its name. The OU's path is not in the URN, and no account id is: an account that has cost
+but is not in the inventory sits under `org:unknown` with its listed code, else its id. Because the
+URN holds the code and no parent, two OUs (or two accounts of one OU) that get one URN stop `map` and
+`xops enrich lz-tree`: list one with a `code` of its own.
+
+Names that come from the cloud (OU names, account names, service names) are slugged (D-053). First CamelCase is
 split: a word break goes between a lowercase letter or digit and the uppercase letter after it, and
 between two uppercase letters when the second is followed by a lowercase letter. Then the name is
 lowercased, every run of characters outside `[a-z0-9]` becomes one `-`, and the ends are trimmed.
@@ -137,9 +144,6 @@ An empty result is `unknown`.
 | `Spoke-SIT` | `spoke-sit` |
 | `Amazon Elastic Compute Cloud - Compute` | `amazon-elastic-compute-cloud-compute` |
 | `---` | `unknown` |
-
-An OU path becomes its slugged segments joined by `/`, without the leading `/`
-(`/Workloads/Checkout/NonProd` is `workloads/checkout/non-prod`); the root `/` is `root`.
 
 A slug can be shorter than a code may be: an OU named `IT` slugs to `it`, which is two characters.
 It is kept as the node's `code` and as its URN segment, and `xops enrich lz-tree` logs a warning
