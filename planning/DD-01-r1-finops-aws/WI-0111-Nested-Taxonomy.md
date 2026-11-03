@@ -152,6 +152,20 @@ no finding. Every other case keeps its records and expectations; converted back 
 layout, each taxonomy equals the original. Accounts whose OU the case doesn't discover (the
 share cases have no `ou` or `account` records) sit under the root entry `path: /`.
 
+### As built in WO-0111-B (#85), where the spec was silent
+
+- `taxonomy-duplicate-code` has the subject `<parent URN> <code>`; an account's parent is
+  `<LZ URN>:org:<OU code>`. `taxonomy-duplicate-alias` has the subject `<URN type> <alias>`
+  (`app shop`).
+- The code rule and reserved ids bind business unit, cost center, owner team, project, App,
+  Environment and LZ codes. OU and account codes, and written OU and account URNs, are checked
+  from WO-0111-C, once D-059 builds them.
+- `tenant` is a mapping with `code` and `name`; a bare `tenant: testtnt` is an error.
+- `taxonomy-duplicate-ou-link` stays, for two `ou_paths` entries naming the same `path` or
+  `ref_id`. An entry with no `ref_urn_*` is valid, so a scaffold passes `validate`.
+- `map` skips a `ref_urn_*` that names no node and goes on to the next source; `validate`
+  reports it, and `map` refuses a taxonomy with errors.
+
 ## WO-0111-A — Green `main`
 
 **Assignee:** open
@@ -236,6 +250,7 @@ beyond reading them. `report tree --format taxonomy` beyond keeping it working.
 **Depends on:** WO-0111-B
 **Packages:**
 - `record/urn/` or `record/taxonomy/` (the URN function);
+- `record/taxonomy/` and `finops/enrich/validate.go` (the `validate` items below);
 - `finops/enrich/` and `finops/enrich/share/` (`ou_urn`, `account_urn`, `service_urn`, and the
   collision error) and `finops/enrich/testdata/` (the cases merged from
   `claude/cases-cloud-urn`);
@@ -256,6 +271,12 @@ file under `testdata/cases/`.
 - The collision errors in `map` and `lz-tree`, each tested with two OUs named `Prod` under
   different parents, and two accounts with one name in one OU.
 - Golden files, examples and `records.md` follow the new URNs.
+- `share` copies `cost_center_urn` from the account's allocation instead of rebuilding it from
+  a cost center code, which is unique only within its business unit (found in #85;
+  `share.Options.CostCenterBU` maps a code two business units share to the first).
+- `validate`: an LZ whose `ref_id` differs from its `management_account` is
+  `taxonomy-lz-ref-id` (error, subject the LZ URN). OU and account codes get the code rule, and
+  a written OU or account `urn` is compared with the one D-059 builds (`taxonomy-urn-mismatch`).
 
 - `report tree --format taxonomy` writes each OU's and account's `code` as its slug, not its
   display name (`793fbf8` writes `Shared Services`), so a scaffold read back passes the code
