@@ -135,6 +135,10 @@ The steps of WI-0104 *Resolution*, with these changes:
 - An OU's code is its `ou_paths` `code` when the taxonomy lists it, else the slug of its
   discovered name. An account's code is its `accounts` `code` when listed, else the slug of its
   discovered name.
+- An account that has cost but isn't in the inventory (`account-not-in-inventory`) sits under
+  `org:unknown`; its code is its `accounts` `code` when the taxonomy lists it, else its account
+  id, since no name is known. Under an unknown LZ (`lzc:unalloc`) the taxonomy isn't used, so
+  codes come from discovered names.
 - One function in `record/urn` (or `record/taxonomy`) builds both, and `map` and `lz-tree` call
   it.
 - Two OUs with one URN, or two accounts with one URN, stop `map` and `lz-tree` with an error
@@ -260,7 +264,10 @@ beyond reading them. `report tree --format taxonomy` beyond keeping it working.
 - `docs/`.
 
 **Reference cases.** Before dispatch, the planner updates the cases' expected URNs to D-059 on
-`claude/cases-cloud-urn`. Merge that branch into yours with a merge commit, and don't edit any
+`claude/cases-cloud-urn`. Done 2026-11-03 (`af6d673`, based on `main` after WO-0111-B): cases 01,
+08, 09 and 12 change, for example `org:workloads/checkout/prod:acc:200000000001` becomes
+`org:prod:acc:chk-prod`, and `org:root:acc:200000000002` becomes `org:root:acc:shared` (a
+listed account's code). No other field changes. Merge that branch into yours with a merge commit, and don't edit any
 file under `testdata/cases/`.
 
 **Goal.** *Cloud URNs* above, in `map`, `share` and `lz-tree`.
