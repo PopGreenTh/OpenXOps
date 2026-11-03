@@ -1,18 +1,35 @@
 name: global-defaults
 why: With no account entry, OU link or LZ default, the global defaults apply.
 taxonomy:
-  tenant: testtnt
-  business_units: [{ code: retail, name: Retail }]
-  cost_centers: [{ code: ecom, name: E-commerce, business_unit: retail }]
+  tenant: { code: testtnt, name: Test tenant }
+  business_units:
+    - code: retail
+      name: Retail
+      cost_centers:
+        - { code: ecom, name: E-commerce }
   projects:
-    - { code: shop, name: Online shop, business_unit: retail }
-    - { code: pay, name: Payments, business_unit: retail }
-  apps:
-    - { code: chk, name: Checkout, project: shop, cost_center: ecom,
-        environments: [{ code: prod, name: Production }, { code: dev, name: Development }] }
-    - { code: pay, name: Payments, project: pay, cost_center: ecom,
-        environments: [{ code: prod, name: Production }, { code: dev, name: Development }] }
-  lzs: [{ code: main, name: Main, csp: aws, currency: USD, management_account: "111111111111" }]
+    - code: shop
+      name: Online shop
+      ref_urn_bu: urn:tnt:testtnt:bzu:retail
+      apps:
+        - code: chk
+          name: Checkout
+          ref_urn_cct: urn:tnt:testtnt:bzu:retail:cct:ecom
+          environments: [{ code: prod, name: Production }, { code: dev, name: Development }]
+    - code: pay
+      name: Payments
+      ref_urn_bu: urn:tnt:testtnt:bzu:retail
+      apps:
+        - code: pay
+          name: Payments
+          ref_urn_cct: urn:tnt:testtnt:bzu:retail:cct:ecom
+          environments: [{ code: prod, name: Production }, { code: dev, name: Development }]
+  lzs:
+    - code: main
+      name: Main
+      csp: aws
+      currency: USD
+      management_account: "111111111111"
   defaults: { app: chk, environment: dev }
 records:
   - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: r-1, name: Root, parent_id: "", path: /, id_path: r-1, has_children: true }
