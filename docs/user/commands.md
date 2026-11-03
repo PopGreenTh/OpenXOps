@@ -18,6 +18,36 @@ before it reads anything. Records hold the tenant as written; URNs hold it in lo
   from `--tenant` ([taxonomy.md](taxonomy.md)).
 - The Cost Explorer cache stays keyed by management account, not by tenant.
 
+## Chaining and Pipelines (D-004)
+
+OpenXOps commands are designed to chain via standard pipes (`|`) or via intermediate JSON Lines files:
+- **Sense** commands emit raw records (`ou`, `account`, `project_tag_cost`, `cost`).
+- **Enrich** commands read records from stdin (or `--from-<kind>`) and stream enriched records to stdout.
+- **Analyze** and **Enforce** evaluate changes or rule violations.
+- **Report** commands format records into terminal tables, CSV directories, Excel workbooks, or nested YAML trees.
+
+### Common Pipelines
+
+**1. Cloud Hierarchy & Scaffolding Pipeline:**
+```bash
+xops sense aws-accounts --tenant <tenant> | \
+  xops enrich lz-tree --tenant <tenant> --taxonomy taxonomy.yaml | \
+  xops report tree --tenant <tenant> --out tree.yaml
+```
+
+**2. FinOps Cost Pipeline:**
+```bash
+# Sense accounts once
+xops sense aws-accounts --tenant <tenant> > accounts.jsonl
+
+# Fetch cost, map ownership, share costs, and report to Excel
+finops sense aws-cost --tenant <tenant> --taxonomy taxonomy.yaml > cost.jsonl
+finops enrich map --tenant <tenant> --taxonomy taxonomy.yaml \
+  --from-accounts accounts.jsonl --from-cost cost.jsonl > map.jsonl
+finops enrich share --tenant <tenant> --taxonomy taxonomy.yaml --from-cost map.jsonl > shared.jsonl
+xops report excel --tenant <tenant> --from-cost shared.jsonl --out finops.xlsx
+```
+
 ## `xops version`
 
 Print version, commit and build date.

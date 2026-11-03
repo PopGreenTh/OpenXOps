@@ -1,0 +1,59 @@
+# ==============================================================================
+# OpenXOps Starter Taxonomy Template
+#
+# Use this template when onboarding a new tenant:
+#   1. Copy this file to data/<tenant>/taxonomy.yaml
+#   2. Replace <tenant> with your lowercase tenant ID (3-50 chars, e.g. 'nsap')
+#   3. Update your Business Units, Cost Centers, Teams, Projects, and Apps
+#   4. Scaffold the lz_conns block from your cloud provider (or fill by hand)
+#   5. Validate with: finops enrich validate --tenant <tenant> --taxonomy <file>
+# ==============================================================================
+
+tenant: <tenant>
+
+# 1. Business Value Hierarchy: Business Unit > Cost Center > Owner Team
+business_units:
+  - code: eng
+    name: Engineering
+    cost_centers:
+      - code: cc-core
+        name: Core Infrastructure
+        owner_teams:
+          - code: platform
+            name: Platform Team
+
+# 2. Project Component Hierarchy: Project > App > Environment
+projects:
+  - code: core
+    name: Core Platform
+    ref_urn_bu: urn:tnt:<tenant>:bzu:eng
+    apps:
+      - code: api
+        name: Core API
+        ref_urn_cct: urn:tnt:<tenant>:bzu:eng:cct:cc-core
+        environments:
+          - code: prod
+            name: Production
+            ref_urn_ont: urn:tnt:<tenant>:bzu:eng:cct:cc-core:ont:platform
+          - code: dev
+            name: Development
+            ref_urn_ont: urn:tnt:<tenant>:bzu:eng:cct:cc-core:ont:platform
+
+# 3. Cloud Hierarchy: Landing Zone > Leaf OU Paths > Accounts
+lz_conns:
+  - code: aws-main
+    name: AWS Main
+    csp: aws
+    currency: USD
+    management_account: "123456789012"
+    ou_paths:
+      - code: root
+        name: Root
+        path: /
+        accounts:
+          - code: core-prod
+            name: Core Prod Account
+            ref_id: "123456789012"
+            status: ACTIVE
+            ref_urn_env: urn:tnt:<tenant>:prj:core:app:api:env:prod
+
