@@ -170,6 +170,19 @@ share cases have no `ou` or `account` records) sit under the root entry `path: /
 - `map` skips a `ref_urn_*` that names no node and goes on to the next source; `validate`
   reports it, and `map` refuses a taxonomy with errors.
 
+### As built in WO-0111-C (#89), where the spec was silent
+
+- The collision check covers every OU and account, under an unlisted LZ (`lzc:unalloc`) too, so
+  two unknown organizations whose roots both give `org:root` stop `map`.
+- An account's written `urn` is compared with the OU its taxonomy entry sits under; `validate`
+  doesn't see the discovered OU.
+- `taxonomy-lz-ref-id` needs both `ref_id` and `management_account`.
+- Two records for the same OU path, or the same account id, aren't a collision.
+- `lz-tree` finds the OU above an account by `parent_id`, else by `ou_path`; an OU missing from
+  the input is made from the path (`org:<slug of its last segment>`).
+- The demo taxonomies list the mock account outside the inventory (`299999999999`) as
+  `outside-inventory`, so no demo URN holds a 12-digit id.
+
 ## WO-0111-A — Green `main`
 
 **Assignee:** open
