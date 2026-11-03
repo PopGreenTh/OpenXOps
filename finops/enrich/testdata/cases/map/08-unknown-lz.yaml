@@ -3,14 +3,27 @@ why: >
   An organization whose management account matches no LZ maps every account to unalloc and
   every level to UNALLOC, with one finding for the organization; no other rule runs.
 taxonomy:
-  tenant: testtnt
-  business_units: [{ code: retail, name: Retail }]
-  cost_centers: [{ code: ecom, name: E-commerce, business_unit: retail }]
-  projects: [{ code: shop, name: Online shop, business_unit: retail }]
-  apps:
-    - { code: chk, name: Checkout, project: shop, cost_center: ecom,
-        environments: [{ code: prod, name: Production }] }
-  lzs: [{ code: main, name: Main, csp: aws, currency: USD, management_account: "111111111111" }]
+  tenant: { code: testtnt, name: Test tenant }
+  business_units:
+    - code: retail
+      name: Retail
+      cost_centers:
+        - { code: ecom, name: E-commerce }
+  projects:
+    - code: shop
+      name: Online shop
+      ref_urn_bu: urn:tnt:testtnt:bzu:retail
+      apps:
+        - code: chk
+          name: Checkout
+          ref_urn_cct: urn:tnt:testtnt:bzu:retail:cct:ecom
+          environments: [{ code: prod, name: Production }]
+  lzs:
+    - code: main
+      name: Main
+      csp: aws
+      currency: USD
+      management_account: "111111111111"
   defaults: { app: chk, environment: prod }
 records:
   - { kind: ou, csp: aws, org_id: o-other, management_account: "999999999999", id: r-9, name: Root, parent_id: "", path: /, id_path: r-9, has_children: false }

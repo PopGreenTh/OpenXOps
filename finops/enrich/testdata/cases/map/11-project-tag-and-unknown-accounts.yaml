@@ -4,21 +4,54 @@ why: >
   empty one is not. Cost of an account missing from the input keeps its LZ and is UNALLOC
   below it. An account entry for an account missing from the input is reported.
 taxonomy:
-  tenant: testtnt
-  business_units: [{ code: retail, name: Retail }]
-  cost_centers: [{ code: ecom, name: E-commerce, business_unit: retail }]
+  tenant: { code: testtnt, name: Test tenant }
+  business_units:
+    - code: retail
+      name: Retail
+      cost_centers:
+        - { code: ecom, name: E-commerce }
   projects:
-    - { code: shop, name: Online shop, business_unit: retail }
-    - { code: pay, name: Payments, business_unit: retail }
-  apps:
-    - { code: chk, name: Checkout, project: shop, cost_center: ecom,
-        environments: [{ code: prod, name: Production }, { code: dev, name: Development }] }
-    - { code: pay, name: Payments, project: pay, cost_center: ecom,
-        environments: [{ code: prod, name: Production }, { code: dev, name: Development }] }
-  lzs: [{ code: main, name: Main, csp: aws, currency: USD, management_account: "111111111111" }]
-  accounts:
-    - { account: "200000000001", apps: [chk], environment: prod }
-    - { account: "400000000004", apps: [pay], environment: prod }
+    - code: shop
+      name: Online shop
+      ref_urn_bu: urn:tnt:testtnt:bzu:retail
+      apps:
+        - code: chk
+          name: Checkout
+          ref_urn_cct: urn:tnt:testtnt:bzu:retail:cct:ecom
+          environments: [{ code: prod, name: Production }, { code: dev, name: Development }]
+    - code: pay
+      name: Payments
+      ref_urn_bu: urn:tnt:testtnt:bzu:retail
+      apps:
+        - code: pay
+          name: Payments
+          ref_urn_cct: urn:tnt:testtnt:bzu:retail:cct:ecom
+          environments: [{ code: prod, name: Production }, { code: dev, name: Development }]
+  lzs:
+    - code: main
+      name: Main
+      csp: aws
+      currency: USD
+      management_account: "111111111111"
+      ou_paths:
+        - code: prod
+          name: Prod
+          path: /Workloads/Checkout/Prod
+          accounts:
+            - code: chk-prod
+              name: chk-prod
+              ref_id: "200000000001"
+              ref_urn_apps: [urn:tnt:testtnt:prj:shop:app:chk]
+              ref_urn_env: urn:tnt:testtnt:prj:shop:app:chk:env:prod
+        - code: root
+          name: Root
+          path: /
+          accounts:
+            - code: acct-400000000004
+              name: acct-400000000004
+              ref_id: "400000000004"
+              ref_urn_apps: [urn:tnt:testtnt:prj:pay:app:pay]
+              ref_urn_env: urn:tnt:testtnt:prj:pay:app:pay:env:prod
 records:
   - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: r-1, name: Root, parent_id: "", path: /, id_path: r-1, has_children: true }
   - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: ou-1, name: Workloads, parent_id: r-1, path: /Workloads, id_path: r-1/ou-1, has_children: true }
