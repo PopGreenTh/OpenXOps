@@ -8,14 +8,15 @@ import (
 
 	"github.com/PopGreenTh/OpenXOps/finops/enrich/share"
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/record/taxonomy"
 	"gopkg.in/yaml.v3"
 )
 
 type shareCase struct {
-	Name     string          `yaml:"name"`
-	Taxonomy Taxonomy        `yaml:"taxonomy"`
-	Records  []record.Record `yaml:"records"`
-	Expect   shareCaseExpect `yaml:"expect"`
+	Name     string            `yaml:"name"`
+	Taxonomy taxonomy.Taxonomy `yaml:"taxonomy"`
+	Records  []record.Record   `yaml:"records"`
+	Expect   shareCaseExpect   `yaml:"expect"`
 }
 
 type shareCaseExpect struct {
@@ -114,7 +115,7 @@ func matchShareCosts(got, want []record.Record) bool {
 }
 
 func TestShareConservationFailure(t *testing.T) {
-	tax := Taxonomy{Tags: &TagKeys{App: "App"}}
+	tax := taxonomy.Taxonomy{Tags: &taxonomy.TagKeys{App: "App"}}
 	recs := []record.Record{
 		{"kind": "allocation", "account_id": "1", "app": "APP-A", "shared": true, "project": "P", "business_unit": "B", "cost_center": "C", "app_rule": "account", "environment": "E"},
 		{"kind": "allocation", "account_id": "1", "app": "APP-B", "shared": true, "project": "P", "business_unit": "B", "cost_center": "C", "app_rule": "account", "environment": "E"},

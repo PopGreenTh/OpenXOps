@@ -16,6 +16,9 @@ before it reads anything. Records hold the tenant as written; URNs hold it in lo
   tenants.
 - `validate`, `map`, `share` and `aws-cost --taxonomy` stop when the taxonomy's `tenant` differs
   from `--tenant` ([taxonomy.md](taxonomy.md)).
+- Every command that takes `--taxonomy` reads it through one loader in the nested layout. A key it
+  does not know, or a file in the earlier flat layout, stops the command with an error naming the
+  file and the key.
 - The Cost Explorer cache stays keyed by management account, not by tenant.
 
 ## `xops version`
@@ -124,7 +127,8 @@ Compare a previous map output to the current one; emit `change` records, then pa
 Turn `ou` and `account` records into one flat `node` record per node of the tenant's cloud
 hierarchy: the landing zone, every OU and every account (D-054). While `xops sense aws-accounts`
 outputs flat cloud provider inventory records, `lz-tree` resolves them into a structured,
-URN-addressable tree linked by `parent_urn`, attaching any node `alias` definitions from the taxonomy.
+URN-addressable tree linked by `parent_urn`, attaching any node `alias` from the taxonomy (an OU entry's by its `ref_id`, else its `path`; an
+account entry's by its `ref_id`).
 The LZ is the taxonomy's one LZ (D-052). URNs are built as `finops enrich map` builds `lz_urn`, `ou_urn`
 and `account_urn`, so the two agree.
 
@@ -164,10 +168,11 @@ and `ref_id`, then `alias` when it has one (D-056, D-057).
   under it (OUs before accounts, each group in `code` order). A node without children has no `children` key.
   An account also shows its `status`, `joined_at` and `joined_method` (D-055); a field that is `""`
   is left out, and the LZ and OUs never show the join fields.
-- `--format taxonomy`: Scaffolds a hierarchical landing zone connection tree (`lz_conns`) compatible
-  with nested taxonomy format (`cvie-taxonomy.yaml`). Only leaf OUs containing accounts are emitted under
-  `ou_paths`. Each node emits `code`, `urn` (constructed from codes), `name`, `ref_id` (cloud resource ID,
-  e.g. AWS account ID or OU ID), `path`, `status`, and `alias` (when set).
+- `--format taxonomy`: Scaffolds a hierarchical landing zone connection tree (`lz_conns`) in the
+  nested taxonomy layout ([taxonomy.md](taxonomy.md)), under a `tenant` mapping whose name is its
+  code. Only leaf OUs containing accounts are emitted under `ou_paths`. Each node emits `code`,
+  `urn` (constructed from codes), `name`, `ref_id` (cloud resource ID, e.g. AWS account ID or OU ID),
+  `path` (OUs), and `alias` (when set).
 
 **Flags:** `--tenant ID` (required), `--from-node FILE` or stdin, `--format tree|taxonomy` (default `tree`), `--out FILE` (the YAML goes to
 stdout when it is not given). An existing `--out` file is replaced: a tree is a snapshot, not a log.

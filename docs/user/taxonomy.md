@@ -1,26 +1,76 @@
 # Taxonomy file
 
-The taxonomy is a YAML file read by `finops enrich validate`, `map`, and `share` (and by
-`finops sense aws-cost --taxonomy`). It belongs to one tenant and describes
-business structure, landing zones, how OUs and accounts map to Apps and Environments, and which
-tag keys to use for cost.
+The taxonomy is a YAML file read by `finops enrich validate`, `map` and `share`, by
+`finops sense aws-cost --taxonomy`, `xops sense aws-accounts --taxonomy` and
+`xops enrich lz-tree`. All of them read it through one loader (`record/taxonomy`). It belongs to
+one tenant and describes the three trees of D-046, nested the way people read them: the business
+structure, the projects with their Apps and Environments, and the landing zone with its OUs and
+accounts. `finops/enrich/testdata/demo-taxonomy.yaml` is a working example and
+`finops/enrich/testdata/nested-taxonomy.yaml` a second one with owner teams and aliases.
 
-See `finops/enrich/testdata/demo-taxonomy.yaml` for a working example.
+```yaml
+tenant: { code: testtnt, name: Test tenant }          # urn optional: urn:tnt:testtnt
+business_units:
+  - code: retail
+    name: Retail
+    cost_centers:
+      - { code: ecom, name: E-commerce }               # owner_teams: read, not used
+projects:
+  - code: shop
+    name: Online shop
+    ref_urn_bu: urn:tnt:testtnt:bzu:retail             # required
+    apps:
+      - code: chk
+        name: Checkout
+        ref_urn_cct: urn:tnt:testtnt:bzu:retail:cct:ecom   # required
+        environments:
+          - { code: prod, name: Production }            # ref_urn_ont: read, not used
+          - { code: nonprod, name: Non-production }
+lzs:                                                    # or lz_conns; exactly one LZ
+  - code: main
+    name: Main
+    csp: aws
+    currency: USD
+    management_account: "111111111111"
+    default: { app: chk, environment: nonprod }         # optional, codes
+    ou_paths:
+      - code: checkout
+        name: Checkout
+        path: /Workloads/Checkout                       # or ref_id; at least one
+        ref_id: ou-1a2b-3c4d5e6f                        # optional
+        ref_urn_apps: [urn:tnt:testtnt:prj:shop:app:chk]
+      - code: checkout-prod
+        name: Prod
+        path: /Workloads/Checkout/Prod
+        ref_urn_env: urn:tnt:testtnt:prj:shop:app:chk:env:prod
+        accounts:
+          - code: shop-prod
+            name: shop-prod
+            ref_id: "200000000002"                      # required: the account id
+            ref_urn_env: urn:tnt:testtnt:prj:shop:app:chk:env:prod
+defaults: { app: chk, environment: nonprod }            # optional, codes
+tags: { app: App, project: Project }                    # optional; these are the defaults
+```
 
 ## Top-level sections
 
 | Section | Purpose |
 |---|---|
-| `tenant` | Required, first line of the file: the tenant id (`tenant: testtnt`). It must equal `--tenant`, or `validate`, `map`, `share` and `aws-cost --taxonomy` stop with an error naming both. Same id rule as `--tenant`: lowercase letters and digits, joined by single dashes. |
-| `business_units` | List of `{ code, name }` business units. |
-| `cost_centers` | `{ code, name, business_unit }` — cost center rolls up to a business unit. |
-| `projects` | `{ code, name, business_unit }` — project for reporting. |
-| `apps` | App definitions with `project`, `cost_center`, and `environments`. |
-| `lzs` | The tenant's one landing zone: `{ code, name, csp, currency, management_account }`. A tenant has exactly one LZ (D-052); `validate` reports any other count as `taxonomy-lz-count`. |
-| `ou_links` | Map OU paths to an App and/or Environment for an LZ. |
-| `accounts` | Per-account overrides: `{ account, apps[], environment }`. |
+| `tenant` | Required: `{ code, name }`, optionally `urn`. The code must equal `--tenant`, or `validate`, `map`, `share` and `aws-cost --taxonomy` stop with an error naming both. Same id rule as `--tenant` (the code rule below). A bare `tenant: testtnt` is not read. |
+| `business_units` | `{ code, name, cost_centers[] }`. A cost center is `{ code, name }` and may list `owner_teams` (`{ code, name }`), which are read and not used. |
+| `projects` | `{ code, name, ref_urn_bu, apps[] }`. `ref_urn_bu` is the URN of the project's business unit. |
+| `apps` (under a project) | `{ code, name, ref_urn_cct, environments[] }`. `ref_urn_cct` is the URN of the App's cost center. An Environment is `{ code, name }`; its `ref_urn_ont` is read and not used. |
+| `lzs` or `lz_conns` | The tenant's one landing zone: `{ code, name, csp, currency, management_account, ref_id, default, ou_paths[] }`. A tenant has exactly one LZ (D-052); `validate` reports any other count as `taxonomy-lz-count`, and a file with both keys is an error naming both. |
+| `ou_paths` (under the LZ) | An OU the taxonomy knows: `{ code, name, path, ref_id, ref_urn_apps[], ref_urn_env, accounts[] }`. It needs `path`, `ref_id` or both. |
+| `accounts` (under an OU) | `{ code, name, ref_id, ref_urn_apps[], ref_urn_env }`. `ref_id` is the account id and is required. `contact` is read and not used. |
 | `tags` | Optional `{ app, project }` keys for Cost Explorer (defaults `App` / `Project`). |
-| `defaults` | Optional default App when an account has no other rule. |
+| `defaults` | Optional `{ app, environment }` (codes) when an account has no other rule. The LZ's `default` has the same shape and wins over it. |
+
+Every node has a `code` and a `name`, and may have a `urn` and an `alias`. The `urn` is checked,
+never read: it must equal the URN built from the codes (`taxonomy-urn-mismatch`). Any other key is
+an error that names the file and the key. The earlier flat layout (`cost_centers`, `apps`,
+`ou_links` or `accounts` at the top of the file) is no longer read; such a file fails with an
+error naming the key.
 
 ## Codes and reserved ids (D-047, D-056)
 
@@ -33,8 +83,11 @@ that is not allowed) as `taxonomy-invalid-id`.
 - **Case.** Records hold the code as written (`project: PRJ_Shop`); the URN holds it in lowercase
   (`project_urn: urn:tnt:testtnt:prj:prj_shop`). So two codes in one list that differ only in
   case (`Shop` and `shop`) are `taxonomy-duplicate-code`, and App tags still match codes in any
-  case. References between sections (`project:`, `cost_center:`, `apps:`) are written exactly as
-  the code is.
+  case. References are URNs (`ref_urn_*`), which are lowercase and match in any case; the
+  `default` keys are codes. A code is read as written, never taken from a `urn`.
+- **Where codes are unique** (compared in any case): business units, projects, Apps and LZs in the
+  tenant; cost centers in their business unit; Environments in their App; OUs in their LZ;
+  accounts in their OU. An `alias` is unique among nodes of one type in the tenant.
 - **URNs** match `^[a-z0-9.:+=@_/-]{11,250}$`.
 
 Three ids are **reserved**, in any case, for the system nodes `map` and `share` create. `validate`
@@ -95,21 +148,43 @@ System nodes build URNs with their reserved ids. An unmapped account's Environme
 `urn:tnt:testtnt:prj:unalloc:app:invalid`; an account whose organization matches no LZ sits under
 `urn:tnt:testtnt:lzc:unalloc`.
 
-## Resolution order (D-015)
+## Resolution order (D-015, D-061)
 
-For each account in the inventory, `finops enrich map` resolves **App** then **Environment**:
+For each account in the inventory, `finops enrich map` resolves **App** then **Environment**. An
+`ou_paths` entry matches the discovered OU whose id equals its `ref_id` when it has one, else the
+one whose path equals its `path`; an entry that matches none gives `ou-not-found`. An `accounts`
+entry matches the account whose id equals its `ref_id`.
 
-1. **Account override** — if `accounts` lists the account with `apps` and/or `environment`, use
-   those values.
-2. **OU links** — walk the account's `ou_path` from the leaf upward; the deepest matching
-   `ou_links` entry for the LZ wins for App and/or Environment.
-3. **Defaults** — taxonomy `defaults.app` when nothing else matched.
+**App**:
+
+1. the account entry's `ref_urn_apps`, else the App of its `ref_urn_env` (`app_rule: account`);
+2. the deepest OU on the account's path with `ref_urn_apps` (`app_rule: ou:<path>`), on a leaf OU
+   too;
+3. the LZ's `default.app` (`lz-default`), then `defaults.app` (`default`);
+4. `unalloc`, with `account-unmapped`.
+
+An OU or an account entry with several Apps makes the account **shared** between them
+(`allocation.shared`), unless the account's own entry names one App.
+
+**Environment**:
+
+1. the account entry's `ref_urn_env` (`account`);
+2. the deepest OU with `ref_urn_env` (`ou:<path>`);
+3. the LZ's `default.environment`, then `defaults.environment`;
+4. `unspec` (the App resolved) or `unalloc`.
+
+Nothing is guessed from names: an OU called `Prod` sets no Environment without a `ref_urn_env`. An
+OU's `ref_urn_env` sets only the Environment, by the code it ends in; it does not set the App.
+
+**A moved account.** When an account entry sits under an OU the account was not discovered under,
+its `ref_urn_apps` and `ref_urn_env` still apply and `map` writes `account-ou-mismatch`. An entry
+whose account was not discovered at all is `account-not-discovered`.
 
 **Worked example** (demo taxonomy):
 
-- Account `200000000002` has override `apps: [chk, pay]` and `environment: prod`.
-- Account under `/Workloads/Checkout/Prod` with no override picks `chk` from the
-  `/Workloads/Checkout` link and `prod` from `/Workloads/Checkout/Prod`.
+- Account `200000000002` has an entry with `ref_urn_apps: [chk, pay]` and `ref_urn_env: …:env:prod`.
+- Account under `/Workloads/Checkout/Prod` with no entry picks `chk` from the
+  `/Workloads/Checkout` OU and `prod` from `/Workloads/Checkout/Prod`.
 - Unmapped accounts get the reserved ids: **`unalloc`** for every level when no App rule matched
   (and for the Environment when no Environment rule matched either); **`unspec`** for the
   Environment when the App resolved but no Environment rule matched; tags that name no App the
@@ -118,44 +193,21 @@ For each account in the inventory, `finops enrich map` resolves **App** then **E
 Shared accounts (multiple Apps on one account) are flagged in `allocation.shared`; `share` splits
 cost by the App tag on each `cost` row.
 
-## Formats: Flat and Nested
+## The three trees
 
-OpenXOps supports two taxonomy layouts:
+Each tenant organizes cloud operations across three interconnected hierarchies:
 
-1. **Flat format** (`finops/enrich/testdata/demo-taxonomy.yaml`) — top-level lists with explicit reference fields (`cost_centers` reference `business_unit`, `apps` reference `project` and `cost_center`, `ou_links` map OUs to apps, `accounts` list overrides).
-2. **Nested hierarchical format** (`finops/enrich/testdata/nested-taxonomy.yaml`) — structured representation of the three organizational trees:
+1. **Business value** (`tnt > bzu > cct > ont`): `business_units` hold `cost_centers`, which hold
+   `owner_teams`.
+2. **Project component** (`tnt > prj > app > env`): `projects` hold `apps`, which hold
+   `environments`. A project names its business unit with `ref_urn_bu`, an App its cost center with
+   `ref_urn_cct`.
+3. **Cloud infrastructure** (`tnt > lzc > org > acc`): the LZ holds `ou_paths`, which hold
+   `accounts`. An OU or account names Apps with `ref_urn_apps` and an Environment with
+   `ref_urn_env`.
 
-### The Three Taxonomy Trees
-
-Each tenant organizes cloud operations across three distinct, interconnected hierarchies:
-
-#### 1. Business Value Hierarchy (`tnt > bzu > cct > ont`)
-Organizes corporate structure, financial ownership, and cost accountability:
-- `tenant` (`tnt`): Tenant root (`code`, `urn`, `name`).
-- `business_units` (`bzu`): Business units representing corporate divisions.
-- `cost_centers` (`cct`): Cost centers nested under their owning business unit.
-- `owner_teams` (`ont`): Engineering or operations teams nested under their cost center.
-
-#### 2. Project Component Hierarchy (`tnt > prj > app > env`)
-Organizes software systems, applications, and runtime environments:
-- `projects` (`prj`): Business initiatives or product suites. References its owning BU via `ref_urn_bu`.
-- `apps` (`app`): Distinct deployable applications nested under a project. References its cost center via `ref_urn_cct`.
-- `environments` (`env`): Deployment tiers (`prd`, `stg`, `sit`, `dev`) nested under each app. Can reference its responsible owner team via `ref_urn_ont`.
-
-#### 3. Cloud Infrastructure Hierarchy (`tnt > lzc > org > acc`)
-Organizes cloud provider tenancies, landing zones, and account inventory:
-- `lz_conns` (`lzc`): Cloud landing zone connection (`code`, `urn`, `csp`, `currency`, `management_account`, `ref_id`).
-- `ou_paths` (`org`): Leaf Organizational Units containing member accounts (`code`, `urn`, `ref_id`, `path`).
-- `accounts` (`acc`): Member cloud accounts staying in leaf OUs (`code`, `urn`, `ref_id`, `status`). Maps to an environment via `ref_urn_env`.
-
-### Common Node Fields and Identifier Conventions
-
-Every node in each tree contains:
-- `code`: Node identifier matching `^[A-Za-z0-9.+=@_-]{3,50}$` (e.g., `CIF`, `CC-CIF01`, `cvd-aws`).
-- `urn`: Stable URN matching `^[a-z0-9.:+=@_/-]{11,250}$` built strictly from slugged node codes down the hierarchy.
-- `name`: Human-readable display label.
-- `alias`: (Optional) Short alternative identifier.
-- `ref_id`: (Cloud tree nodes only) External cloud provider identifier (e.g., AWS 12-digit Account ID or `ou-xxxx-xxxxxxxx`).
+`ref_id` is the id the cloud gives the node: the management account on the LZ, `ou-xxxx-xxxxxxxx`
+on an OU, the 12-digit id on an account.
 
 ### Node Aliases and Uniqueness Rules
 

@@ -249,7 +249,7 @@ func TestDemoTreeCoversEveryInputRecord(t *testing.T) {
 
 func TestLZTreeCommandErrors(t *testing.T) {
 	accounts := mockAccounts(t)
-	otherTenant := writeFile(t, "other.yaml", strings.Replace(mustRead(t, demoTaxonomy), "tenant: testtnt", "tenant: othertnt", 1))
+	otherTenant := writeFile(t, "other.yaml", strings.Replace(mustRead(t, demoTaxonomy), "tenant: { code: testtnt,", "tenant: { code: othertnt,", 1))
 	twoLZs := writeFile(t, "two.yaml", mustRead(t, demoTaxonomy)+"  - code: other\n    name: Other\n    csp: aws\n    currency: USD\n    management_account: \"222222222222\"\n")
 	otherLZ := writeFile(t, "otherlz.yaml", strings.Replace(mustRead(t, demoTaxonomy), `"111111111111"`, `"999999999999"`, 1))
 	missing := filepath.Join(t.TempDir(), "missing.jsonl")
@@ -524,5 +524,56 @@ func TestEveryDemoNodeHasCodeURNAndName(t *testing.T) {
 	}
 	if len(longest) < 40 {
 		t.Fatalf("longest demo URN %q looks too short", longest)
+	}
+}
+
+// TestAliasesComeFromOUAndAccountEntries checks that an alias is found by an OU entry's ref_id,
+// else its path, and by an account entry's ref_id, and never by a name (D-061).
+func TestAliasesComeFromOUAndAccountEntries(t *testing.T) {
+	tax := writeFile(t, "alias.yaml", `tenant: { code: testtnt, name: Test tenant }
+lzs:
+  - code: main
+    name: Main
+    csp: aws
+    currency: USD
+    management_account: "111111111111"
+    alias: the-lz
+    ou_paths:
+      - { code: by-id, name: By id, ref_id: ou-1, alias: ou-by-id }
+      - code: by-path
+        name: By path
+        path: /Two
+        alias: ou-by-path
+        accounts:
+          - { code: acct-one, name: One, ref_id: "200000000001", alias: acct-by-id }
+      - { code: Three, name: Three, path: /Three }
+`)
+	lz, err := loadLZ(tax, "testtnt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ou := func(id, name, path string) record.Record {
+		return record.Record{"kind": "ou", "csp": "aws", "id": id, "name": name, "path": path, "parent_id": "r-1"}
+	}
+	recs := []record.Record{
+		{"kind": "ou", "csp": "aws", "id": "r-1", "name": "Root", "path": "/", "parent_id": ""},
+		ou("ou-1", "One", "/One"),
+		ou("ou-2", "Two", "/Two"),
+		ou("ou-3", "By id", "/Three"), // named like an entry, matched by neither its id nor its path
+		{"kind": "account", "csp": "aws", "id": "200000000001", "name": "Two", "ou_path": "/Two", "status": "ACTIVE"},
+		{"kind": "account", "csp": "aws", "id": "200000000002", "name": "One", "ou_path": "/Two", "status": "ACTIVE"},
+	}
+	got := map[string]string{}
+	for _, n := range LZTree("testtnt", lz, recs) {
+		got[str(n, "ref_id")] = str(n, "alias")
+	}
+	want := map[string]string{
+		"111111111111": "the-lz", "r-1": "", "ou-1": "ou-by-id", "ou-2": "ou-by-path", "ou-3": "",
+		"200000000001": "acct-by-id", "200000000002": "",
+	}
+	for id, alias := range want {
+		if got[id] != alias {
+			t.Errorf("node %s has alias %q, want %q", id, got[id], alias)
+		}
 	}
 }

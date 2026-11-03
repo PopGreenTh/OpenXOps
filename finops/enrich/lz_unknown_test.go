@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/record/taxonomy"
 )
 
 func TestLzUnknownOncePerOrganization(t *testing.T) {
-	tax, err := LoadTaxonomy("testdata/demo-taxonomy.yaml")
+	tax, err := taxonomy.Load("testdata/demo-taxonomy.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}

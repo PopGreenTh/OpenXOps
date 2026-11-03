@@ -4,11 +4,13 @@ import (
 	"sort"
 
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/record/taxonomy"
 )
 
 // Map applies taxonomy rules to inventory and cost records.
-func Map(t Taxonomy, recs []record.Record) []record.Record {
-	in := buildInventory(recs)
+func Map(t taxonomy.Taxonomy, recs []record.Record) []record.Record {
+	r := &resolver{t: t, ix: t.Index(), in: buildInventory(recs)}
+	in := r.in
 	var passthrough []record.Record
 	var costs []record.Record
 	var tagCosts []record.Record
@@ -23,28 +25,17 @@ func Map(t Taxonomy, recs []record.Record) []record.Record {
 		}
 	}
 
-	effectsByLZ := map[string]map[string]ouLinkEffect{}
 	var findings []record.Record
-	for _, lz := range t.LZs {
-		effectsByLZ[lz.Code] = applyOULinks(t, lz.Code, in, &findings)
-	}
+	r.buildViews(&findings)
 
 	lzUnknownOrgs := map[string]struct{}{}
 	var allocations []record.Record
 	for _, ac := range sortedAccounts(in.accounts) {
-		mgmt := strID(ac["management_account"])
-		lz, ok := lzByMgmt(t, mgmt)
-		var effects map[string]ouLinkEffect
-		if ok {
-			effects = effectsByLZ[lz.Code]
-		} else {
-			effects = map[string]ouLinkEffect{}
-		}
-		allocs, f := resolveAccount(t, in, ac, effects, lzUnknownOrgs)
+		allocs, f := r.resolveAccount(ac, lzUnknownOrgs)
 		allocations = append(allocations, allocs...)
 		findings = append(findings, f...)
 	}
-	findings = append(findings, staleAccountEntries(t, in)...)
+	findings = append(findings, r.staleAccountEntries()...)
 
 	byAcct := map[string][]record.Record{}
 	for _, a := range allocations {
@@ -53,12 +44,12 @@ func Map(t Taxonomy, recs []record.Record) []record.Record {
 	}
 
 	for _, tc := range tagCosts {
-		findings = append(findings, checkProjectTags(t, in, tc, byAcct)...)
+		findings = append(findings, checkProjectTags(tc, byAcct)...)
 	}
 
 	var enrichedCosts []record.Record
 	for _, c := range costs {
-		out, f := enrichCost(t, in, c, byAcct)
+		out, f := r.enrichCost(c, byAcct)
 		enrichedCosts = append(enrichedCosts, out)
 		findings = append(findings, f...)
 	}

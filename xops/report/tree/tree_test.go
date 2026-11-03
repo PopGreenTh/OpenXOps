@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/record/taxonomy"
 )
 
 func nd(typ, id, urn, parent string) record.Record {
@@ -194,6 +195,14 @@ func TestBuildTaxonomy(t *testing.T) {
 	}
 	if !strings.Contains(text, "accounts:") {
 		t.Errorf("want accounts in YAML, got:\n%s", text)
+	}
+	// The scaffold is a taxonomy the loader reads (WO-0111-B).
+	tax, err := taxonomy.Parse(data)
+	if err != nil {
+		t.Fatalf("the scaffold is not a taxonomy: %v\n%s", err, text)
+	}
+	if tax.Tenant.Code != "testtnt" || len(tax.LZs) != 1 || tax.LZs[0].Code != "main" {
+		t.Errorf("scaffold read back as %+v", tax)
 	}
 }
 
