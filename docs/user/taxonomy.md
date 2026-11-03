@@ -123,7 +123,7 @@ cost by the App tag on each `cost` row.
 OpenXOps supports two taxonomy layouts:
 
 1. **Flat format** (`finops/enrich/testdata/demo-taxonomy.yaml`) — top-level lists with explicit reference fields (`cost_centers` reference `business_unit`, `apps` reference `project` and `cost_center`, `ou_links` map OUs to apps, `accounts` list overrides).
-2. **Nested hierarchical format** (`finops/enrich/testdata/nested-taxonomy.yaml`) — structured representation of the three organizational trees:
+2. **Nested hierarchical format** (starter template [`../../templates/taxonomy.yaml`](../../templates/taxonomy.yaml)) — structured representation of the three organizational trees:
 
 ### The Three Taxonomy Trees
 
