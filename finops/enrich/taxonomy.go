@@ -125,7 +125,8 @@ func LoadTaxonomy(path string) (Taxonomy, error) {
 	dec := yaml.NewDecoder(bytes.NewReader(data))
 	dec.KnownFields(true)
 	var tax Taxonomy
-	if err := dec.Decode(&tax); err == nil {
+	err = dec.Decode(&tax)
+	if err == nil {
 		return tax, nil
 	}
 
