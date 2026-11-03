@@ -909,3 +909,35 @@ the commands that take `--save`).
   become this run's start for a node the history doesn't have, and `last_changed` becomes it
   when the node's **name** or **parent** (`parent_id`, so a move) differs from the history's.
 - Status and email changes don't count. Without `--from-history`, both fields are `""`.
+
+## Q-010
+
+**Planner defaults in DD-03, to confirm** (planner, 2026-11-03). DD-03 needs these, and the brief
+and D-062 to D-065 don't settle them:
+
+1. **Directus:** a collection `finops_lines`, one row per month and node, with
+   `line_type` `budget`, `change` or `forecast`. The URL and token come from
+   `OPENXOPS_DIRECTUS_URL` and `OPENXOPS_DIRECTUS_TOKEN`, and the token is never logged. Requests
+   are paged with `GET` only. `--from-file` reads a Directus JSON or CSV export. Service lines
+   give `service_category` and `service` as codes, and `plan-lines` builds their URNs from the
+   line's account (WI-0302).
+2. **Plan vs planned change:** `plan` records carry `plan_type` `budget` or `change`. Only a
+   `change` is added on top of the run rate, as its own `forecast` record with `basis`
+   `planned_change`, at the node it names. Variance's `plan` sums both types (WI-0303,
+   WI-0304).
+3. **Run-rate base:** the open month's cost so far ÷ its days elapsed. With 0 days elapsed (the
+   1st), the last closed month's daily cost. The forecast has one line per `service_urn` node
+   over 12 months from the open month (WI-0303).
+4. **Variance grading:** a closed month compares actual with plan; the open and later months
+   compare the run rate with plan. Gaps are in money and in percent of plan. The leading gap is
+   graded with `impact`'s floor-factor file and levels, on `factor` = (plan + gap) ÷ plan, so
+   with the default base factor 2 only an overrun of 100% or more is graded (WI-0304).
+5. **Lookup export:** `xops report urn-lookup`, CSV by default or JSON, listing the business,
+   project and service-category nodes from the taxonomy and the cloud nodes from `lz-tree`
+   (WI-0305).
+6. **Packages:** the new commands sit in subpackages (`finops/sense/planlines/`,
+   `finops/analyze/forecast/`, `finops/analyze/variance/`, `xops/report/lookup/`), and the
+   Directus client in a new top-level `directus/`, because the stage packages reach the 5-file
+   limit in Release 2.
+
+Open.

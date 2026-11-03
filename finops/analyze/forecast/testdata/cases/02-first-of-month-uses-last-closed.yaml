@@ -1,0 +1,26 @@
+name: first-of-month-uses-last-closed
+why: >
+  On 2026-12-01 no day of the open month has elapsed, so the base is the last closed month:
+  November's 600 over 30 days is 20 a day, and December's run rate is 20 × 31. S3 had cost in
+  September and October but none in November, so it has no base, no line, and forecast-no-base.
+args: { as_of: "2026-12-01", months: 1 }
+records:
+  - { kind: cost, period: 2026-11, metric: UnblendedCost, currency: USD, amount: 600, service: AmazonEC2, service_category: compute,
+      account_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod",
+      service_category_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute",
+      service_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute:svc:amazon-ec2" }
+  - { kind: cost, period: 2026-09, metric: UnblendedCost, currency: USD, amount: 30, service: AmazonS3, service_category: storage,
+      account_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod",
+      service_category_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:storage",
+      service_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:storage:svc:amazon-s3" }
+  - { kind: cost, period: 2026-10, metric: UnblendedCost, currency: USD, amount: 31, service: AmazonS3, service_category: storage,
+      account_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod",
+      service_category_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:storage",
+      service_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:storage:svc:amazon-s3" }
+expect:
+  forecasts:
+    - { period: 2026-12, node_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute:svc:amazon-ec2",
+        node_type: svc, basis: run_rate, source: runrate, metric: UnblendedCost, currency: USD,
+        amount: 620, days_in_month: 31, daily_cost: 20 }
+  findings:
+    - { code: forecast-no-base, subject: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:storage:svc:amazon-s3" }

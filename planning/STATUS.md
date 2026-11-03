@@ -15,6 +15,7 @@ Written by Claude only. Status values: see [README.md](README.md#status-values).
 | [Q-007](DECISIONS.md#q-007): drop stdin kind-sort so piped and file runs are byte-identical | — | closed by D-043 |
 | [Q-008](DECISIONS.md#q-008): `scripts/check` leaves gitignored mock cache under `data/mock/` | — | open |
 | [Q-009](DECISIONS.md#q-009): two OUs whose names slug to the same id share one URN | — | closed by D-059 |
+| [Q-010](DECISIONS.md#q-010): DD-03 planner defaults (Directus, plan types, run-rate base, variance grading, lookup, packages) | DD-03 dispatch | open |
 
 ## DD-01 — Release 1: AWS cost owned by Project › App › Environment
 
@@ -133,3 +134,16 @@ DD-02 refreshed 2026-11-03 ([D-066](DECISIONS.md#d-066)) for tenants, URNs, the 
 
 Release 3 grilled 2026-11-03 from the repo owner's brief: monthly forecast and plan vs actual ([D-062](DECISIONS.md#d-062) to [D-065](DECISIONS.md#d-065)), with Enforce moving to Release 4. Before DD-03 is written, the planner brings DD-02 up to date for tenants, URNs, the code rules and the nested taxonomy ([D-066](DECISIONS.md#d-066)).
 
+
+## DD-03 — Release 3: monthly forecast and plan vs actual
+
+| Work Order | Assignee | Depends on | Status | Issue | PR | Branch | Revisions |
+|---|---|---|---|---|---|---|---|
+| [WO-0301-A](DD-03-r3-finops-forecast-plan/WI-0301-Service-Category.md#wo-0301-a--service-categories-and-the-full-cost-urn) | open | Release 2 | not started | — | — | — | 0 |
+| [WO-0302-A](DD-03-r3-finops-forecast-plan/WI-0302-Plan-Lines.md#wo-0302-a--plan-lines) | open | WO-0301-A, WO-0201-A | not started | — | — | — | 0 |
+| [WO-0303-A](DD-03-r3-finops-forecast-plan/WI-0303-Forecast.md#wo-0303-a--forecast) | open | WO-0302-A | not started | — | — | — | 0 |
+| [WO-0304-A](DD-03-r3-finops-forecast-plan/WI-0304-Variance.md#wo-0304-a--variance) | open | WO-0303-A, WO-0204-A, WO-0201-A | not started | — | — | — | 0 |
+| [WO-0304-B](DD-03-r3-finops-forecast-plan/WI-0304-Variance.md#wo-0304-b--the-plan-vs-actual-sheet) | open | WO-0304-A | not started | — | — | — | 0 |
+| [WO-0305-A](DD-03-r3-finops-forecast-plan/WI-0305-Urn-Lookup.md#wo-0305-a--urn-lookup) | open | WO-0301-A | not started | — | — | — | 0 |
+
+DD-03 written 2026-11-03 from D-062 to D-065, on top of the refreshed DD-02, with 6 reference cases (`finops/analyze/forecast/testdata/cases/`, `…/variance/…`). The planner defaults it needs are listed in Q-010 for the repo owner. Dispatch waits for Release 2 and Q-010. Before WO-0301-A, the planner puts the `map`, `share` and `trend` cases with the new `service_urn` on `claude/cases-sct`.

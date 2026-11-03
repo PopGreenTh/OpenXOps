@@ -1,0 +1,35 @@
+name: new-project-planned-change
+why: >
+  A new Project goes live in December, with no account and no cost yet. Its plan `change` line
+  becomes a planned_change forecast for December, at the App node it names. Its `budget` line is
+  ignored: a budget is not a change. The February change line is outside the horizon (November
+  to January). The running Project keeps its run rate.
+args: { as_of: "2026-11-10", months: 3 }
+records:
+  - { kind: cost, period: 2026-11, metric: UnblendedCost, currency: USD, amount: 90, service: AmazonEC2, service_category: compute,
+      app_urn: "urn:tnt:testtnt:prj:shop:app:chk",
+      account_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod",
+      service_category_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute",
+      service_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute:svc:amazon-ec2" }
+  - { kind: plan, source: directus, plan_type: change, line_id: "17", period: 2026-12, month_start: "2026-12-01",
+      business_unit_urn: "urn:tnt:testtnt:bzu:digital", project_urn: "urn:tnt:testtnt:prj:loyalty",
+      app_urn: "urn:tnt:testtnt:prj:loyalty:app:points", node_urn: "urn:tnt:testtnt:prj:loyalty:app:points", node_type: app,
+      metric: UnblendedCost, currency: USD, amount: 1000 }
+  - { kind: plan, source: directus, plan_type: budget, line_id: "18", period: 2026-12, month_start: "2026-12-01",
+      project_urn: "urn:tnt:testtnt:prj:loyalty", app_urn: "urn:tnt:testtnt:prj:loyalty:app:points",
+      node_urn: "urn:tnt:testtnt:prj:loyalty:app:points", node_type: app, metric: UnblendedCost, currency: USD, amount: 1200 }
+  - { kind: plan, source: directus, plan_type: change, line_id: "19", period: 2027-02, month_start: "2027-02-01",
+      project_urn: "urn:tnt:testtnt:prj:loyalty", app_urn: "urn:tnt:testtnt:prj:loyalty:app:points",
+      node_urn: "urn:tnt:testtnt:prj:loyalty:app:points", node_type: app, metric: UnblendedCost, currency: USD, amount: 2000 }
+expect:
+  forecasts:
+    - { period: 2026-11, node_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute:svc:amazon-ec2",
+        basis: run_rate, amount: 300 }
+    - { period: 2026-12, node_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute:svc:amazon-ec2",
+        basis: run_rate, amount: 310 }
+    - { period: 2026-12, node_urn: "urn:tnt:testtnt:prj:loyalty:app:points", node_type: app, basis: planned_change,
+        source: runrate, line_id: "17", business_unit_urn: "urn:tnt:testtnt:bzu:digital", account_urn: "",
+        metric: UnblendedCost, currency: USD, amount: 1000, days_in_month: 31, daily_cost: 32.258064516 }
+    - { period: 2027-01, node_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:geo:global:sct:compute:svc:amazon-ec2",
+        basis: run_rate, amount: 310 }
+  findings: []
