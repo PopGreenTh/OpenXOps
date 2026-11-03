@@ -45,7 +45,7 @@ lzs:                                                    # or lz_conns; exactly o
     ou_paths:
       - code: checkout
         name: Checkout
-        path: /Workloads/Checkout                       # required
+        path: /Workloads/Checkout                       # or ref_id; at least one
         ref_id: ou-1a2b-3c4d5e6f                        # optional
         ref_urn_apps: [urn:tnt:testtnt:prj:shop:app:chk]
       - code: checkout-prod
@@ -64,6 +64,8 @@ tags: { app: App, project: Project }                    # optional; these are th
 - **Every node** has `code` and `name`, and may have `urn` and `alias`. Cloud nodes (`lzs`,
   `ou_paths`, `accounts`) may have `ref_id`. An LZ's `ref_id`, when given, equals its
   `management_account`.
+- **An OU entry** has `path`, `ref_id` or both. With `ref_id` it matches by id, so `path` may be
+  left out (reference case 10).
 - **References** are URNs: `ref_urn_bu` on a Project, `ref_urn_cct` on an App, `ref_urn_apps`
   (a list of App URNs) on an OU or an account, and `ref_urn_env` (one Environment URN) on an OU
   or an account. Defaults stay codes, as before.
@@ -105,14 +107,18 @@ The steps of WI-0104 *Resolution*, with these changes:
 
 1. **OU links** come from `ou_paths`. An entry matches the discovered OU whose id equals its
    `ref_id` when it has one, else whose path equals its `path`; none → `ou-not-found` (subject:
-   the `path`). `app-on-leaf-ou` is gone: an App on any OU applies.
+   the `path`, or the `ref_id` when it has no `path`). `app-on-leaf-ou` is gone: an App on any
+   OU applies.
 2. **App**: an account's `ref_urn_apps` › the App of its `ref_urn_env` (both `app_rule`
    `account`) › the deepest OU with `ref_urn_apps` (`ou:<path>`) › LZ default › global default ›
    `unalloc`. An OU with several Apps makes the account shared between them (`shared: true`),
    unless the account's own entry names one App.
 3. **Environment**: an account's `ref_urn_env` (`account`) › the deepest OU with `ref_urn_env`
    (`ou:<path>`) › LZ default › global default › `unspec` or `unalloc`, as before. Nothing is
-   guessed from names.
+   guessed from names. An OU's `ref_urn_env` sets only the Environment, by the
+   Environment code it ends in: the App in that URN must define the Environment (`validate`
+   checks it as a reference) but does not set the account's App. An account's `ref_urn_env`
+   sets its App only when the account has no `ref_urn_apps`.
 4. **A moved account**: a taxonomy account whose `ref_id` is discovered under another OU keeps
    its `ref_urn_apps` and `ref_urn_env`, and `map` writes `account-ou-mismatch` (warning,
    subject the account id, message naming both paths). A taxonomy account not discovered at all
@@ -139,9 +145,12 @@ The steps of WI-0104 *Resolution*, with these changes:
 ### Reference cases
 
 The planner converts every case under `finops/enrich/testdata/cases/` to the nested layout:
-first with today's URNs on `claude/cases-nested` (for WO-0111-B), then with D-059's URNs on
-`claude/cases-cloud-urn` (for WO-0111-C). Case 04 (`app-on-leaf-ou-falls-to-lz-default`) is
-rewritten for D-061: the leaf OU's App now applies.
+first with today's URNs on `claude/cases-nested` (for WO-0111-B; done 2026-11-03, `bb6afa8`,
+based on `claude/cases-code`), then with D-059's URNs on `claude/cases-cloud-urn` (for
+WO-0111-C). Case 04 is renamed `04-app-on-leaf-ou-applies` and rewritten for D-061: the leaf OU's App now applies, with
+no finding. Every other case keeps its records and expectations; converted back to the flat
+layout, each taxonomy equals the original. Accounts whose OU the case doesn't discover (the
+share cases have no `ou` or `account` records) sit under the root entry `path: /`.
 
 ## WO-0111-A — Green `main`
 
