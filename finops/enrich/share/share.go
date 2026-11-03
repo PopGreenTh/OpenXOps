@@ -25,8 +25,6 @@ type Options struct {
 	Tenant    string
 	AppTagKey string
 	AppCodes  []string
-	// CostCenterBU maps a cost center id to its business unit id, for the cost center's URN.
-	CostCenterBU map[string]string
 }
 
 // Split shared-account cost rows by App tag; other records pass through unchanged.
@@ -237,7 +235,7 @@ func fillFromAllocation(cost record.Record, app string, allocs []record.Record, 
 		if len(allocs) > 0 {
 			cost["environment"] = allocs[0]["environment"]
 		}
-		setAppURNs(cost, opt, prjUnalloc, appInvalid, strID(cost["environment"]), buUnalloc, ccUnalloc)
+		setAppURNs(cost, opt, prjUnalloc, appInvalid, strID(cost["environment"]), buUnalloc, ccUnalloc, "")
 		return
 	}
 	for _, a := range allocs {
@@ -248,22 +246,19 @@ func fillFromAllocation(cost record.Record, app string, allocs []record.Record, 
 			cost["cost_center"] = a["cost_center"]
 			cost["app_rule"] = a["app_rule"]
 			cost["environment"] = a["environment"]
-			setAppURNs(cost, opt, strID(a["project"]), app, strID(a["environment"]), strID(a["business_unit"]), strID(a["cost_center"]))
+			ccURN, _ := a["cost_center_urn"].(string)
+			setAppURNs(cost, opt, strID(a["project"]), app, strID(a["environment"]), strID(a["business_unit"]), strID(a["cost_center"]), ccURN)
 			return
 		}
 	}
 }
 
-// setAppURNs sets the five App-level URN fields of a cost row. The cost center sits under its
-// own business unit, which can differ from the project's.
-func setAppURNs(cost record.Record, opt Options, project, app, env, bu, cc string) {
+// setAppURNs sets the five App-level URN fields of a cost row. The cost center's URN is the one
+// the allocation holds: a cost center code is unique only within its business unit, so it is not
+// rebuilt from the code. Only an allocation without one (an input written by hand) gets it built
+// under the allocation's business unit.
+func setAppURNs(cost record.Record, opt Options, project, app, env, bu, cc, ccURN string) {
 	tnt := urn.Tenant(opt.Tenant)
-	ccBU := bu
-	if cc == ccUnalloc {
-		ccBU = buUnalloc
-	} else if b, ok := opt.CostCenterBU[cc]; ok {
-		ccBU = b
-	}
 	prj := tnt.Child("prj", project)
 	appU := prj.Child("app", app)
 	cost["project_urn"] = prj.String()
@@ -273,7 +268,10 @@ func setAppURNs(cost record.Record, opt Options, project, app, env, bu, cc strin
 		cost["environment_urn"] = appU.Child("env", env).String()
 	}
 	cost["business_unit_urn"] = tnt.Child("bzu", bu).String()
-	cost["cost_center_urn"] = tnt.Child("bzu", ccBU).Child("cct", cc).String()
+	if ccURN == "" {
+		ccURN = tnt.Child("bzu", bu).Child("cct", cc).String()
+	}
+	cost["cost_center_urn"] = ccURN
 }
 
 func sortShareCosts(costs []record.Record) {

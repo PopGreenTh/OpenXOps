@@ -36,6 +36,6 @@ expect:
         business_unit_urn: "urn:tnt:testtnt:bzu:unalloc", cost_center_urn: "urn:tnt:testtnt:bzu:unalloc:cct:unalloc",
         project_urn: "urn:tnt:testtnt:prj:unalloc", app_urn: "urn:tnt:testtnt:prj:unalloc:app:unalloc",
         environment_urn: "urn:tnt:testtnt:prj:unalloc:app:unalloc:env:unalloc", lz_urn: "urn:tnt:testtnt:lzc:unalloc",
-        ou_urn: "urn:tnt:testtnt:lzc:unalloc:org:root", account_urn: "urn:tnt:testtnt:lzc:unalloc:org:root:acc:900000000001" }
+        ou_urn: "urn:tnt:testtnt:lzc:unalloc:org:root", account_urn: "urn:tnt:testtnt:lzc:unalloc:org:root:acc:stray" }
   findings:
     - { code: lz-unknown, subject: o-other }

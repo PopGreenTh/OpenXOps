@@ -171,11 +171,15 @@ command stops with the file (or `stdin`), the line and both accounts.
 **Writes:** only `node` records: the LZ node, then the OU nodes sorted by `urn`, then the account
 nodes sorted by `urn`. Input records are not passed through. The same input gives the same output.
 Every node has a non-empty `code`, `urn` and `name` ([records.md](records.md#node)): the `code` is
-the LZ code, the slug of an OU's own name (`hub-sit`, `root`) or the account id, and `ref_id` is the
-id of the cloud resource (D-056).
+the LZ code or, for an OU or account, the `code` of its taxonomy entry when listed, else the slug of
+its name (`hub-sit`, `root`), and `ref_id` is the id of the cloud resource (D-056, D-059).
 
 - A node whose `urn` breaks the URN rule (`^[a-z0-9.:+=@_/-]{11,250}$`), or that has an empty
   `code` or `name`, stops the command, naming the node. Nothing is written.
+- Two OUs, or two accounts, with one URN stop the command with both OU paths or both account ids
+  (two unlisted OUs named `Prod` under different parents; two accounts of one name in one OU).
+  List one of them under `ou_paths` or `accounts` with a `code` of its own. `finops enrich map`
+  stops the same way.
 - A `code` that breaks the code rule (`^[A-Za-z0-9.+=@_-]{3,50}$`) is kept as it is, and a
   warning naming the node goes to stderr. An OU named `IT` slugs to `it`, which is two characters:
   its node has `code: it`, the URN segment `it`, and one warning.

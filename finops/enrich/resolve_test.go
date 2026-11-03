@@ -201,3 +201,72 @@ func TestOUEntryWithARefIDMatchesByIDOnly(t *testing.T) {
 		t.Fatalf("allocations = %v", a)
 	}
 }
+
+// collisionInventory has two OUs named Prod under different parents and two accounts named
+// chk-prod in one OU.
+func collisionInventory() []record.Record {
+	acct := func(id, name, parent, path string) record.Record {
+		return record.Record{"kind": "account", "csp": "aws", "org_id": "o-main", "management_account": "111111111111", "id": id,
+			"name": name, "email": id + "@example.com", "status": "ACTIVE", "parent_id": parent, "ou_path": path}
+	}
+	return []record.Record{
+		ouRec("r-1", "", "Root", "/", "r-1", true),
+		ouRec("ou-a", "r-1", "Checkout", "/Checkout", "r-1/ou-a", true),
+		ouRec("ou-b", "r-1", "Payments", "/Payments", "r-1/ou-b", true),
+		ouRec("ou-ap", "ou-a", "Prod", "/Checkout/Prod", "r-1/ou-a/ou-ap", false),
+		ouRec("ou-bp", "ou-b", "Prod", "/Payments/Prod", "r-1/ou-b/ou-bp", false),
+		acct("200000000001", "chk-prod", "ou-ap", "/Checkout/Prod"),
+		acct("200000000002", "chk-prod", "ou-ap", "/Checkout/Prod"),
+	}
+}
+
+func TestCollisionsStopOnTwoOUsWithOneURN(t *testing.T) {
+	recs := collisionInventory()[:5] // no accounts
+	err := CheckCollisions(parseTaxonomy(t, fmt.Sprintf(resolveTaxonomy, "      - { code: checkout, name: Checkout, path: /Checkout }\n")), recs)
+	if err == nil {
+		t.Fatal("two OUs named Prod under different parents should collide")
+	}
+	for _, want := range []string{"/Checkout/Prod", "/Payments/Prod", "urn:tnt:testtnt:lzc:main:org:prod"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error %q should contain %q", err, want)
+		}
+	}
+}
+
+func TestListingOneOUBreaksTheTie(t *testing.T) {
+	tax := parseTaxonomy(t, fmt.Sprintf(resolveTaxonomy, "      - { code: payments-prod, name: Prod, path: /Payments/Prod }\n"))
+	if err := CheckCollisions(tax, collisionInventory()[:5]); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCollisionsStopOnTwoAccountsWithOneURN(t *testing.T) {
+	err := CheckCollisions(parseTaxonomy(t, fmt.Sprintf(resolveTaxonomy, "      - { code: prod, name: Prod, path: /Checkout/Prod }\n")), collisionInventory()[:1:1])
+	if err != nil {
+		t.Fatalf("no accounts, no collision: %v", err)
+	}
+	recs := append(collisionInventory()[:4:4], collisionInventory()[5:]...)
+	err = CheckCollisions(parseTaxonomy(t, fmt.Sprintf(resolveTaxonomy, "      - { code: prod, name: Prod, path: /Checkout/Prod }\n")), recs)
+	if err == nil {
+		t.Fatal("two accounts named chk-prod in one OU should collide")
+	}
+	for _, want := range []string{"200000000001", "200000000002", "org:prod:acc:chk-prod"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error %q should contain %q", err, want)
+		}
+	}
+	// Listing one account gives it a code of its own.
+	listed := "      - code: prod\n        name: Prod\n        path: /Checkout/Prod\n        accounts:\n          - { code: chk-prod-two, name: second, ref_id: \"200000000002\" }\n"
+	if err := CheckCollisions(parseTaxonomy(t, fmt.Sprintf(resolveTaxonomy, listed)), recs); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestOneNameInTwoOUsIsNotACollision(t *testing.T) {
+	recs := collisionInventory()
+	recs[6]["parent_id"], recs[6]["ou_path"] = "ou-bp", "/Payments/Prod" // the second chk-prod moves to the other Prod
+	tax := parseTaxonomy(t, fmt.Sprintf(resolveTaxonomy, "      - { code: checkout-prod, name: Prod, path: /Checkout/Prod }\n      - { code: payments-prod, name: Prod, path: /Payments/Prod }\n"))
+	if err := CheckCollisions(tax, recs); err != nil {
+		t.Fatal(err)
+	}
+}

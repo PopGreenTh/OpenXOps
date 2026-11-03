@@ -19,17 +19,17 @@ lz:
           ref_id: ou-sec
           children:
             - type: acc
-              code: "200000000010"
+              code: sec-audit
               name: sec-audit
-              urn: urn:tnt:testtnt:lzc:main:org:security:acc:200000000010
+              urn: urn:tnt:testtnt:lzc:main:org:security:acc:sec-audit
               ref_id: "200000000010"
               status: ACTIVE
               joined_at: "2019-03-11T02:30:00Z"
               joined_method: CREATED
             - type: acc
-              code: "200000000011"
+              code: sec-log
               name: sec-log
-              urn: urn:tnt:testtnt:lzc:main:org:security:acc:200000000011
+              urn: urn:tnt:testtnt:lzc:main:org:security:acc:sec-log
               ref_id: "200000000011"
               status: ACTIVE
               joined_at: "2019-03-11T02:41:18Z"
@@ -41,9 +41,9 @@ lz:
           ref_id: ou-shared
           children:
             - type: acc
-              code: "200000000002"
+              code: shared-platform
               name: shared-platform
-              urn: urn:tnt:testtnt:lzc:main:org:shared:acc:200000000002
+              urn: urn:tnt:testtnt:lzc:main:org:shared:acc:shared-platform
               ref_id: "200000000002"
               status: ACTIVE
               joined_at: "2019-06-20T14:05:09Z"
@@ -57,33 +57,33 @@ lz:
             - type: org
               code: checkout
               name: Checkout
-              urn: urn:tnt:testtnt:lzc:main:org:workloads/checkout
+              urn: urn:tnt:testtnt:lzc:main:org:checkout
               ref_id: ou-2
               children:
                 - type: org
-                  code: non-prod
+                  code: checkout-nonprod
                   name: NonProd
-                  urn: urn:tnt:testtnt:lzc:main:org:workloads/checkout/non-prod
+                  urn: urn:tnt:testtnt:lzc:main:org:checkout-nonprod
                   ref_id: ou-3np
                   children:
                     - type: acc
-                      code: "200000000003"
+                      code: chk-nonprod
                       name: chk-nonprod
-                      urn: urn:tnt:testtnt:lzc:main:org:workloads/checkout/non-prod:acc:200000000003
+                      urn: urn:tnt:testtnt:lzc:main:org:checkout-nonprod:acc:chk-nonprod
                       ref_id: "200000000003"
                       status: ACTIVE
                       joined_at: "2020-01-15T08:22:07Z"
                       joined_method: CREATED
                 - type: org
-                  code: prod
+                  code: checkout-prod
                   name: Prod
-                  urn: urn:tnt:testtnt:lzc:main:org:workloads/checkout/prod
+                  urn: urn:tnt:testtnt:lzc:main:org:checkout-prod
                   ref_id: ou-3
                   children:
                     - type: acc
-                      code: "200000000001"
+                      code: chk-prod
                       name: chk-prod
-                      urn: urn:tnt:testtnt:lzc:main:org:workloads/checkout/prod:acc:200000000001
+                      urn: urn:tnt:testtnt:lzc:main:org:checkout-prod:acc:chk-prod
                       ref_id: "200000000001"
                       status: ACTIVE
                       joined_at: "2020-01-15T08:00:31Z"
@@ -91,49 +91,49 @@ lz:
             - type: org
               code: payments
               name: Payments
-              urn: urn:tnt:testtnt:lzc:main:org:workloads/payments
+              urn: urn:tnt:testtnt:lzc:main:org:payments
               ref_id: ou-pay
               children:
                 - type: org
-                  code: non-prod
+                  code: payments-nonprod
                   name: NonProd
-                  urn: urn:tnt:testtnt:lzc:main:org:workloads/payments/non-prod
+                  urn: urn:tnt:testtnt:lzc:main:org:payments-nonprod
                   ref_id: ou-pay-np
                   children:
                     - type: acc
-                      code: "200000000005"
+                      code: pay-nonprod
                       name: pay-nonprod
-                      urn: urn:tnt:testtnt:lzc:main:org:workloads/payments/non-prod:acc:200000000005
+                      urn: urn:tnt:testtnt:lzc:main:org:payments-nonprod:acc:pay-nonprod
                       ref_id: "200000000005"
                       status: ACTIVE
                       joined_at: "2021-04-12T03:48:52Z"
                       joined_method: CREATED
                 - type: org
-                  code: prod
+                  code: payments-prod
                   name: Prod
-                  urn: urn:tnt:testtnt:lzc:main:org:workloads/payments/prod
+                  urn: urn:tnt:testtnt:lzc:main:org:payments-prod
                   ref_id: ou-pay-prod
                   children:
                     - type: acc
-                      code: "200000000004"
+                      code: pay-prod
                       name: pay-prod
-                      urn: urn:tnt:testtnt:lzc:main:org:workloads/payments/prod:acc:200000000004
+                      urn: urn:tnt:testtnt:lzc:main:org:payments-prod:acc:pay-prod
                       ref_id: "200000000004"
                       status: ACTIVE
                       joined_at: "2021-04-12T03:15:27Z"
                       joined_method: INVITED
         - type: acc
-          code: "111111111111"
+          code: management
           name: management
-          urn: urn:tnt:testtnt:lzc:main:org:root:acc:111111111111
+          urn: urn:tnt:testtnt:lzc:main:org:root:acc:management
           ref_id: "111111111111"
           status: ACTIVE
           joined_at: "2019-03-04T09:12:45Z"
           joined_method: CREATED
         - type: acc
-          code: "200000000099"
+          code: sandbox
           name: sandbox
-          urn: urn:tnt:testtnt:lzc:main:org:root:acc:200000000099
+          urn: urn:tnt:testtnt:lzc:main:org:root:acc:sandbox
           ref_id: "200000000099"
           status: ACTIVE
           joined_at: "2022-09-30T23:59:59Z"
