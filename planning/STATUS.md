@@ -107,6 +107,8 @@ The reference cases for WO-0111-B were converted to the nested layout on 2026-11
 
 PR #77 (WO-0110-B) re-reviewed 2026-11-03 at `0846f11`: approved, every *Done when* item met after it merged `main` and kept `793fbf8`'s work. It also fixed `report tree --format taxonomy`, which still read `id` and `source_id`. The verdict was posted as a comment because the reviewer may not approve a PR built by a Claude implementer session; the changes-requested review was dismissed on the repo owner's go-ahead. WO-0110-B merged (#77, `c6b853b`). WO-0111-B dispatched the same day (#83) on the repo owner's go-ahead, after #82 (`5c22023`); WI-0111 notes the implementer's two points for it.
 
+Two more commits went to `main` on 2026-11-03 without a Work Order or PR: `266c2a3` (pipeline examples in `getting-started.md` and `commands.md`) and `34e4b00` (`LoadTaxonomy` keeps the YAML decode error). Both are small and CI is green on them. PR #85 (WO-0111-B, Claude Code implementer session) reviewed the same day: approved once it merges `main` again, posted as a comment because the reviewer may not approve a PR built by a Claude implementer session. Every *Done when* item is met, and the mock pipeline's outputs are byte-identical to `main`'s. `34e4b00` changed `finops/enrich/taxonomy.go`, which #85 deletes; it resolves by keeping the deletion. WI-0111 records the choices #85 made where the spec was silent, and WO-0111-C gains two items: `share` copies `cost_center_urn`, and the LZ `ref_id` check.
+
 WI-0107 Contracts clarified 2026-10-27 during PR #24's review: `environment` and `lz` changes are account changes, and an allocation's `cost_moved` counts only cost records with its own `app`.
 
 ## DD-02 — Release 2: FOCUS, history, trend and impact
