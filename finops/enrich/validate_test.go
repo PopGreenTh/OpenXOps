@@ -261,12 +261,12 @@ func TestValidateLZCount(t *testing.T) {
 }
 
 func TestLoadNestedTaxonomy(t *testing.T) {
-	tax, err := LoadTaxonomy(filepath.Join("..", "..", "data", "real", "cvie-taxonomy.yaml"))
+	tax, err := LoadTaxonomy(filepath.Join("testdata", "nested-taxonomy.yaml"))
 	if err != nil {
 		t.Fatalf("LoadTaxonomy failed: %v", err)
 	}
-	if tax.Tenant != "cvie" {
-		t.Errorf("want tenant cvie, got %q", tax.Tenant)
+	if tax.Tenant != "nesttnt" {
+		t.Errorf("want tenant nesttnt, got %q", tax.Tenant)
 	}
 	if len(tax.BusinessUnits) != 2 {
 		t.Errorf("want 2 BUs, got %d", len(tax.BusinessUnits))
