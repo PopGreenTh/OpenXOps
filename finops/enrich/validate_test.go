@@ -1,6 +1,7 @@
 package enrich
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -546,5 +547,20 @@ func TestCodesAreReadAsWritten(t *testing.T) {
 	}
 	if f := validateBody(t, body); len(f) != 0 {
 		t.Fatalf("findings = %v", f)
+	}
+}
+
+// TestStarterTemplateValidates fills in the starter template's <tenant> and checks that it loads
+// and has no error finding, so a new tenant starts from a file that works.
+func TestStarterTemplateValidates(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "..", "templates", "taxonomy.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := strings.NewReplacer("<tenant name>", "Acme", "<tenant>", "acme").Replace(string(data))
+	for _, f := range validateBody(t, body) {
+		if f["severity"] == "error" {
+			t.Errorf("starter template: %v", f)
+		}
 	}
 }

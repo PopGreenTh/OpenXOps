@@ -6,7 +6,9 @@ The taxonomy is a YAML file read by `finops enrich validate`, `map` and `share`,
 one tenant and describes the three trees of D-046, nested the way people read them: the business
 structure, the projects with their Apps and Environments, and the landing zone with its OUs and
 accounts. `finops/enrich/testdata/demo-taxonomy.yaml` is a working example and
-`finops/enrich/testdata/nested-taxonomy.yaml` a second one with owner teams and aliases.
+`finops/enrich/testdata/nested-taxonomy.yaml` a second one with owner teams and aliases. To
+start a new tenant, copy the starter template
+[`templates/taxonomy.yaml`](../../templates/taxonomy.yaml).
 
 ```yaml
 tenant: { code: testtnt, name: Test tenant }          # urn optional: urn:tnt:testtnt
