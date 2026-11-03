@@ -103,6 +103,8 @@ Commit `793fbf8` (nested taxonomy, `alias`, `report tree --format taxonomy`) was
 
 PR #80 (WO-0111-A, Cursor) reviewed 2026-11-03: approved, every *Done when* item met. The fixture is made up, nothing outside `planning/` names `data/real`, and CI is green. Its URNs leave out their parents, so WO-0111-B rewrites them under D-058. PR #77 (WO-0110-B) reviewed the same day: changes requested. It meets its *Done when* at `75c3d69`, but it conflicts with `793fbf8` in six files. Once #80 merges, it has to merge `main`, keep `alias`, the nested reader and `--format taxonomy`, and re-run Verify. WO-0111-A merged 2026-11-03 (#80, `a7ec7b2`) on the repo owner's go-ahead; `main` is green again.
 
+The reference cases for WO-0111-B were converted to the nested layout on 2026-11-03, on `claude/cases-nested` (`bb6afa8`, based on `claude/cases-code`). Each taxonomy converts back to its original flat one, and only case 04 changes: it is now `04-app-on-leaf-ou-applies` (D-061). Converting them settled three points in the WI-0111 Contracts: an OU entry may give `ref_id` without `path`; an OU's `ref_urn_env` sets only the Environment; and an account's `ref_urn_env` sets its App only when it has no `ref_urn_apps`. WO-0111-B can be dispatched once WO-0110-B (#77) merges.
+
 WI-0107 Contracts clarified 2026-10-27 during PR #24's review: `environment` and `lz` changes are account changes, and an allocation's `cost_moved` counts only cost records with its own `app`.
 
 ## DD-02 — Release 2: FOCUS, history, trend and impact
