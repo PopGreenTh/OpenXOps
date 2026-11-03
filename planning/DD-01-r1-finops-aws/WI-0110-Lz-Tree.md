@@ -54,8 +54,11 @@ xops report tree --tenant cvd --from-node tree.jsonl --out cvd-tree.yaml
 | `status` | string | `""` | `""` | the account's `status` |
 | `joined_at` | string | `""` | `""` | the account's `joined_at`, or `""` when the record has none ([D-055](../DECISIONS.md#d-055)) |
 | `joined_method` | string | `""` | `""` | the account's `joined_method`, or `""` when the record has none (D-055) |
+| `alias` | string | the LZ's `alias` | the OU's `alias` in the taxonomy | the account's `alias` in the taxonomy |
 
-`node` goes into `record/schema` with every field above required.
+`node` goes into `record/schema` with every field above required, except `alias` (optional, `""`
+when the taxonomy gives none; added by `793fbf8`, [D-057](../DECISIONS.md#d-057)). From WO-0111-C, the
+OU and account `urn` and `code` follow WI-0111 *Cloud URNs* ([D-059](../DECISIONS.md#d-059)).
 
 ### `xops report tree`
 
@@ -155,7 +158,9 @@ read the tree (D-054).
 ## WO-0110-B — Codes, URNs, names and `ref_id` on every node
 
 **Assignee:** open
-**Depends on:** WO-0110-A
+**Depends on:** WO-0110-A, and WO-0111-A for a green `main`. Merge `main` into your branch: it
+now holds commit `793fbf8` (nested taxonomy, `alias`; [D-057](../DECISIONS.md#d-057)) in the same
+packages. Keep its `alias` and its nested reader as they are; WO-0111-B reworks them.
 **Packages:**
 - `record/urn/`, `record/schema/` (the `node` fields) and the `--tenant` check;
 - `finops/enrich/` (`validate.go`, and where taxonomy codes become URN ids),

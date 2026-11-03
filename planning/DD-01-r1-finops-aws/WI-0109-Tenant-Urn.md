@@ -64,6 +64,9 @@ These amend the Contracts of WI-0101 to WI-0107. Where they disagree, this file 
   | `Spoke-SIT` | `spoke-sit` |
   | `Amazon Elastic Compute Cloud - Compute` | `amazon-elastic-compute-cloud-compute` |
   | `---` | `unknown` |
+- **From WO-0111-C** ([D-059](../DECISIONS.md#d-059)): an OU's URN segment is its own code, not its
+  path, and an account's is its code, not its id; see WI-0111 *Cloud URNs*. The two bullets
+  below hold until then.
 - An **OU path** becomes its segments, each slugged, joined by `/`, without the leading `/`
   (`/Workloads/Checkout/Prod` → `workloads/checkout/prod`). The root `/` is `root`.
 - **One LZ per tenant** (D-052, from WO-0109-C): the taxonomy's `lzs` has exactly one entry;
