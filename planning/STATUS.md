@@ -128,3 +128,5 @@ WI-0107 Contracts clarified 2026-10-27 during PR #24's review: `environment` and
 
 DD-02 written 2026-10-27 with 8 reference cases (`finops/analyze/testdata/cases/trend/`, `…/impact/`); Q-006 closed by D-042; dispatch waits for the Release 1 tag.
 
+Release 3 grilled 2026-11-03 from the repo owner's brief: monthly forecast and plan vs actual ([D-062](DECISIONS.md#d-062) to [D-065](DECISIONS.md#d-065)), with Enforce moving to Release 4. Before DD-03 is written, the planner brings DD-02 up to date for tenants, URNs, the code rules and the nested taxonomy ([D-066](DECISIONS.md#d-066)).
+
