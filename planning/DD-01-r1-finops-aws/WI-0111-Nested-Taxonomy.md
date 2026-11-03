@@ -208,6 +208,11 @@ and don't edit any file under `testdata/cases/`.
 - `map`: resolution as above, with no name matching.
 - The demo taxonomy in the nested layout; every example in `docs/` and `README.md` follows.
 
+- Found while merging WO-0110-B (#77): `793fbf8`'s nested reader takes each code from its URN
+  segment, lowercased, so `PRJ_Shop` came out as `prj_shop` in records and a `code:` that
+  disagreed with its URN was ignored. The new loader reads `code` as written and only checks a
+  written `urn` (D-058).
+
 **Out of scope.** The cloud URNs (WO-0111-C). `owner_teams` and the other read-not-used keys
 beyond reading them. `report tree --format taxonomy` beyond keeping it working.
 
@@ -251,6 +256,10 @@ file under `testdata/cases/`.
 - The collision errors in `map` and `lz-tree`, each tested with two OUs named `Prod` under
   different parents, and two accounts with one name in one OU.
 - Golden files, examples and `records.md` follow the new URNs.
+
+- `report tree --format taxonomy` writes each OU's and account's `code` as its slug, not its
+  display name (`793fbf8` writes `Shared Services`), so a scaffold read back passes the code
+  rule and gives the same URNs.
 
 **Out of scope.** URN history or a migration of old URNs (nothing is stored yet).
 
