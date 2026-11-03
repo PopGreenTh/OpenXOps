@@ -74,13 +74,13 @@ expect:
         project_urn: "urn:tnt:testtnt:prj:shop", app_urn: "urn:tnt:testtnt:prj:shop:app:chk",
         environment_urn: "urn:tnt:testtnt:prj:shop:app:chk:env:prod",
         business_unit_urn: "urn:tnt:testtnt:bzu:retail", cost_center_urn: "urn:tnt:testtnt:bzu:retail:cct:ecom",
-        lz_urn: "urn:tnt:testtnt:lzc:main", ou_urn: "urn:tnt:testtnt:lzc:main:org:workloads/checkout/prod",
-        account_urn: "urn:tnt:testtnt:lzc:main:org:workloads/checkout/prod:acc:200000000001",
-        service_urn: "urn:tnt:testtnt:lzc:main:org:workloads/checkout/prod:acc:200000000001:svc:amazon-ec2" }
+        lz_urn: "urn:tnt:testtnt:lzc:main", ou_urn: "urn:tnt:testtnt:lzc:main:org:prod",
+        account_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod",
+        service_urn: "urn:tnt:testtnt:lzc:main:org:prod:acc:chk-prod:svc:amazon-ec2" }
     - { account_id: "200000000002", lz: main, project: "", app: "", environment: prod,
         app_rule: "", environment_rule: account, shared: true, app_tag: pay, amount: 40,
         project_urn: "", app_urn: "", environment_urn: "", business_unit_urn: "", cost_center_urn: "",
         lz_urn: "urn:tnt:testtnt:lzc:main", ou_urn: "urn:tnt:testtnt:lzc:main:org:root",
-        account_urn: "urn:tnt:testtnt:lzc:main:org:root:acc:200000000002",
-        service_urn: "urn:tnt:testtnt:lzc:main:org:root:acc:200000000002:svc:amazon-ec2" }
+        account_urn: "urn:tnt:testtnt:lzc:main:org:root:acc:shared",
+        service_urn: "urn:tnt:testtnt:lzc:main:org:root:acc:shared:svc:amazon-ec2" }
   findings: []
