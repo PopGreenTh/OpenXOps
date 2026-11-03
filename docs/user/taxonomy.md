@@ -118,6 +118,77 @@ For each account in the inventory, `finops enrich map` resolves **App** then **E
 Shared accounts (multiple Apps on one account) are flagged in `allocation.shared`; `share` splits
 cost by the App tag on each `cost` row.
 
+## Formats: Flat and Nested
+
+OpenXOps supports two taxonomy layouts:
+
+1. **Flat format** (`finops/enrich/testdata/demo-taxonomy.yaml`) — top-level lists with explicit reference fields (`cost_centers` reference `business_unit`, `apps` reference `project` and `cost_center`, `ou_links` map OUs to apps, `accounts` list overrides).
+2. **Nested hierarchical format** (`finops/enrich/testdata/nested-taxonomy.yaml`) — structured representation of the three organizational trees:
+
+### The Three Taxonomy Trees
+
+Each tenant organizes cloud operations across three distinct, interconnected hierarchies:
+
+#### 1. Business Value Hierarchy (`tnt > bzu > cct > ont`)
+Organizes corporate structure, financial ownership, and cost accountability:
+- `tenant` (`tnt`): Tenant root (`code`, `urn`, `name`).
+- `business_units` (`bzu`): Business units representing corporate divisions.
+- `cost_centers` (`cct`): Cost centers nested under their owning business unit.
+- `owner_teams` (`ont`): Engineering or operations teams nested under their cost center.
+
+#### 2. Project Component Hierarchy (`tnt > prj > app > env`)
+Organizes software systems, applications, and runtime environments:
+- `projects` (`prj`): Business initiatives or product suites. References its owning BU via `ref_urn_bu`.
+- `apps` (`app`): Distinct deployable applications nested under a project. References its cost center via `ref_urn_cct`.
+- `environments` (`env`): Deployment tiers (`prd`, `stg`, `sit`, `dev`) nested under each app. Can reference its responsible owner team via `ref_urn_ont`.
+
+#### 3. Cloud Infrastructure Hierarchy (`tnt > lzc > org > acc`)
+Organizes cloud provider tenancies, landing zones, and account inventory:
+- `lz_conns` (`lzc`): Cloud landing zone connection (`code`, `urn`, `csp`, `currency`, `management_account`, `ref_id`).
+- `ou_paths` (`org`): Leaf Organizational Units containing member accounts (`code`, `urn`, `ref_id`, `path`).
+- `accounts` (`acc`): Member cloud accounts staying in leaf OUs (`code`, `urn`, `ref_id`, `status`). Maps to an environment via `ref_urn_env`.
+
+### Common Node Fields and Identifier Conventions
+
+Every node in each tree contains:
+- `code`: Node identifier matching `^[A-Za-z0-9.+=@_-]{3,50}$` (e.g., `CIF`, `CC-CIF01`, `cvd-aws`).
+- `urn`: Stable URN matching `^[a-z0-9.:+=@_/-]{11,250}$` built strictly from slugged node codes down the hierarchy.
+- `name`: Human-readable display label.
+- `alias`: (Optional) Short alternative identifier.
+- `ref_id`: (Cloud tree nodes only) External cloud provider identifier (e.g., AWS 12-digit Account ID or `ou-xxxx-xxxxxxxx`).
+
+### Node Aliases and Uniqueness Rules
+
+Every node across all three hierarchies can optionally carry an `alias` field:
+- **Business Value hierarchy:** `bzu`, `cct`, `ont`.
+- **Project Component hierarchy:** `prj`, `app`, `env`.
+- **Cloud Infrastructure hierarchy:** `lzc`, `org`, `acc`.
+
+**Uniqueness rule:** Each non-empty alias must be unique across all nodes of the **same type** within the tenant (evaluated case-insensitively).
+- Two applications cannot share the same alias (e.g. `alias: core`).
+- Two environments cannot share the same alias across the entire tenant.
+- Two nodes of *different* types (for example, a Business Unit and an Application) **may** share the same alias without conflict.
+- Empty or omitted aliases are ignored and do not conflict.
+- `finops enrich validate` verifies alias uniqueness and reports error finding `taxonomy-duplicate-alias` if a collision occurs.
+
+### Scaffolding `lz_conns` from Cloud Discovery
+
+When bootstrapping your taxonomy, discover your AWS organization and scaffold the `lz_conns` hierarchy:
+
+```bash
+# 1. Discover active AWS accounts and OUs
+go run ./xops sense aws-accounts --tenant <tenant> > accounts.jsonl
+
+# 2. Enrich into hierarchical node records
+go run ./xops enrich lz-tree --tenant <tenant> --taxonomy init-taxonomy.yaml \
+  --from-accounts accounts.jsonl > tree.jsonl
+
+# 3. Scaffold taxonomy-ready lz_conns block
+go run ./xops report tree --tenant <tenant> --from-node tree.jsonl --format taxonomy --out lz-conns.yaml
+```
+
+The generated `lz-conns.yaml` formats leaf OUs (`ou_paths`) and their member accounts (`accounts`), populating `code`, `name`, `ref_id`, `path`, `status`, and URNs with codes. You can paste this block directly into your `taxonomy.yaml`.
+
 ## Validate first
 
 ```bash

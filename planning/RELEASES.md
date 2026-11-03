@@ -59,6 +59,9 @@ Project › App › Environment. Shared accounts are split by the App tag, unmap
 | [WO-0109-C](DD-01-r1-finops-aws/WI-0109-Tenant-Urn.md) | CamelCase slugs, one LZ per tenant (D-052, D-053) | 0109-B, 0102-B |
 | [WO-0110-A](DD-01-r1-finops-aws/WI-0110-Lz-Tree.md) | `xops enrich lz-tree`, `xops report tree` YAML (D-054) | 0109-C |
 | [WO-0110-B](DD-01-r1-finops-aws/WI-0110-Lz-Tree.md) | Codes, URNs, names and `ref_id` on every node (D-056) | 0110-A |
+| [WO-0111-A](DD-01-r1-finops-aws/WI-0111-Nested-Taxonomy.md) | Green `main`: a committed nested-taxonomy fixture (D-057) | — |
+| [WO-0111-B](DD-01-r1-finops-aws/WI-0111-Nested-Taxonomy.md) | One loader for the nested taxonomy (D-058, D-060, D-061) | 0111-A, 0110-B |
+| [WO-0111-C](DD-01-r1-finops-aws/WI-0111-Nested-Taxonomy.md) | Cloud URNs from OU and account codes (D-059) | 0111-B |
 
 ```mermaid
 flowchart LR

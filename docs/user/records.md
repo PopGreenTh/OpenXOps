@@ -170,6 +170,7 @@ every OU and every account. Nodes are named by the same URNs `finops enrich map`
 | `status` | string | yes | The account's `status`; `""` for the LZ and OUs. |
 | `joined_at` | string | yes | The account's `joined_at` (RFC 3339 UTC, [`account`](#account)), or `""` when the record has none; `""` for the LZ and OUs (D-055). |
 | `joined_method` | string | yes | The account's `joined_method` (`CREATED` or `INVITED`), or `""` when the record has none; `""` for the LZ and OUs (D-055). |
+| `alias` | string | no | Node alias if defined in the taxonomy. |
 
 ## `finding`
 

@@ -212,6 +212,7 @@ var nodeSchema = Schema{
 		{Name: "status", Type: TypeString, Required: true},
 		{Name: "joined_at", Type: TypeString, Required: true},
 		{Name: "joined_method", Type: TypeString, Required: true},
+		{Name: "alias", Type: TypeString},
 	},
 }
 

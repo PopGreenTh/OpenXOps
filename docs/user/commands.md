@@ -122,9 +122,11 @@ Compare a previous map output to the current one; emit `change` records, then pa
 ## `xops enrich lz-tree`
 
 Turn `ou` and `account` records into one flat `node` record per node of the tenant's cloud
-hierarchy: the landing zone, every OU and every account (D-054). The LZ is the taxonomy's one LZ
-(D-052). URNs are built as `finops enrich map` builds `lz_urn`, `ou_urn` and `account_urn`, so the
-two agree.
+hierarchy: the landing zone, every OU and every account (D-054). While `xops sense aws-accounts`
+outputs flat cloud provider inventory records, `lz-tree` resolves them into a structured,
+URN-addressable tree linked by `parent_urn`, attaching any node `alias` definitions from the taxonomy.
+The LZ is the taxonomy's one LZ (D-052). URNs are built as `finops enrich map` builds `lz_urn`, `ou_urn`
+and `account_urn`, so the two agree.
 
 **Flags:** `--tenant ID` (required), `--taxonomy FILE` (required; its `tenant` must be `--tenant`
 and it must have exactly one LZ), `--from-accounts FILE` or stdin.
@@ -154,12 +156,20 @@ go run ./xops enrich lz-tree --tenant testtnt --taxonomy xops/enrich/testdata/de
 
 ## `xops report tree`
 
-Write the `node` records as one nested YAML file people can read: the LZ at the top and every
-node's `children` under it, OUs before accounts, each group in `code` order. A node without children
-has no `children` key. Each node shows `type`, `code`, `name`, `urn` and `ref_id`. An account shows its `name`, `status`, `joined_at` and `joined_method` (D-055);
-a field that is `""` is left out, and the LZ and OUs never show the join fields.
+Write the `node` records as a nested YAML document. Each node shows `type`, `code`, `name`, `urn`
+and `ref_id`, then `alias` when it has one (D-056, D-057).
 
-**Flags:** `--tenant ID` (required), `--from-node FILE` or stdin, `--out FILE` (the YAML goes to
+**Formats:**
+- `--format tree` (default): Human-readable tree view with the LZ at the top and every node's `children`
+  under it (OUs before accounts, each group in `code` order). A node without children has no `children` key.
+  An account also shows its `status`, `joined_at` and `joined_method` (D-055); a field that is `""`
+  is left out, and the LZ and OUs never show the join fields.
+- `--format taxonomy`: Scaffolds a hierarchical landing zone connection tree (`lz_conns`) compatible
+  with nested taxonomy format (`cvie-taxonomy.yaml`). Only leaf OUs containing accounts are emitted under
+  `ou_paths`. Each node emits `code`, `urn` (constructed from codes), `name`, `ref_id` (cloud resource ID,
+  e.g. AWS account ID or OU ID), `path`, `status`, and `alias` (when set).
+
+**Flags:** `--tenant ID` (required), `--from-node FILE` or stdin, `--format tree|taxonomy` (default `tree`), `--out FILE` (the YAML goes to
 stdout when it is not given). An existing `--out` file is replaced: a tree is a snapshot, not a log.
 
 **Reads:** `node` records.
@@ -168,7 +178,15 @@ stdout when it is not given). An existing `--out` file is replaced: a tree is a 
 `lzc` node, when two nodes have the same `urn`, or when a node's `parent_urn` names no node; the
 error names the file (or `stdin`), the line and the URN.
 
-**Example:** `go run ./xops report tree --tenant testtnt --from-node tree.jsonl --out tree.yaml`
+**Examples:**
+
+```bash
+# View human-readable hierarchy
+go run ./xops report tree --tenant testtnt --from-node tree.jsonl --out tree.yaml
+
+# Scaffold taxonomy lz_conns block directly from discovered accounts
+go run ./xops report tree --tenant testtnt --from-node tree.jsonl --format taxonomy --out lz-conns.yaml
+```
 
 ## `xops report table`
 

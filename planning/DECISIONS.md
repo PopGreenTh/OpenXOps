@@ -696,9 +696,9 @@ keeps building its own URNs with `record/urn`; it doesn't read the tree.
 ## Q-009
 
 **Two OUs whose names slug to the same id would share one URN** (raised by the planner,
-2026-10-31; parked by the repo owner to revise later). `ou-path-ambiguous` catches only identical
+2026-10-31; parked by the repo owner to revise later). **Closed by [D-059](#d-059)** (2026-11-03): a shared URN is an error. `ou-path-ambiguous` catches only identical
 sibling names, not `Hub-SIT` next to `Hub SIT`. A finding such as `ou-urn-collision` in
-`lz-tree` is one option. The repo owner's real Organization has no collision today. Open.
+`lz-tree` is one option. The repo owner's real Organization has no collision today.
 
 ## D-055
 
@@ -733,3 +733,80 @@ repo owner restated the three hierarchies of [D-046](#d-046) with these rules fo
   `lz-tree` logs a warning naming the node. Recorded by the planner; the repo owner can change it.
 - Release 1, as WO-0110-B; the Release 1 tag waits for it. The reference cases with codes
   shorter than 3 (`a`, `b`, `c`, `qa`) are renamed on `claude/cases-code`.
+
+## D-057
+
+**Commit `793fbf8` stays on `main`, specified after the fact** (repo owner, 2026-11-03). It went
+to `main` without a Work Order, an issue or a PR, and its CI failed: a test reads the gitignored
+`data/real/cvie-taxonomy.yaml`. It added a nested taxonomy layout, `alias` on every node, a
+`taxonomy-duplicate-alias` finding and `xops report tree --format taxonomy`. Asked whether to
+revert it, the repo owner kept it and asked for the spec to follow. This decision, D-058 to
+D-061 and WI-0111 are that spec. Where the commit and the spec disagree, the spec wins.
+
+- **Release 1 keeps `alias`**: optional on every node, unique among nodes of one type in the
+  tenant, compared in any case, with `taxonomy-duplicate-alias` (error).
+- **Read but not used in Release 1**: `owner_teams`, `ref_urn_ont`, an LZ's `ref_urn_prjs` and
+  an account's `contact`. The file may hold them; nothing is built from them. OwnerTeam stays a
+  Release 2 level ([D-049](#d-049)).
+- **`lz_conns`** is read as the LZ list, the nested name for `lzs`; a file holds one of the
+  two keys, not both. The one-LZ rule ([D-052](#d-052)) applies to it. Recorded by the planner:
+  the repo owner kept `lzs` as the key and asked that the nested file load, and it has no other
+  list of LZs.
+- **`xops report tree --format taxonomy`** stays as built, documented as it is, with no further
+  work in Release 1.
+- Codes allow 3–50 characters ([D-056](#d-056)), not the 3–30 that the commit's docs say.
+
+## D-058
+
+**URNs are built from codes; a URN written in the taxonomy must match** (repo owner,
+2026-11-03). `record/urn` builds every URN from codes (D-046, D-056). A `urn` on a taxonomy
+node, or a `ref_urn_*` reference, is a check, not a source: `validate` reports a written `urn`
+that differs from the one built from the codes as `taxonomy-urn-mismatch` (error), and a
+`ref_urn_*` that names no node in the file as `taxonomy-unknown-reference`. A node may leave
+out its `urn`. In the repo owner's file, App `CVD-Spoke` has the URN `…:app:cvd-spk`, which is
+an error.
+
+## D-059
+
+**Cloud URNs use the OU's own code and the account's code** (repo owner, 2026-11-03; amends
+[D-047](#d-047), [D-056](#d-056) and the WI-0109 and WI-0110 Contracts; closes
+[Q-009](#q-009)).
+
+- An OU is `org:<OU code>`, one segment, not its path from the root:
+  `urn:tnt:cvd:lzc:cvd:org:hub-production`. The root stays `org:root`.
+- An account is `<its OU's urn>:acc:<account code>`, not its account id:
+  `…:org:finance:acc:cvd-fin-finops-sha`. The account id stays in `account_id` and `ref_id`.
+- An OU's or account's code is its `code` in the taxonomy when the taxonomy lists it, else
+  the slug of its name as discovered (D-053). Renaming an account in AWS therefore changes its
+  URN unless the taxonomy gives it a code; the repo owner accepted that.
+- **Two nodes with one URN are an error**: two OUs with one code in an LZ, or two accounts with
+  one code in an OU. `validate` reports it for codes in the file (`taxonomy-duplicate-code`);
+  `map` and `lz-tree` stop with an error that names both OU paths or both account ids. The fix
+  is a distinct `code` in the taxonomy.
+- `map` and `lz-tree` build these URNs with the same function, so they always agree.
+
+## D-060
+
+**The nested taxonomy replaces the flat one, before the Release 1 tag** (repo owner,
+2026-11-03; amends the WI-0104 Contracts). One layout, read by one loader in one package and
+used by every command that reads a taxonomy. The flat reader is removed. The planner converts
+the demo taxonomy and every reference case. The Release 1 tag waits for WI-0111, so Release 2's
+history starts on the URNs it keeps.
+
+## D-061
+
+**How the nested taxonomy maps accounts** (repo owner, 2026-11-03; amends D-015 as written in
+the WI-0104 Contracts).
+
+- **An OU's apps** (`ref_urn_apps`): one App maps the OU's accounts to it, as an `ou_links`
+  App did. Several Apps make every account under that OU shared between them, as a multi-App
+  account entry does, unless the account's own `ref_urn_env` names one App.
+- **Apps on any OU**: an App on an OU with no child OUs applies; `app-on-leaf-ou` is dropped.
+  The deepest OU on the account's chain with an App still wins.
+- **No guessing**: an OU gets an Environment only from its own `ref_urn_env`, and an account
+  only from its own. Otherwise the LZ and global defaults apply, then `unspec`. The build's
+  match of Environment names inside OU names goes.
+- **Discovery wins**: a taxonomy account is matched to a discovered one by `ref_id`. When the
+  discovered account sits under another OU than the file lists, its `ref_urn_env` still applies,
+  its URN follows the discovered OU, and `map` writes `account-ou-mismatch` (warning, subject
+  the account id) naming both OUs.

@@ -48,26 +48,64 @@ go run ./xops enrich lz-tree --tenant testtnt \
   --taxonomy xops/enrich/testdata/demo-taxonomy.yaml \
   --from-accounts accounts.jsonl > tree.jsonl
 go run ./xops report tree --tenant testtnt --from-node tree.jsonl --out tree.yaml
+
+# Or scaffold a taxonomy-compatible landing zone connection block:
+go run ./xops report tree --tenant testtnt --from-node tree.jsonl --format taxonomy --out tree-taxonomy.yaml
 ```
 
 ## Real Organization
 
-1. Configure AWS credentials with read-only access described in [aws-setup.md](aws-setup.md).
-2. Prepare a taxonomy YAML for your organization (see [taxonomy.md](taxonomy.md)). Its first line
-   names your tenant (`tenant: testtnt` below); pass the same id as `--tenant` to every command.
-3. Replace `--mock` with live calls. Add `--taxonomy` to the Sense commands to check the
-   organization against your landing zone: `--lz` is optional and defaults to the taxonomy's one LZ.
+### 1. Configure AWS credentials
+Configure AWS credentials with read-only access described in [aws-setup.md](aws-setup.md).
+
+### 2. Scaffold your initial taxonomy (`lz_conns`)
+To bootstrap a nested taxonomy matching your AWS organization layout:
+1. Discover your organization's accounts and OUs:
+   ```bash
+   go run ./xops sense aws-accounts --tenant <tenant> > accounts.jsonl
+   ```
+2. Create a minimal bootstrap taxonomy containing your tenant ID and one landing zone:
+   ```yaml
+   tenant: <tenant>
+   lzs:
+     - code: <lz-code>
+       name: <lz-name>
+       csp: aws
+       currency: USD
+       management_account: "<management-account-id>"
+   ```
+3. Enrich the discovered inventory into cloud hierarchy nodes:
+   ```bash
+   go run ./xops enrich lz-tree --tenant <tenant> --taxonomy bootstrap.yaml \
+     --from-accounts accounts.jsonl > tree.jsonl
+   ```
+4. Scaffold the `lz_conns` block with leaf OUs and accounts:
+   ```bash
+   go run ./xops report tree --tenant <tenant> --from-node tree.jsonl --format taxonomy --out lz-conns.yaml
+   ```
+5. Merge `lz-conns.yaml` with your Business Value (`business_units`) and Project (`projects`) trees
+   into your final `taxonomy.yaml` (see [taxonomy.md](taxonomy.md)).
+
+### 3. Validate your taxonomy
+Before running cost mapping, validate your taxonomy structure and rules:
+```bash
+go run ./finops enrich validate --tenant <tenant> --taxonomy taxonomy.yaml
+```
+Fix any `error` findings before proceeding.
+
+### 4. Run the FinOps pipeline
+Run the live pipeline using your verified taxonomy:
 
 ```bash
-go run ./xops sense aws-accounts --tenant testtnt > accounts.jsonl
-go run ./finops sense aws-cost --tenant testtnt --taxonomy taxonomy.yaml > cost.jsonl
-go run ./finops enrich map --tenant testtnt --taxonomy taxonomy.yaml \
+go run ./xops sense aws-accounts --tenant <tenant> > accounts.jsonl
+go run ./finops sense aws-cost --tenant <tenant> --taxonomy taxonomy.yaml > cost.jsonl
+go run ./finops enrich map --tenant <tenant> --taxonomy taxonomy.yaml \
   --from-accounts accounts.jsonl --from-cost cost.jsonl > map.jsonl
-go run ./finops enrich share --tenant testtnt --taxonomy taxonomy.yaml --from-cost map.jsonl > shared.jsonl
-go run ./xops report excel --tenant testtnt --from-cost shared.jsonl --out finops.xlsx
+go run ./finops enrich share --tenant <tenant> --taxonomy taxonomy.yaml --from-cost map.jsonl > shared.jsonl
+go run ./xops report excel --tenant <tenant> --from-cost shared.jsonl --out finops.xlsx
 ```
 
-The second `aws-cost` run over the same closed months should make no new Cost Explorer calls
+The second `aws-cost` run over the same closed months makes no new Cost Explorer calls
 (release criterion 5); stderr reports call count and cost.
 
 ## More detail

@@ -1,0 +1,109 @@
+tenant:
+  code: nesttnt
+  urn: urn:tnt:nesttnt
+  name: Nested fixture tenant
+
+business_units:
+  - code: retail
+    urn: urn:tnt:nesttnt:bzu:retail
+    name: Retail Division
+    cost_centers:
+      - code: ecom
+        urn: urn:tnt:nesttnt:cct:ecom
+        name: E-Commerce
+        owner_teams:
+          - code: team-shop
+            urn: urn:tnt:nesttnt:ont:team-shop
+            name: Shop Team
+  - code: digital
+    urn: urn:tnt:nesttnt:bzu:digital
+    name: Digital Division
+    cost_centers:
+      - code: plat
+        urn: urn:tnt:nesttnt:cct:plat
+        name: Platform
+        owner_teams:
+          - code: team-plat
+            urn: urn:tnt:nesttnt:ont:team-plat
+            name: Platform Team
+
+projects:
+  - code: shop
+    urn: urn:tnt:nesttnt:prj:shop
+    name: Online Shop
+    ref_urn_bu: urn:tnt:nesttnt:bzu:retail
+    apps:
+      - code: checkout
+        urn: urn:tnt:nesttnt:app:checkout
+        name: Checkout
+        ref_urn_cct: urn:tnt:nesttnt:cct:ecom
+        environments:
+          - code: prod
+            urn: urn:tnt:nesttnt:env:prod
+            name: Production
+            ref_urn_ont: urn:tnt:nesttnt:ont:team-shop
+          - code: nonprod
+            urn: urn:tnt:nesttnt:env:nonprod
+            name: Non-production
+      - code: catalog
+        urn: urn:tnt:nesttnt:app:catalog
+        name: Catalog
+        ref_urn_cct: urn:tnt:nesttnt:cct:ecom
+        environments:
+          - code: prod
+            urn: urn:tnt:nesttnt:env:prod
+            name: Production
+  - code: hub
+    urn: urn:tnt:nesttnt:prj:hub
+    name: Shared Hub
+    ref_urn_bu: urn:tnt:nesttnt:bzu:digital
+    apps:
+      - code: shared
+        urn: urn:tnt:nesttnt:app:shared
+        name: Shared Services
+        ref_urn_cct: urn:tnt:nesttnt:cct:plat
+        environments:
+          - code: prod
+            urn: urn:tnt:nesttnt:env:prod
+            name: Production
+
+lz_conns:
+  - code: main
+    urn: urn:tnt:nesttnt:lzc:main
+    name: Main Landing Zone
+    csp: aws
+    currency: USD
+    management_account: "111111111111"
+    ref_id: "111111111111"
+    ou_paths:
+      - code: checkout-prod
+        urn: urn:tnt:nesttnt:org:checkout-prod
+        name: Checkout Prod OU
+        ref_id: ou-xxxx-11111111
+        path: /Workloads/Checkout/Prod
+        ref_urn_apps:
+          - urn:tnt:nesttnt:app:checkout
+        ref_urn_env: urn:tnt:nesttnt:env:prod
+        accounts:
+          - code: "222222222222"
+            urn: urn:tnt:nesttnt:acc:222222222222
+            name: Checkout Prod Account
+            ref_id: "222222222222"
+            ref_urn_env: urn:tnt:nesttnt:env:prod
+      - code: shared-prod
+        urn: urn:tnt:nesttnt:org:shared-prod
+        name: Shared Prod OU
+        ref_id: ou-xxxx-22222222
+        path: /Workloads/Shared/Prod
+        ref_urn_apps:
+          - urn:tnt:nesttnt:app:shared
+        accounts:
+          - code: "333333333333"
+            urn: urn:tnt:nesttnt:acc:333333333333
+            name: Shared Account
+            ref_id: "333333333333"
+            ref_urn_env: urn:tnt:nesttnt:env:prod
+
+tags:
+  app: App
+  project: Project

@@ -304,3 +304,198 @@ func TestValidateLZCount(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadNestedTaxonomy(t *testing.T) {
+	tax, err := LoadTaxonomy(filepath.Join("testdata", "nested-taxonomy.yaml"))
+	if err != nil {
+		t.Fatalf("LoadTaxonomy failed: %v", err)
+	}
+	if tax.Tenant != "nesttnt" {
+		t.Errorf("want tenant nesttnt, got %q", tax.Tenant)
+	}
+	if len(tax.BusinessUnits) != 2 {
+		t.Errorf("want 2 BUs, got %d", len(tax.BusinessUnits))
+	}
+	if len(tax.CostCenters) != 2 {
+		t.Errorf("want 2 CCs, got %d", len(tax.CostCenters))
+	}
+	if len(tax.Projects) != 2 {
+		t.Errorf("want 2 Projects, got %d", len(tax.Projects))
+	}
+	if len(tax.Apps) != 3 {
+		t.Errorf("want 3 Apps, got %d", len(tax.Apps))
+	}
+	if len(tax.LZs) != 1 {
+		t.Errorf("want 1 LZ, got %d", len(tax.LZs))
+	}
+	findings := ValidateTaxonomy(tax)
+	for _, f := range findings {
+		if f["severity"] == "error" {
+			t.Errorf("unexpected validation error: %v", f)
+		}
+	}
+}
+
+func TestValidateAliasUniqueness(t *testing.T) {
+	baseTax := func() Taxonomy {
+		return Taxonomy{
+			Tenant: "testtnt",
+			BusinessUnits: []BusinessUnit{
+				{Code: "bu-a", Name: "BU A", Alias: "infra"},
+				{Code: "bu-b", Name: "BU B", Alias: "platform"},
+			},
+			CostCenters: []CostCenter{
+				{Code: "cc-a", Name: "CC A", BusinessUnit: "bu-a", Alias: "cc-1"},
+				{Code: "cc-b", Name: "CC B", BusinessUnit: "bu-b", Alias: "cc-2"},
+			},
+			OwnerTeams: []OwnerTeam{
+				{Code: "team-a", Name: "Team A", CostCenter: "cc-a", Alias: "alpha"},
+				{Code: "team-b", Name: "Team B", CostCenter: "cc-b", Alias: "bravo"},
+			},
+			Projects: []Project{
+				{Code: "prj-a", Name: "Prj A", BusinessUnit: "bu-a", Alias: "proj-1"},
+				{Code: "prj-b", Name: "Prj B", BusinessUnit: "bu-b", Alias: "proj-2"},
+			},
+			Apps: []App{
+				{
+					Code: "app-a", Name: "App A", Project: "prj-a", CostCenter: "cc-a", Alias: "shop",
+					Environments: []Environment{
+						{Code: "prod", Name: "Prod", Alias: "p"},
+						{Code: "stage", Name: "Stage", Alias: "s"},
+					},
+				},
+				{
+					Code: "app-b", Name: "App B", Project: "prj-b", CostCenter: "cc-b", Alias: "hub",
+					Environments: []Environment{
+						{Code: "dev", Name: "Dev", Alias: "d"},
+					},
+				},
+			},
+			LZs: []LZ{
+				{Code: "lz-1", Name: "Main LZ", CSP: "aws", Currency: "USD", ManagementAccount: "111111111111", Alias: "aws-lz"},
+			},
+			OUs: []OU{
+				{Code: "ou-1", Name: "Workloads", Path: "/workloads", Alias: "wkld"},
+				{Code: "ou-2", Name: "Shared", Path: "/shared", Alias: "shrd"},
+			},
+			Accounts: []AccountLink{
+				{Account: "111111111111", Apps: []string{"app-a"}, Environment: "prod", Alias: "acct-main"},
+				{Account: "222222222222", Apps: []string{"app-b"}, Environment: "dev", Alias: "acct-sub"},
+			},
+		}
+	}
+
+	findings := ValidateTaxonomy(baseTax())
+	for _, f := range findings {
+		if f["code"] == "taxonomy-duplicate-alias" {
+			t.Errorf("unexpected duplicate alias error on valid taxonomy: %v", f)
+		}
+	}
+
+	taxBU := baseTax()
+	taxBU.BusinessUnits[1].Alias = "infra"
+	if f := findCode(ValidateTaxonomy(taxBU), "taxonomy-duplicate-alias"); len(f) == 0 {
+		t.Errorf("want taxonomy-duplicate-alias for duplicate BU alias, got none")
+	}
+
+	taxApp := baseTax()
+	taxApp.Apps[1].Alias = "shop"
+	if f := findCode(ValidateTaxonomy(taxApp), "taxonomy-duplicate-alias"); len(f) == 0 {
+		t.Errorf("want taxonomy-duplicate-alias for duplicate App alias, got none")
+	}
+
+	taxEnv := baseTax()
+	taxEnv.Apps[1].Environments[0].Alias = "p"
+	if f := findCode(ValidateTaxonomy(taxEnv), "taxonomy-duplicate-alias"); len(f) == 0 {
+		t.Errorf("want taxonomy-duplicate-alias for duplicate Environment alias across tenant, got none")
+	}
+
+	taxOnt := baseTax()
+	taxOnt.OwnerTeams[1].Alias = "alpha"
+	if f := findCode(ValidateTaxonomy(taxOnt), "taxonomy-duplicate-alias"); len(f) == 0 {
+		t.Errorf("want taxonomy-duplicate-alias for duplicate OwnerTeam alias, got none")
+	}
+
+	taxOU := baseTax()
+	taxOU.OUs[1].Alias = "wkld"
+	if f := findCode(ValidateTaxonomy(taxOU), "taxonomy-duplicate-alias"); len(f) == 0 {
+		t.Errorf("want taxonomy-duplicate-alias for duplicate OU alias, got none")
+	}
+
+	taxAcc := baseTax()
+	taxAcc.Accounts[1].Alias = "acct-main"
+	if f := findCode(ValidateTaxonomy(taxAcc), "taxonomy-duplicate-alias"); len(f) == 0 {
+		t.Errorf("want taxonomy-duplicate-alias for duplicate Account alias, got none")
+	}
+
+	taxDiff := baseTax()
+	taxDiff.BusinessUnits[0].Alias = "common-alias"
+	taxDiff.Apps[0].Alias = "common-alias"
+	taxDiff.Projects[0].Alias = "common-alias"
+	if f := findCode(ValidateTaxonomy(taxDiff), "taxonomy-duplicate-alias"); len(f) != 0 {
+		t.Errorf("identical alias on different types should be allowed, got: %v", f)
+	}
+}
+
+func findCode(findings []record.Record, code string) []record.Record {
+	var out []record.Record
+	for _, f := range findings {
+		if f["code"] == code {
+			out = append(out, f)
+		}
+	}
+	return out
+}
+
+func TestCodeRulesApplyToCodesReadThroughTheNestedReader(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "nested-taxonomy.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	load := func(name, body string) Taxonomy {
+		path := filepath.Join(t.TempDir(), name)
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		tax, err := LoadTaxonomy(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return tax
+	}
+	has := func(tax Taxonomy, code, subject string) bool {
+		for _, f := range ValidateTaxonomy(tax) {
+			if f["code"] == code && (subject == "" || f["subject"] == subject) {
+				return true
+			}
+		}
+		return false
+	}
+
+	// The nested reader takes a node's code from its URN segment, so that is what the rules see.
+	// A business unit whose URN id is ab breaks the code rule.
+	short := strings.Replace(string(data), "urn: urn:tnt:nesttnt:bzu:retail\n", "urn: urn:tnt:nesttnt:bzu:ab\n", 1)
+	if short == string(data) {
+		t.Fatal("the fixture's first business unit URN changed; update this test")
+	}
+	if tax := load("short.yaml", short); !has(tax, "taxonomy-invalid-id", "ab") {
+		t.Errorf("want taxonomy-invalid-id for ab, got %v", ValidateTaxonomy(tax))
+	}
+
+	// A reserved id.
+	reserved := strings.Replace(string(data), "urn: urn:tnt:nesttnt:bzu:retail\n", "urn: urn:tnt:nesttnt:bzu:unalloc\n", 1)
+	if tax := load("reserved.yaml", reserved); !has(tax, "taxonomy-reserved-code", "unalloc") {
+		t.Errorf("want taxonomy-reserved-code for unalloc, got %v", ValidateTaxonomy(tax))
+	}
+
+	// Two business units whose URN ids differ only in case.
+	dup := strings.Replace(string(data), "urn: urn:tnt:nesttnt:bzu:digital\n", "urn: urn:tnt:nesttnt:bzu:RETAIL\n", 1)
+	if tax := load("dup.yaml", dup); !has(tax, "taxonomy-duplicate-code", "") {
+		t.Errorf("want taxonomy-duplicate-code for retail and RETAIL, got %v", ValidateTaxonomy(tax))
+	}
+
+	// The unchanged fixture stays clean.
+	if tax := load("clean.yaml", string(data)); has(tax, "taxonomy-invalid-id", "") || has(tax, "taxonomy-reserved-code", "") || has(tax, "taxonomy-duplicate-code", "") {
+		t.Errorf("the fixture should pass the code rules, got %v", ValidateTaxonomy(tax))
+	}
+}

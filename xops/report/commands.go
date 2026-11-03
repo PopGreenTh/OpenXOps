@@ -86,14 +86,14 @@ func excelCommand() *cobra.Command {
 }
 
 func treeCommand() *cobra.Command {
-	var out, tenant string
+	var out, tenant, format string
 	from := record.From{Name: "node", Kinds: []string{"node"}}
 	cmd := &cobra.Command{
 		Use:   "tree",
 		Short: "Write the cloud tree as one nested YAML file",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			record.LogStart("xops report tree", map[string]string{"out": out, "from-node": from.File}, map[string]string{"tenant": tenant})
+			record.LogStart("xops report tree", map[string]string{"out": out, "from-node": from.File}, map[string]string{"tenant": tenant, "format": format})
 			recs, err := record.AssembleTenant(os.Stdin, tenant, []record.From{from})
 			if err != nil {
 				return err
@@ -102,13 +102,31 @@ func treeCommand() *cobra.Command {
 			if source == "" || source == "-" {
 				source = "stdin"
 			}
-			doc, err := tree.Build(tenant, source, recs)
-			if err != nil {
-				return err
+			if format == "" {
+				format = "tree"
 			}
-			data, err := tree.Marshal(doc)
-			if err != nil {
-				return err
+			var data []byte
+			switch format {
+			case "tree":
+				doc, err := tree.Build(tenant, source, recs)
+				if err != nil {
+					return err
+				}
+				data, err = tree.Marshal(doc)
+				if err != nil {
+					return err
+				}
+			case "taxonomy":
+				doc, err := tree.BuildTaxonomy(tenant, source, recs)
+				if err != nil {
+					return err
+				}
+				data, err = tree.MarshalTaxonomy(doc)
+				if err != nil {
+					return err
+				}
+			default:
+				return fmt.Errorf("unknown --format %q (want tree or taxonomy)", format)
 			}
 			if strings.TrimSpace(out) == "" {
 				_, err = cmd.OutOrStdout().Write(data)
@@ -119,6 +137,7 @@ func treeCommand() *cobra.Command {
 	}
 	record.AddTenantFlag(cmd, &tenant)
 	cmd.Flags().StringVar(&out, "out", "", "write the YAML to FILE, replacing it (default: stdout)")
+	cmd.Flags().StringVar(&format, "format", "tree", "output format: tree (default) or taxonomy")
 	record.AddFromFlags(cmd, []*record.From{&from})
 	return cmd
 }

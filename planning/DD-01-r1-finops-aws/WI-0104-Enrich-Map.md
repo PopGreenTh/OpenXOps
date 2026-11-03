@@ -8,6 +8,10 @@ more Apps (D-015), adds that to the account's cost, and says why for everything 
 
 ## Contracts
 
+> **Amended by [WI-0111](WI-0111-Nested-Taxonomy.md)** ([D-060](../DECISIONS.md#d-060),
+> [D-061](../DECISIONS.md#d-061)): the taxonomy file below is replaced by the nested layout, and
+> *Resolution* changes as WI-0111 says. The flat layout stays here as the history of Release 1.
+
 ### Taxonomy file
 
 ```yaml
