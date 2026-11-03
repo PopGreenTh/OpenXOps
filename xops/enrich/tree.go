@@ -77,11 +77,9 @@ func LZTree(tenant string, lz LZ, recs []record.Record) []record.Record {
 			}
 			alias := str(r, "alias")
 			if alias == "" && lz.OUAliases != nil {
-				if a, ok := lz.OUAliases[path]; ok {
+				if a, ok := lz.OUAliases[id]; ok {
 					alias = a
-				} else if a, ok := lz.OUAliases[id]; ok {
-					alias = a
-				} else if a, ok := lz.OUAliases[name]; ok {
+				} else if a, ok := lz.OUAliases[path]; ok {
 					alias = a
 				}
 			}
@@ -93,8 +91,6 @@ func LZTree(tenant string, lz LZ, recs []record.Record) []record.Record {
 			alias := str(r, "alias")
 			if alias == "" && lz.AccountAliases != nil {
 				if a, ok := lz.AccountAliases[id]; ok {
-					alias = a
-				} else if a, ok := lz.AccountAliases[name]; ok {
 					alias = a
 				}
 			}

@@ -362,7 +362,7 @@ func TestAwsCostCommandTaxonomyTenant(t *testing.T) {
 	defer setupTestClock(t)()
 	chdirTemp(t)
 	write := func(name, tenant string) string {
-		body := "tenant: " + tenant + "\nlzs:\n  - { code: main, name: Main, csp: aws, currency: USD, management_account: \"111111111111\" }\n"
+		body := "tenant: { code: " + tenant + ", name: T }\nlzs:\n  - { code: main, name: Main, csp: aws, currency: USD, management_account: \"111111111111\" }\n"
 		if err := os.WriteFile(name, []byte(body), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -427,7 +427,7 @@ func TestAwsCostLZDefaultsFromTaxonomy(t *testing.T) {
 	chdirTemp(t)
 	dir := t.TempDir()
 	write := func(name string, codes ...string) string {
-		body := "tenant: testtnt\nlzs:\n"
+		body := "tenant: { code: testtnt, name: Test tenant }\nlzs:\n"
 		for _, c := range codes {
 			body += "  - { code: " + c + ", name: Main, csp: aws, currency: USD, management_account: \"111111111111\" }\n"
 		}

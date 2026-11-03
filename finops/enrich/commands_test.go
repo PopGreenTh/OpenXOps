@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/record/taxonomy"
 	"github.com/spf13/cobra"
 )
 
@@ -59,7 +60,7 @@ func otherTenantTaxonomy(t *testing.T) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	body := strings.Replace(string(data), "tenant: testtnt", "tenant: othertnt", 1)
+	body := strings.Replace(string(data), "tenant: { code: testtnt,", "tenant: { code: othertnt,", 1)
 	return writeFile(t, "other.yaml", body)
 }
 
@@ -200,7 +201,7 @@ func TestEveryRecordEnrichWritesHasTenant(t *testing.T) {
 
 	t.Run("pass-through unchanged", func(t *testing.T) {
 		in := []record.Record{{"kind": "note", "id": "n1"}}
-		out := Map(Taxonomy{}, in)
+		out := Map(taxonomy.Taxonomy{}, in)
 		record.SetTenantOwn(in, out, "testtnt")
 		if len(out) != 1 {
 			t.Fatalf("out = %v", out)

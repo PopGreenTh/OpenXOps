@@ -3,19 +3,55 @@ why: >
   Only shared accounts are split. A single-App account's cost keeps the App map gave it, whatever
   its tag says, and is marked single.
 taxonomy:
-  tenant: testtnt
-  business_units: [{ code: retail, name: Retail }]
-  cost_centers: [{ code: ecom, name: E-commerce, business_unit: retail }]
-  projects: [{ code: shop, name: Online shop, business_unit: retail }]
-  apps:
-    - { code: aaa, name: AAA, project: shop, cost_center: ecom, environments: [{ code: prod, name: Production }] }
-    - { code: bbb, name: BBB, project: shop, cost_center: ecom, environments: [{ code: prod, name: Production }] }
-    - { code: ccc, name: CCC, project: shop, cost_center: ecom, environments: [{ code: prod, name: Production }] }
-  lzs: [{ code: main, name: Main, csp: aws, currency: USD, management_account: "111111111111" }]
-  accounts:
-    - { account: "200000000001", apps: [aaa, bbb], environment: prod }
-    - { account: "200000000002", apps: [ccc], environment: prod }
-    - { account: "200000000003", apps: [aaa, bbb, ccc], environment: prod }
+  tenant: { code: testtnt, name: Test tenant }
+  business_units:
+    - code: retail
+      name: Retail
+      cost_centers:
+        - { code: ecom, name: E-commerce }
+  projects:
+    - code: shop
+      name: Online shop
+      ref_urn_bu: urn:tnt:testtnt:bzu:retail
+      apps:
+        - code: aaa
+          name: AAA
+          ref_urn_cct: urn:tnt:testtnt:bzu:retail:cct:ecom
+          environments: [{ code: prod, name: Production }]
+        - code: bbb
+          name: BBB
+          ref_urn_cct: urn:tnt:testtnt:bzu:retail:cct:ecom
+          environments: [{ code: prod, name: Production }]
+        - code: ccc
+          name: CCC
+          ref_urn_cct: urn:tnt:testtnt:bzu:retail:cct:ecom
+          environments: [{ code: prod, name: Production }]
+  lzs:
+    - code: main
+      name: Main
+      csp: aws
+      currency: USD
+      management_account: "111111111111"
+      ou_paths:
+        - code: root
+          name: Root
+          path: /
+          accounts:
+            - code: acct-200000000001
+              name: acct-200000000001
+              ref_id: "200000000001"
+              ref_urn_apps: [urn:tnt:testtnt:prj:shop:app:aaa, urn:tnt:testtnt:prj:shop:app:bbb]
+              ref_urn_env: urn:tnt:testtnt:prj:shop:app:aaa:env:prod
+            - code: acct-200000000002
+              name: acct-200000000002
+              ref_id: "200000000002"
+              ref_urn_apps: [urn:tnt:testtnt:prj:shop:app:ccc]
+              ref_urn_env: urn:tnt:testtnt:prj:shop:app:ccc:env:prod
+            - code: acct-200000000003
+              name: acct-200000000003
+              ref_id: "200000000003"
+              ref_urn_apps: [urn:tnt:testtnt:prj:shop:app:aaa, urn:tnt:testtnt:prj:shop:app:bbb, urn:tnt:testtnt:prj:shop:app:ccc]
+              ref_urn_env: urn:tnt:testtnt:prj:shop:app:aaa:env:prod
 records:
   - { kind: allocation, account_id: "200000000001", account_name: acct-200000000001, lz: main, ou_path: /, project: shop, app: aaa, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: true }
   - { kind: allocation, account_id: "200000000001", account_name: acct-200000000001, lz: main, ou_path: /, project: shop, app: bbb, environment: prod, business_unit: retail, cost_center: ecom, app_rule: account, environment_rule: account, shared: true }

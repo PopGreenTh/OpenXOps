@@ -9,7 +9,7 @@
 #   5. Validate with: finops enrich validate --tenant <tenant> --taxonomy <file>
 # ==============================================================================
 
-tenant: <tenant>
+tenant: { code: <tenant>, name: <tenant name> }
 
 # 1. Business Value Hierarchy: Business Unit > Cost Center > Owner Team
 business_units:
@@ -54,6 +54,5 @@ lz_conns:
           - code: core-prod
             name: Core Prod Account
             ref_id: "123456789012"
-            status: ACTIVE
             ref_urn_env: urn:tnt:<tenant>:prj:core:app:api:env:prod
 

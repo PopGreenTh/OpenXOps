@@ -133,7 +133,7 @@ func TestAWSAccountsMockEveryRecordHasTenant(t *testing.T) {
 
 func writeTaxonomy(t *testing.T, lzCodes ...string) string {
 	t.Helper()
-	body := "tenant: testtnt\nlzs:\n"
+	body := "tenant: { code: testtnt, name: Test tenant }\nlzs:\n"
 	for _, c := range lzCodes {
 		body += "  - { code: " + c + ", name: L, csp: aws, currency: USD, management_account: \"111111111111\" }\n"
 	}

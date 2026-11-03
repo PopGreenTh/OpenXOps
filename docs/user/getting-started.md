@@ -87,7 +87,7 @@ To bootstrap a nested taxonomy matching your AWS organization layout:
    ```
 2. Create a minimal bootstrap taxonomy containing your tenant ID and one landing zone:
    ```yaml
-   tenant: <tenant>
+   tenant: { code: <tenant>, name: <tenant name> }
    lzs:
      - code: <lz-code>
        name: <lz-name>
@@ -105,7 +105,9 @@ To bootstrap a nested taxonomy matching your AWS organization layout:
    go run ./xops report tree --tenant <tenant> --from-node tree.jsonl --format taxonomy --out lz-conns.yaml
    ```
 5. Merge `lz-conns.yaml` with your Business Value (`business_units`) and Project (`projects`) trees
-   into your final `taxonomy.yaml` (see [taxonomy.md](taxonomy.md)).
+   into your final `taxonomy.yaml` (see [taxonomy.md](taxonomy.md)), then add `ref_urn_apps` and
+   `ref_urn_env` to the OUs and accounts that should map to an App or an Environment. The scaffold
+   is a taxonomy the loader reads, so `finops enrich validate` checks it as it stands.
 
 ### 3. Validate your taxonomy
 Before running cost mapping, validate your taxonomy structure and rules:

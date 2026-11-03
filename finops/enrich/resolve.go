@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/record/taxonomy"
 	"github.com/PopGreenTh/OpenXOps/record/urn"
 )
 
@@ -75,34 +76,63 @@ func buildInventory(recs []record.Record) inv {
 	return in
 }
 
-func lzByMgmt(t Taxonomy, mgmt string) (*LZ, bool) {
-	for i := range t.LZs {
-		if t.LZs[i].ManagementAccount == mgmt {
-			return &t.LZs[i], true
+// resolver holds what resolution needs: the taxonomy, its reference index, the discovered
+// inventory and the taxonomy's OU entries matched to it.
+type resolver struct {
+	t     taxonomy.Taxonomy
+	ix    taxonomy.Index
+	in    inv
+	views map[string]*lzView // by LZ code
+}
+
+// appPick is an App chosen for an account. ref is nil when the taxonomy does not define it.
+type appPick struct {
+	code string
+	ref  *taxonomy.AppRef
+}
+
+// place is where an allocation lands in the business and project trees. ccBU is the business unit
+// the cost center sits under, which can differ from the project's.
+type place struct {
+	project, app, env, bu, cc, ccBU string
+}
+
+var unallocPlace = place{prjUnalloc, appUnalloc, envUnalloc, buUnalloc, ccUnalloc, buUnalloc}
+
+func (r *resolver) lzByMgmt(mgmt string) (*taxonomy.LZ, bool) {
+	for i := range r.t.LZs {
+		if r.t.LZs[i].Management() == mgmt {
+			return &r.t.LZs[i], true
 		}
 	}
 	return nil, false
 }
 
-func appByCode(t Taxonomy, code string) (App, bool) {
-	for _, a := range t.Apps {
-		if a.Code == code {
-			return a, true
+// apps looks up App URNs. A URN that names no App is skipped: `validate` reports it.
+func (r *resolver) apps(urns []string) []appPick {
+	var out []appPick
+	for _, u := range urns {
+		if ref, ok := r.ix.LookupApp(u); ok {
+			ref := ref
+			out = append(out, appPick{code: ref.App.Code, ref: &ref})
 		}
 	}
-	return App{}, false
+	return out
 }
 
-func accountLink(t Taxonomy, id string) (*AccountLink, bool) {
-	for i := range t.Accounts {
-		if t.Accounts[i].Account == id {
-			return &t.Accounts[i], true
-		}
+// env looks up an Environment URN and returns its code and its App.
+func (r *resolver) env(u string) (string, taxonomy.EnvRef, bool) {
+	if u == "" {
+		return "", taxonomy.EnvRef{}, false
 	}
-	return nil, false
+	ref, ok := r.ix.LookupEnv(u)
+	if !ok {
+		return "", taxonomy.EnvRef{}, false
+	}
+	return ref.Env.Code, ref, true
 }
 
-func ouChain(in inv, ac record.Record) []string {
+func ouChain(ac record.Record) []string {
 	idPath := strID(ac["ou_id_path"])
 	if idPath == "" {
 		return nil
@@ -110,78 +140,42 @@ func ouChain(in inv, ac record.Record) []string {
 	return strings.Split(idPath, "/")
 }
 
-func resolveOULinkTarget(in inv, ouRef string) (path string, id string, ok bool) {
-	if strings.HasPrefix(ouRef, "/") {
-		id, ok = in.byPath[ouRef]
-		return ouRef, id, ok
-	}
-	info, ok := in.ous[ouRef]
-	return info.path, ouRef, ok
-}
-
-type ouLinkEffect struct {
-	app, env  string
-	appPath   string
-	envPath   string
-	appOnLeaf bool
-}
-
-func applyOULinks(t Taxonomy, lzCode string, in inv, findings *[]record.Record) map[string]ouLinkEffect {
-	effects := map[string]ouLinkEffect{}
-	for _, link := range t.OULinks {
-		if link.LZ != lzCode {
-			continue
-		}
-		path, id, ok := resolveOULinkTarget(in, link.OU)
-		if !ok {
-			*findings = append(*findings, record.Finding("warning", "ou-not-found", link.OU,
-				fmt.Sprintf("OU %q not found in inventory", link.OU), cmdMap))
-			continue
-		}
-		eff := effects[id]
-		if link.App != "" {
-			if info, has := in.ous[id]; has && !info.children {
-				*findings = append(*findings, record.Finding("warning", "app-on-leaf-ou", path,
-					fmt.Sprintf("app link on leaf OU %s", path), cmdMap))
-			} else {
-				eff.app = link.App
-				eff.appPath = path
-			}
-		}
-		if link.Environment != "" {
-			eff.env = link.Environment
-			eff.envPath = path
-		}
-		effects[id] = eff
-	}
-	return effects
-}
-
-func deepestOURule(chain []string, effects map[string]ouLinkEffect, pickApp bool) (value, rule string) {
+// deepestOU returns the nearest OU on the account's path that sets an App (pickApp) or an
+// Environment, with the rule that names it.
+func deepestOU(chain []string, effects map[string]ouEffect, pickApp bool) (e ouEffect, rule string, ok bool) {
 	for i := len(chain) - 1; i >= 0; i-- {
-		id := chain[i]
-		eff, ok := effects[id]
-		if !ok {
+		eff, has := effects[chain[i]]
+		if !has {
 			continue
 		}
-		if pickApp && eff.app != "" {
-			return eff.app, "ou:" + eff.appPath
+		if pickApp && len(eff.apps) > 0 {
+			return eff, "ou:" + eff.appPath, true
 		}
 		if !pickApp && eff.env != "" {
-			return eff.env, "ou:" + eff.envPath
+			return eff, "ou:" + eff.envPath, true
 		}
 	}
-	return "", ""
+	return ouEffect{}, "", false
 }
 
-func resolveAccount(t Taxonomy, in inv, ac record.Record, ouEffects map[string]ouLinkEffect, lzUnknownOrgs map[string]struct{}) ([]record.Record, []record.Record) {
+// defaultApp finds the App a `default` names, by code. A code the taxonomy does not define is
+// still used, with no tree behind it.
+func (r *resolver) defaultApp(code string) appPick {
+	if ref, ok := r.ix.AppByCode(code); ok {
+		return appPick{code: ref.App.Code, ref: &ref}
+	}
+	return appPick{code: code}
+}
+
+func (r *resolver) resolveAccount(ac record.Record, lzUnknownOrgs map[string]struct{}) ([]record.Record, []record.Record) {
 	var findings []record.Record
 	acctID := strID(ac["id"])
 	mgmt := strID(ac["management_account"])
 	org := strID(ac["org_id"])
 	ouPath := strID(ac["ou_path"])
+	name := strID(ac["name"])
 
-	lz, ok := lzByMgmt(t, mgmt)
+	lz, ok := r.lzByMgmt(mgmt)
 	if !ok {
 		if org != "" {
 			if _, dup := lzUnknownOrgs[org]; !dup {
@@ -193,35 +187,52 @@ func resolveAccount(t Taxonomy, in inv, ac record.Record, ouEffects map[string]o
 			findings = append(findings, record.Finding("warning", "lz-unknown", org,
 				fmt.Sprintf("no LZ for management account %s", mgmt), cmdMap))
 		}
-		rec := allocationRecord(t, acctID, strID(ac["name"]), lzUnalloc, ouPath, prjUnalloc, appUnalloc, envUnalloc, buUnalloc, ccUnalloc, "unalloc", "unalloc", false)
+		rec := r.allocationRecord(acctID, name, lzUnalloc, ouPath, unallocPlace, "unalloc", "unalloc", false)
 		return []record.Record{rec}, findings
 	}
 
-	chain := ouChain(in, ac)
-	link, hasLink := accountLink(t, acctID)
-
-	var apps []string
-	var appRule string
-	if hasLink && len(link.Apps) > 0 {
-		apps = append([]string{}, link.Apps...)
-		appRule = "account"
-	} else if app, rule := deepestOURule(chain, ouEffects, true); app != "" {
-		apps = []string{app}
-		appRule = rule
-	} else if lz.Default != nil && lz.Default.App != "" {
-		apps = []string{lz.Default.App}
-		appRule = "lz-default"
-	} else if t.Defaults != nil && t.Defaults.App != "" {
-		apps = []string{t.Defaults.App}
-		appRule = "default"
-	} else {
-		findings = append(findings, record.Finding("warning", "account-unmapped", acctID,
-			fmt.Sprintf("account %s has no app mapping", acctID), cmdMap))
-		apps = []string{appUnalloc}
-		appRule = "unalloc"
+	view := r.views[lz.Code]
+	chain := ouChain(ac)
+	entry, hasEntry := view.accounts[acctID]
+	if hasEntry && entry.ouFound && strID(ac["parent_id"]) != entry.ouID {
+		findings = append(findings, record.Finding("warning", "account-ou-mismatch", acctID,
+			fmt.Sprintf("account %s is under %s, the taxonomy lists it under %s", acctID, ouPath, entry.ouPath), cmdMap))
 	}
 
-	env, envRule := resolveEnvironment(t, in, acctID, chain, ouEffects, link, hasLink, lz, apps)
+	var acctApps []appPick
+	var acctEnv string
+	var acctEnvRef taxonomy.EnvRef
+	var acctHasEnv bool
+	if hasEntry {
+		acctApps = r.apps(entry.acc.RefURNApps)
+		acctEnv, acctEnvRef, acctHasEnv = r.env(entry.acc.RefURNEnv)
+	}
+
+	// App: the account's apps › the App of the account's environment › the deepest OU › the LZ
+	// default › the global default › unalloc.
+	var apps []appPick
+	var appRule string
+	ouEff, ouRule, ouHas := deepestOU(chain, view.effects, true)
+	switch {
+	case len(acctApps) > 0:
+		apps, appRule = acctApps, "account"
+	case acctHasEnv:
+		app := acctEnvRef.App
+		apps = []appPick{{code: app.Code, ref: &taxonomy.AppRef{App: app, Project: acctEnvRef.Project}}}
+		appRule = "account"
+	case ouHas:
+		apps, appRule = ouEff.apps, ouRule
+	case lz.Default != nil && lz.Default.App != "":
+		apps, appRule = []appPick{r.defaultApp(lz.Default.App)}, "lz-default"
+	case r.t.Defaults != nil && r.t.Defaults.App != "":
+		apps, appRule = []appPick{r.defaultApp(r.t.Defaults.App)}, "default"
+	default:
+		findings = append(findings, record.Finding("warning", "account-unmapped", acctID,
+			fmt.Sprintf("account %s has no app mapping", acctID), cmdMap))
+		apps, appRule = []appPick{{code: appUnalloc}}, "unalloc"
+	}
+
+	env, envRule := r.resolveEnvironment(chain, view.effects, acctEnv, acctHasEnv, lz, apps)
 	if env == envUnspec && envRule == "unspec" {
 		findings = append(findings, record.Finding("warning", "environment-unresolved", acctID,
 			fmt.Sprintf("no environment mapping for account %s", acctID), cmdMap))
@@ -229,113 +240,101 @@ func resolveAccount(t Taxonomy, in inv, ac record.Record, ouEffects map[string]o
 
 	shared := len(apps) > 1
 	var allocs []record.Record
-	for _, appCode := range apps {
-		project, bu, cc := deriveHierarchy(t, appCode)
+	for _, pick := range apps {
+		p := r.placeOf(pick)
 		envOut, envRuleOut := env, envRule
-		if appCode != appUnalloc {
-			if !envUnderApp(t, appCode, env) {
-				findings = append(findings, record.Finding("warning", "environment-not-in-app", acctID+"/"+appCode,
-					fmt.Sprintf("environment %q not under app %q", env, appCode), cmdMap))
-				envOut = envUnspec
-				envRuleOut = "unspec"
-			}
+		if pick.code != appUnalloc && !envUnderApp(pick, env) {
+			findings = append(findings, record.Finding("warning", "environment-not-in-app", acctID+"/"+pick.code,
+				fmt.Sprintf("environment %q not under app %q", env, pick.code), cmdMap))
+			envOut, envRuleOut = envUnspec, "unspec"
 		}
-		allocs = append(allocs, allocationRecord(t, acctID, strID(ac["name"]), lz.Code, ouPath, project, appCode, envOut, bu, cc, appRule, envRuleOut, shared))
+		p.env = envOut
+		allocs = append(allocs, r.allocationRecord(acctID, name, lz.Code, ouPath, p, appRule, envRuleOut, shared))
 	}
 	return allocs, findings
 }
 
-func resolveEnvironment(t Taxonomy, in inv, acctID string, chain []string, effects map[string]ouLinkEffect, link *AccountLink, hasLink bool, lz *LZ, apps []string) (string, string) {
-	if hasLink && link.Environment != "" {
-		return link.Environment, "account"
+// resolveEnvironment picks the Environment code: the account's environment › the deepest OU's ›
+// the LZ default › the global default › unspec or unalloc. Nothing is guessed from names.
+func (r *resolver) resolveEnvironment(chain []string, effects map[string]ouEffect, acctEnv string, acctHasEnv bool, lz *taxonomy.LZ, apps []appPick) (string, string) {
+	if acctHasEnv {
+		return acctEnv, "account"
 	}
-	if env, rule := deepestOURule(chain, effects, false); env != "" {
-		return env, rule
+	if eff, rule, ok := deepestOU(chain, effects, false); ok {
+		return eff.env, rule
 	}
 	if lz.Default != nil && lz.Default.Environment != "" {
 		return lz.Default.Environment, "lz-default"
 	}
-	if t.Defaults != nil && t.Defaults.Environment != "" {
-		return t.Defaults.Environment, "default"
+	if r.t.Defaults != nil && r.t.Defaults.Environment != "" {
+		return r.t.Defaults.Environment, "default"
 	}
-	if len(apps) > 0 && apps[0] != appUnalloc {
+	if len(apps) > 0 && apps[0].code != appUnalloc {
 		return envUnspec, "unspec"
 	}
 	return envUnalloc, "unalloc"
 }
 
-func envUnderApp(t Taxonomy, appCode, env string) bool {
+func envUnderApp(pick appPick, env string) bool {
 	if env == "" || env == envUnspec || env == envUnalloc {
 		return true
 	}
-	app, ok := appByCode(t, appCode)
-	if !ok {
+	if pick.ref == nil {
 		return false
 	}
-	for _, e := range app.Environments {
-		if e.Code == env {
-			return true
-		}
-	}
-	return false
+	return pick.ref.App.HasEnv(env)
 }
 
-func deriveHierarchy(t Taxonomy, appCode string) (project, bu, cc string) {
-	if appCode == appUnalloc {
-		return prjUnalloc, buUnalloc, ccUnalloc
+// placeOf derives the project, business unit and cost center of an App from the references in the
+// taxonomy (D-061).
+func (r *resolver) placeOf(pick appPick) place {
+	if pick.ref == nil {
+		p := unallocPlace
+		p.app = pick.code
+		return p
 	}
-	app, ok := appByCode(t, appCode)
-	if !ok {
-		return prjUnalloc, buUnalloc, ccUnalloc
+	p := place{project: pick.ref.Project.Code, app: pick.ref.App.Code, bu: buUnalloc, cc: ccUnalloc, ccBU: buUnalloc}
+	if bu, ok := r.ix.LookupBU(pick.ref.Project.RefURNBU); ok {
+		p.bu = bu.Code
 	}
-	project = app.Project
-	cc = app.CostCenter
-	if pr, ok := prjByCode(t, app.Project); ok {
-		bu = pr.BusinessUnit
-	} else {
-		bu = buUnalloc
+	if cc, ok := r.ix.LookupCC(pick.ref.App.RefURNCCT); ok {
+		p.cc, p.ccBU = cc.CC.Code, cc.BU.Code
 	}
-	return project, bu, cc
+	return p
 }
 
-func allocationRecord(t Taxonomy, acctID, name, lz, ouPath, project, app, env, bu, cc, appRule, envRule string, shared bool) record.Record {
+func (r *resolver) allocationRecord(acctID, name, lz, ouPath string, p place, appRule, envRule string, shared bool) record.Record {
 	rec := record.Record{
 		"kind":             "allocation",
-		"tenant":           t.Tenant,
+		"tenant":           r.t.Tenant.Code,
 		"account_id":       acctID,
 		"account_name":     name,
 		"lz":               lz,
 		"ou_path":          ouPath,
-		"project":          project,
-		"app":              app,
-		"environment":      env,
-		"business_unit":    bu,
-		"cost_center":      cc,
+		"project":          p.project,
+		"app":              p.app,
+		"environment":      p.env,
+		"business_unit":    p.bu,
+		"cost_center":      p.cc,
 		"app_rule":         appRule,
 		"environment_rule": envRule,
 		"shared":           shared,
 	}
-	setURNs(rec, t, acctID, lz, ouPath, project, app, env, bu, cc)
+	r.setURNs(rec, acctID, lz, ouPath, p)
 	return rec
 }
 
 // setURNs sets the eight URN fields of an allocation on rec (D-046, D-048). The cost center's
 // URN sits under the cost center's own business unit, which can differ from the project's.
-func setURNs(rec record.Record, t Taxonomy, acctID, lz, ouPath, project, app, env, bu, cc string) {
-	tnt := urn.Tenant(t.Tenant)
-	ccBU := buUnalloc
-	if c, ok := ccByCode(t, cc); ok && cc != ccUnalloc {
-		ccBU = c.BusinessUnit
-	}
-	prj := tnt.Child("prj", project)
-	appU := prj.Child("app", app)
-	ou := tnt.Child("lzc", lz).Child("org", urn.OUPath(ouPath))
-	rec["business_unit_urn"] = tnt.Child("bzu", bu).String()
-	rec["cost_center_urn"] = tnt.Child("bzu", ccBU).Child("cct", cc).String()
-	rec["project_urn"] = prj.String()
-	rec["app_urn"] = appU.String()
-	rec["environment_urn"] = appU.Child("env", env).String()
-	rec["lz_urn"] = tnt.Child("lzc", lz).String()
+func (r *resolver) setURNs(rec record.Record, acctID, lz, ouPath string, p place) {
+	t := r.t
+	ou := t.LZURN(lz).Child("org", urn.OUPath(ouPath))
+	rec["business_unit_urn"] = t.BUURN(p.bu).String()
+	rec["cost_center_urn"] = t.CCURN(p.ccBU, p.cc).String()
+	rec["project_urn"] = t.ProjectURN(p.project).String()
+	rec["app_urn"] = t.AppURN(p.project, p.app).String()
+	rec["environment_urn"] = t.EnvURN(p.project, p.app, p.env).String()
+	rec["lz_urn"] = t.LZURN(lz).String()
 	rec["ou_urn"] = ou.String()
 	rec["account_urn"] = ou.Child("acc", acctID).String()
 }
@@ -348,17 +347,17 @@ func setServiceURN(cost record.Record) {
 	cost["service_urn"] = urn.URN(strID(cost["account_urn"])).Child("svc", urn.Slug(strID(cost["service"]))).String()
 }
 
-func enrichCost(t Taxonomy, in inv, cost record.Record, byAcct map[string][]record.Record) (record.Record, []record.Record) {
+func (r *resolver) enrichCost(cost record.Record, byAcct map[string][]record.Record) (record.Record, []record.Record) {
 	var findings []record.Record
 	out := copyRecord(cost)
-	out["tenant"] = t.Tenant
+	out["tenant"] = r.t.Tenant.Code
 	acctID := strID(cost["account_id"])
 	mgmt := strID(cost["management_account"])
 
 	allocs, inInv := byAcct[acctID]
 	if !inInv {
 		lzCode := lzUnalloc
-		if lz, ok := lzByMgmt(t, mgmt); ok {
+		if lz, ok := r.lzByMgmt(mgmt); ok {
 			lzCode = lz.Code
 		}
 		out["lz"] = lzCode
@@ -370,7 +369,7 @@ func enrichCost(t Taxonomy, in inv, cost record.Record, byAcct map[string][]reco
 		out["app_rule"] = "unalloc"
 		out["environment_rule"] = "unalloc"
 		out["shared"] = false
-		setURNs(out, t, acctID, lzCode, ouUnknown, prjUnalloc, appUnalloc, envUnalloc, buUnalloc, ccUnalloc)
+		r.setURNs(out, acctID, lzCode, ouUnknown, unallocPlace)
 		setServiceURN(out)
 		findings = append(findings, record.Finding("warning", "account-not-in-inventory", acctID,
 			fmt.Sprintf("cost for unknown account %s", acctID), cmdMap))
@@ -423,7 +422,7 @@ func copyRecord(r record.Record) record.Record {
 	return out
 }
 
-func checkProjectTags(t Taxonomy, in inv, rec record.Record, byAcct map[string][]record.Record) []record.Record {
+func checkProjectTags(rec record.Record, byAcct map[string][]record.Record) []record.Record {
 	tag := strings.TrimSpace(strID(rec["project_tag"]))
 	if tag == "" {
 		return nil
@@ -466,17 +465,6 @@ func checkProjectTags(t Taxonomy, in inv, rec record.Record, byAcct map[string][
 	return []record.Record{record.Finding("warning", "project-tag-mismatch", acctID+"/"+tag, msg, cmdMap)}
 }
 
-func staleAccountEntries(t Taxonomy, in inv) []record.Record {
-	var out []record.Record
-	for _, entry := range t.Accounts {
-		if _, ok := in.accounts[entry.Account]; !ok {
-			out = append(out, record.Finding("warning", "account-not-discovered", entry.Account,
-				fmt.Sprintf("taxonomy account entry %s not in inventory", entry.Account), cmdMap))
-		}
-	}
-	return out
-}
-
 func sortFindings(findings []record.Record) {
 	sort.Slice(findings, func(i, j int) bool {
 		a, b := findings[i], findings[j]
@@ -485,4 +473,15 @@ func sortFindings(findings []record.Record) {
 		}
 		return strID(a["subject"]) < strID(b["subject"])
 	})
+}
+
+func strID(v any) string {
+	switch x := v.(type) {
+	case string:
+		return x
+	case float64:
+		return fmt.Sprintf("%.0f", x)
+	default:
+		return fmt.Sprint(v)
+	}
 }

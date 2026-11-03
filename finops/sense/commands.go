@@ -3,15 +3,14 @@ package sense
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/PopGreenTh/OpenXOps/aws"
 	"github.com/PopGreenTh/OpenXOps/aws/ce"
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/record/taxonomy"
 	awssdk "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 var newCEClient = func(cfg awssdk.Config) ce.API {
@@ -30,7 +29,7 @@ func Commands() []*cobra.Command {
 
 func awsCostCommand() *cobra.Command {
 	var mock, refresh bool
-	var profile, region, lz, taxonomy, granularity, metric, from, to, appTag, projectTag, tenant string
+	var profile, region, lz, taxPath, granularity, metric, from, to, appTag, projectTag, tenant string
 	cmd := &cobra.Command{
 		Use:   "aws-cost",
 		Short: "Read AWS Cost Explorer and emit cost records",
@@ -39,7 +38,7 @@ func awsCostCommand() *cobra.Command {
 			if ctx == nil {
 				ctx = context.Background()
 			}
-			record.LogStart("finops sense aws-cost", map[string]string{"taxonomy": taxonomy}, map[string]string{
+			record.LogStart("finops sense aws-cost", map[string]string{"taxonomy": taxPath}, map[string]string{
 				"mock":        fmt.Sprintf("%t", mock),
 				"profile":     profile,
 				"region":      region,
@@ -53,19 +52,20 @@ func awsCostCommand() *cobra.Command {
 				"refresh":     fmt.Sprintf("%t", refresh),
 				"tenant":      tenant,
 			})
-			if lz != "" && taxonomy == "" {
+			if lz != "" && taxPath == "" {
 				return fmt.Errorf("--lz requires --taxonomy")
 			}
-			if taxonomy != "" {
-				if err := checkTaxonomyTenant(taxonomy, tenant); err != nil {
-					return err
-				}
-				code, err := taxonomyLZ(taxonomy)
+			if taxPath != "" {
+				tax, err := loadTaxonomy(taxPath, tenant)
 				if err != nil {
 					return err
 				}
-				if lz != "" && lz != code {
-					return fmt.Errorf("--lz %q is not the LZ %q of taxonomy %s", lz, code, taxonomy)
+				if len(tax.LZs) != 1 {
+					return fmt.Errorf("taxonomy %s has %d LZs, want exactly one", taxPath, len(tax.LZs))
+				}
+				code := tax.LZs[0].Code
+				if lz != "" && !strings.EqualFold(lz, code) {
+					return fmt.Errorf("--lz %q is not the LZ %q of taxonomy %s", lz, code, taxPath)
 				}
 				lz = code
 			}
@@ -86,7 +86,7 @@ func awsCostCommand() *cobra.Command {
 				Profile:     profile,
 				Region:      region,
 				LZ:          lz,
-				Taxonomy:    taxonomy,
+				Taxonomy:    taxPath,
 				Granularity: granularity,
 				Metric:      metric,
 				From:        from,
@@ -106,7 +106,7 @@ func awsCostCommand() *cobra.Command {
 	cmd.Flags().StringVar(&profile, "profile", "", "AWS shared config profile")
 	cmd.Flags().StringVar(&region, "region", "", "AWS region (default us-east-1)")
 	cmd.Flags().StringVar(&lz, "lz", "", "landing zone code (requires --taxonomy; defaults to the taxonomy's one LZ)")
-	cmd.Flags().StringVar(&taxonomy, "taxonomy", "", "taxonomy YAML for --lz and default tag keys (its tenant must be --tenant)")
+	cmd.Flags().StringVar(&taxPath, "taxonomy", "", "taxonomy YAML for --lz and default tag keys (its tenant must be --tenant)")
 	cmd.Flags().StringVar(&granularity, "granularity", "monthly", "monthly or daily")
 	cmd.Flags().StringVar(&metric, "metric", "", "Cost Explorer metric (default by granularity)")
 	cmd.Flags().StringVar(&from, "from", "", "start period inclusive")
@@ -116,161 +116,49 @@ func awsCostCommand() *cobra.Command {
 	return cmd
 }
 
-// checkTaxonomyTenant stops when the taxonomy at path is not for tenant.
-func checkTaxonomyTenant(path, tenant string) error {
-	data, err := os.ReadFile(path)
+// loadTaxonomy reads the taxonomy at path and stops unless it is for tenant.
+func loadTaxonomy(path, tenant string) (taxonomy.Taxonomy, error) {
+	tax, err := taxonomy.Load(path)
 	if err != nil {
-		return fmt.Errorf("read taxonomy %s: %w", path, err)
+		return taxonomy.Taxonomy{}, err
 	}
-	var doc struct {
-		Tenant yaml.Node `yaml:"tenant"`
+	if err := record.CheckTaxonomyTenant(path, tax.Tenant.Code, tenant); err != nil {
+		return taxonomy.Taxonomy{}, err
 	}
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return fmt.Errorf("parse taxonomy %s: %w", path, err)
-	}
-	tnt, err := parseTenantNode(&doc.Tenant)
-	if err != nil {
-		return fmt.Errorf("parse taxonomy %s tenant: %w", path, err)
-	}
-	return record.CheckTaxonomyTenant(path, tnt, tenant)
+	return tax, nil
 }
 
-type rawLZItem struct {
-	Code              string `yaml:"code"`
-	URN               string `yaml:"urn"`
-	Name              string `yaml:"name"`
-	ManagementAccount string `yaml:"management_account"`
-	RefID             string `yaml:"ref_id"`
-}
-
-func urnSegment(u, typ string) string {
-	parts := strings.Split(u, ":")
-	for i := 0; i < len(parts)-1; i++ {
-		if parts[i] == typ {
-			return parts[i+1]
-		}
-	}
-	return ""
-}
-
-func parseTenantNode(n *yaml.Node) (string, error) {
-	if n == nil || n.Kind == 0 {
-		return "", nil
-	}
-	if n.Kind == yaml.ScalarNode {
-		return n.Value, nil
-	}
-	if n.Kind == yaml.MappingNode {
-		var m struct {
-			Code string `yaml:"code"`
-			URN  string `yaml:"urn"`
-		}
-		if err := n.Decode(&m); err != nil {
-			return "", err
-		}
-		if m.URN != "" {
-			if t := urnSegment(m.URN, "tnt"); t != "" {
-				return t, nil
-			}
-		}
-		if m.Code != "" {
-			return strings.ToLower(m.Code), nil
-		}
-	}
-	return "", fmt.Errorf("unexpected tenant node kind")
-}
-
+// resolveTags returns the App and Project tag keys: the flags, else the taxonomy's `tags`, else
+// `App` and `Project`.
 func resolveTags(opt CostOptions) (app, project string, err error) {
-	app = opt.AppTag
-	project = opt.ProjectTag
+	app, project = opt.AppTag, opt.ProjectTag
+	taxApp, taxProject := "App", "Project"
 	if opt.Taxonomy != "" {
-		data, err := os.ReadFile(opt.Taxonomy)
+		tax, err := taxonomy.Load(opt.Taxonomy)
 		if err != nil {
-			return "", "", fmt.Errorf("read taxonomy %s: %w", opt.Taxonomy, err)
+			return "", "", err
 		}
-		var doc struct {
-			Tags struct {
-				App     string `yaml:"app"`
-				Project string `yaml:"project"`
-			} `yaml:"tags"`
-		}
-		if err := yaml.Unmarshal(data, &doc); err != nil {
-			return "", "", fmt.Errorf("parse taxonomy %s: %w", opt.Taxonomy, err)
-		}
-		if app == "" && doc.Tags.App != "" {
-			app = doc.Tags.App
-		}
-		if project == "" && doc.Tags.Project != "" {
-			project = doc.Tags.Project
-		}
+		taxApp, taxProject = tax.TagKeys()
 	}
 	if app == "" {
-		app = "App"
+		app = taxApp
 	}
 	if project == "" {
-		project = "Project"
+		project = taxProject
 	}
 	return app, project, nil
 }
 
-// taxonomyLZ returns the code of the one LZ in the taxonomy at path (D-052).
-func taxonomyLZ(path string) (string, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return "", fmt.Errorf("read taxonomy %s: %w", path, err)
-	}
-	var doc struct {
-		LZs     []rawLZItem `yaml:"lzs"`
-		LZConns []rawLZItem `yaml:"lz_conns"`
-	}
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return "", fmt.Errorf("parse taxonomy %s: %w", path, err)
-	}
-	lzs := doc.LZs
-	if len(lzs) == 0 {
-		lzs = doc.LZConns
-	}
-	if len(lzs) != 1 {
-		return "", fmt.Errorf("taxonomy %s has %d LZs, want exactly one", path, len(lzs))
-	}
-	code := lzs[0].Code
-	if lzs[0].URN != "" {
-		if u := urnSegment(lzs[0].URN, "lzc"); u != "" {
-			code = u
-		}
-	}
-	return code, nil
-}
-
+// managementAccountForLZ returns the management account of the LZ with this code (any case) in the
+// taxonomy at path.
 func managementAccountForLZ(path, code string) (string, error) {
-	data, err := os.ReadFile(path)
+	tax, err := taxonomy.Load(path)
 	if err != nil {
-		return "", fmt.Errorf("read taxonomy %s: %w", path, err)
+		return "", err
 	}
-	var doc struct {
-		LZs     []rawLZItem `yaml:"lzs"`
-		LZConns []rawLZItem `yaml:"lz_conns"`
-	}
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return "", fmt.Errorf("parse taxonomy %s: %w", path, err)
-	}
-	lzs := doc.LZs
-	if len(lzs) == 0 {
-		lzs = doc.LZConns
-	}
-	for _, lz := range lzs {
-		c := lz.Code
-		if lz.URN != "" {
-			if u := urnSegment(lz.URN, "lzc"); u != "" {
-				c = u
-			}
-		}
-		if strings.EqualFold(c, code) || strings.EqualFold(lz.Code, code) {
-			mgmt := lz.ManagementAccount
-			if mgmt == "" {
-				mgmt = lz.RefID
-			}
-			return mgmt, nil
+	for _, lz := range tax.LZs {
+		if strings.EqualFold(lz.Code, code) {
+			return lz.Management(), nil
 		}
 	}
 	return "", fmt.Errorf("LZ %q not found in taxonomy %s", code, path)

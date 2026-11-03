@@ -7,14 +7,15 @@ import (
 	"testing"
 
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/record/taxonomy"
 	"gopkg.in/yaml.v3"
 )
 
 type mapCase struct {
-	Name     string          `yaml:"name"`
-	Taxonomy Taxonomy        `yaml:"taxonomy"`
-	Records  []record.Record `yaml:"records"`
-	Expect   mapCaseExpect   `yaml:"expect"`
+	Name     string            `yaml:"name"`
+	Taxonomy taxonomy.Taxonomy `yaml:"taxonomy"`
+	Records  []record.Record   `yaml:"records"`
+	Expect   mapCaseExpect     `yaml:"expect"`
 }
 
 type mapCaseExpect struct {
@@ -141,8 +142,8 @@ func matchFindings(got []record.Record, want []mapCaseFinding) bool {
 }
 
 func TestMapPassThroughUnhandledKinds(t *testing.T) {
-	tax := Taxonomy{
-		LZs: []LZ{{Code: "LZ-MAIN", Name: "Main", CSP: "aws", Currency: "USD", ManagementAccount: "111111111111"}},
+	tax := taxonomy.Taxonomy{
+		LZs: []taxonomy.LZ{{Node: nd("LZ-MAIN", "Main"), CSP: "aws", Currency: "USD", ManagementAccount: "111111111111"}},
 	}
 	upstream := record.Finding("warning", "ou-path-ambiguous", "/Workloads/Prod", "dup names", "xops sense aws-accounts")
 	recs := []record.Record{
@@ -170,7 +171,7 @@ func TestMapPassThroughUnhandledKinds(t *testing.T) {
 }
 
 func TestDemoTaxonomyValidate(t *testing.T) {
-	tax, err := LoadTaxonomy("testdata/demo-taxonomy.yaml")
+	tax, err := taxonomy.Load("testdata/demo-taxonomy.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,7 +182,7 @@ func TestDemoTaxonomyValidate(t *testing.T) {
 }
 
 func TestDemoMapSecurityUnmapped(t *testing.T) {
-	tax, err := LoadTaxonomy("testdata/demo-taxonomy.yaml")
+	tax, err := taxonomy.Load("testdata/demo-taxonomy.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}

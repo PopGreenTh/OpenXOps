@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/record/taxonomy"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 // Commands returns Enrich-stage commands for xops.
@@ -22,16 +22,16 @@ func Commands() []*cobra.Command {
 }
 
 func lzTreeCommand() *cobra.Command {
-	var taxonomy, tenant string
+	var taxPath, tenant string
 	from := record.From{Name: "accounts", Kinds: []string{"ou", "account"}}
 	cmd := &cobra.Command{
 		Use:   "lz-tree",
 		Short: "Turn ou and account records into one node record per LZ, OU and account",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			record.LogStart("xops enrich lz-tree", map[string]string{"taxonomy": taxonomy, "accounts": from.File},
+			record.LogStart("xops enrich lz-tree", map[string]string{"taxonomy": taxPath, "accounts": from.File},
 				map[string]string{"tenant": tenant})
-			lz, err := loadLZ(taxonomy, tenant)
+			lz, err := loadLZ(taxPath, tenant)
 			if err != nil {
 				return err
 			}
@@ -61,179 +61,52 @@ func lzTreeCommand() *cobra.Command {
 		},
 	}
 	record.AddTenantFlag(cmd, &tenant)
-	cmd.Flags().StringVar(&taxonomy, "taxonomy", "", "taxonomy YAML file: its one LZ is the top of the tree (its tenant must be --tenant)")
+	cmd.Flags().StringVar(&taxPath, "taxonomy", "", "taxonomy YAML file: its one LZ is the top of the tree (its tenant must be --tenant)")
 	_ = cmd.MarkFlagRequired("taxonomy")
 	record.AddFromFlags(cmd, []*record.From{&from})
 	return cmd
 }
 
-type rawOUPath struct {
-	Code     string       `yaml:"code"`
-	Name     string       `yaml:"name"`
-	Path     string       `yaml:"path"`
-	Alias    string       `yaml:"alias"`
-	Accounts []rawAccount `yaml:"accounts"`
-}
-
-type rawAccount struct {
-	Code    string `yaml:"code"`
-	Name    string `yaml:"name"`
-	RefID   string `yaml:"ref_id"`
-	Account string `yaml:"account"`
-	Alias   string `yaml:"alias"`
-}
-
-type rawOULink struct {
-	OU    string `yaml:"ou"`
-	Alias string `yaml:"alias"`
-}
-
-type rawAccountLink struct {
-	Account string `yaml:"account"`
-	Alias   string `yaml:"alias"`
-}
-
-type rawLZItem struct {
-	Code              string      `yaml:"code"`
-	URN               string      `yaml:"urn"`
-	Name              string      `yaml:"name"`
-	Alias             string      `yaml:"alias"`
-	CSP               string      `yaml:"csp"`
-	ManagementAccount string      `yaml:"management_account"`
-	RefID             string      `yaml:"ref_id"`
-	OUPaths           []rawOUPath `yaml:"ou_paths"`
-}
-
-// loadLZ reads the tenant and the one LZ of the taxonomy at path (D-052) and checks the tenant.
+// loadLZ reads the one LZ of the taxonomy at path (D-052) and checks the tenant. An OU entry's
+// alias is found by its ref_id when it has one, else by its path, the way `finops enrich map`
+// matches the entry to an OU (D-061); an account entry's alias by its ref_id.
 func loadLZ(path, tenant string) (LZ, error) {
-	data, err := os.ReadFile(path)
+	tax, err := taxonomy.Load(path)
 	if err != nil {
-		return LZ{}, fmt.Errorf("read taxonomy %s: %w", path, err)
-	}
-	var doc struct {
-		Tenant   yaml.Node        `yaml:"tenant"`
-		LZs      []rawLZItem      `yaml:"lzs"`
-		LZConns  []rawLZItem      `yaml:"lz_conns"`
-		OULinks  []rawOULink      `yaml:"ou_links"`
-		Accounts []rawAccountLink `yaml:"accounts"`
-	}
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return LZ{}, fmt.Errorf("parse taxonomy %s: %w", path, err)
-	}
-	tnt, err := parseTenantNode(&doc.Tenant)
-	if err != nil {
-		return LZ{}, fmt.Errorf("parse taxonomy %s tenant: %w", path, err)
-	}
-	if err := record.CheckTaxonomyTenant(path, tnt, tenant); err != nil {
 		return LZ{}, err
 	}
-	lzs := doc.LZs
-	if len(lzs) == 0 {
-		lzs = doc.LZConns
+	if err := record.CheckTaxonomyTenant(path, tax.Tenant.Code, tenant); err != nil {
+		return LZ{}, err
 	}
-	if len(lzs) != 1 {
-		return LZ{}, fmt.Errorf("taxonomy %s has %d LZs, want exactly one", path, len(lzs))
+	if len(tax.LZs) != 1 {
+		return LZ{}, fmt.Errorf("taxonomy %s has %d LZs, want exactly one", path, len(tax.LZs))
 	}
-	l := lzs[0]
-	mgmt := l.ManagementAccount
-	if mgmt == "" {
-		mgmt = l.RefID
-	}
-	code := l.Code
-	if l.URN != "" {
-		if u := urnSegment(l.URN, "lzc"); u != "" {
-			code = u
-		}
-	}
-
+	l := tax.LZs[0]
 	ouAliases := map[string]string{}
 	accountAliases := map[string]string{}
 	for _, ou := range l.OUPaths {
 		if ou.Alias != "" {
-			if ou.Path != "" {
+			if ou.RefID != "" {
+				ouAliases[ou.RefID] = ou.Alias
+			} else if ou.Path != "" {
 				ouAliases[ou.Path] = ou.Alias
-			}
-			if ou.Code != "" {
-				ouAliases[ou.Code] = ou.Alias
-			}
-			if ou.Name != "" {
-				ouAliases[ou.Name] = ou.Alias
 			}
 		}
 		for _, acc := range ou.Accounts {
-			if acc.Alias != "" {
-				if acc.RefID != "" {
-					accountAliases[acc.RefID] = acc.Alias
-				}
-				if acc.Code != "" {
-					accountAliases[acc.Code] = acc.Alias
-				}
-				if acc.Account != "" {
-					accountAliases[acc.Account] = acc.Alias
-				}
-				if acc.Name != "" {
-					accountAliases[acc.Name] = acc.Alias
-				}
+			if acc.Alias != "" && acc.RefID != "" {
+				accountAliases[acc.RefID] = acc.Alias
 			}
 		}
 	}
-	for _, link := range doc.OULinks {
-		if link.Alias != "" && link.OU != "" {
-			ouAliases[link.OU] = link.Alias
-		}
-	}
-	for _, acc := range doc.Accounts {
-		if acc.Alias != "" && acc.Account != "" {
-			accountAliases[acc.Account] = acc.Alias
-		}
-	}
-
 	return LZ{
-		Code:              code,
+		Code:              l.Code,
 		Name:              l.Name,
 		CSP:               strings.ToLower(l.CSP),
-		ManagementAccount: mgmt,
+		ManagementAccount: l.Management(),
 		Alias:             l.Alias,
 		OUAliases:         ouAliases,
 		AccountAliases:    accountAliases,
 	}, nil
-}
-
-func parseTenantNode(n *yaml.Node) (string, error) {
-	if n == nil || n.Kind == 0 {
-		return "", nil
-	}
-	if n.Kind == yaml.ScalarNode {
-		return n.Value, nil
-	}
-	if n.Kind == yaml.MappingNode {
-		var m struct {
-			Code string `yaml:"code"`
-			URN  string `yaml:"urn"`
-		}
-		if err := n.Decode(&m); err != nil {
-			return "", err
-		}
-		if m.URN != "" {
-			if t := urnSegment(m.URN, "tnt"); t != "" {
-				return t, nil
-			}
-		}
-		if m.Code != "" {
-			return strings.ToLower(m.Code), nil
-		}
-	}
-	return "", fmt.Errorf("unexpected tenant node kind")
-}
-
-func urnSegment(u, typ string) string {
-	parts := strings.Split(u, ":")
-	for i := 0; i < len(parts)-1; i++ {
-		if parts[i] == typ {
-			return parts[i+1]
-		}
-	}
-	return ""
 }
 
 func hasInventory(recs []record.Record) bool {

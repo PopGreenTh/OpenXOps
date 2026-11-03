@@ -6,18 +6,29 @@ import (
 
 	"github.com/PopGreenTh/OpenXOps/finops/enrich/share"
 	"github.com/PopGreenTh/OpenXOps/record"
+	"github.com/PopGreenTh/OpenXOps/record/taxonomy"
 )
 
+// nd makes a taxonomy node.
+func nd(code, name string) taxonomy.Node { return taxonomy.Node{Code: code, Name: name} }
+
 // urnTaxonomy has a cost center (pay) under another business unit than its project's (retail).
-func urnTaxonomy() Taxonomy {
-	return Taxonomy{
-		Tenant:        "testtnt",
-		BusinessUnits: []BusinessUnit{{Code: "retail", Name: "Retail"}, {Code: "digital", Name: "Digital"}},
-		CostCenters:   []CostCenter{{Code: "pay", Name: "Payments", BusinessUnit: "digital"}},
-		Projects:      []Project{{Code: "shop", Name: "Shop", BusinessUnit: "retail"}},
-		Apps:          []App{{Code: "chk", Name: "Checkout", Project: "shop", CostCenter: "pay", Environments: []Environment{{Code: "prod", Name: "Prod"}}}},
-		LZs:           []LZ{{Code: "main", Name: "Main", CSP: "aws", Currency: "USD", ManagementAccount: "111111111111"}},
-		Defaults:      &Defaults{App: "chk", Environment: "prod"},
+func urnTaxonomy() taxonomy.Taxonomy {
+	return taxonomy.Taxonomy{
+		Tenant: nd("testtnt", "Test tenant"),
+		BusinessUnits: []taxonomy.BusinessUnit{
+			{Node: nd("retail", "Retail")},
+			{Node: nd("digital", "Digital"), CostCenters: []taxonomy.CostCenter{{Node: nd("pay", "Payments")}}},
+		},
+		Projects: []taxonomy.Project{{
+			Node: nd("shop", "Shop"), RefURNBU: "urn:tnt:testtnt:bzu:retail",
+			Apps: []taxonomy.App{{
+				Node: nd("chk", "Checkout"), RefURNCCT: "urn:tnt:testtnt:bzu:digital:cct:pay",
+				Environments: []taxonomy.Environment{{Node: nd("prod", "Prod")}},
+			}},
+		}},
+		LZs:      []taxonomy.LZ{{Node: nd("main", "Main"), CSP: "aws", Currency: "USD", ManagementAccount: "111111111111"}},
+		Defaults: &taxonomy.Defaults{App: "chk", Environment: "prod"},
 	}
 }
 
@@ -102,8 +113,18 @@ func TestCostOfAccountNotInInventoryHasEveryURN(t *testing.T) {
 
 func TestEveryCostAfterShareHasAllNineURNs(t *testing.T) {
 	tax := urnTaxonomy()
-	tax.Apps = append(tax.Apps, App{Code: "pay", Name: "Payments", Project: "shop", CostCenter: "pay", Environments: []Environment{{Code: "prod", Name: "Prod"}}})
-	tax.Accounts = []AccountLink{{Account: "200000000001", Apps: []string{"chk", "pay"}, Environment: "prod"}}
+	tax.Projects[0].Apps = append(tax.Projects[0].Apps, taxonomy.App{
+		Node: nd("pay", "Payments"), RefURNCCT: "urn:tnt:testtnt:bzu:digital:cct:pay",
+		Environments: []taxonomy.Environment{{Node: nd("prod", "Prod")}},
+	})
+	tax.LZs[0].OUPaths = []taxonomy.OUPath{{
+		Node: nd("shared-services", "Shared Services"), Path: "/Shared Services",
+		Accounts: []taxonomy.Account{{
+			Node: nd("shared-account", "a"), RefID: "200000000001",
+			RefURNApps: []string{"urn:tnt:testtnt:prj:shop:app:chk", "urn:tnt:testtnt:prj:shop:app:pay"},
+			RefURNEnv:  "urn:tnt:testtnt:prj:shop:app:chk:env:prod",
+		}},
+	}}
 	recs := urnInventory()
 	for _, tag := range []string{"", "chk", "chk,pay", "nope"} {
 		c := costRow("200000000001", "AmazonEC2")
@@ -133,10 +154,14 @@ func TestEveryCostAfterShareHasAllNineURNs(t *testing.T) {
 
 func TestMixedCaseCodeKeepsCaseInRecordsAndLowercasesInURNs(t *testing.T) {
 	tax := urnTaxonomy()
-	tax.Projects = []Project{{Code: "PRJ_Shop", Name: "Shop", BusinessUnit: "retail"}}
-	tax.Apps = []App{{Code: "Chk_App", Name: "Checkout", Project: "PRJ_Shop", CostCenter: "pay",
-		Environments: []Environment{{Code: "Prod", Name: "Prod"}}}}
-	tax.Defaults = &Defaults{App: "Chk_App", Environment: "Prod"}
+	tax.Projects = []taxonomy.Project{{
+		Node: nd("PRJ_Shop", "Shop"), RefURNBU: "urn:tnt:testtnt:bzu:retail",
+		Apps: []taxonomy.App{{
+			Node: nd("Chk_App", "Checkout"), RefURNCCT: "urn:tnt:testtnt:bzu:digital:cct:pay",
+			Environments: []taxonomy.Environment{{Node: nd("Prod", "Prod")}},
+		}},
+	}}
+	tax.Defaults = &taxonomy.Defaults{App: "Chk_App", Environment: "Prod"}
 	out := Map(tax, urnInventory())
 	allocs := byKind(out, "allocation")
 	if len(allocs) != 1 {
@@ -162,7 +187,7 @@ func TestMixedCaseCodeKeepsCaseInRecordsAndLowercasesInURNs(t *testing.T) {
 }
 
 // validateTaxonomyOK returns the error findings of ValidateTaxonomy as a string, "" for none.
-func validateTaxonomyOK(tax Taxonomy) string {
+func validateTaxonomyOK(tax taxonomy.Taxonomy) string {
 	var out []string
 	for _, f := range ValidateTaxonomy(tax) {
 		if f["severity"] == "error" {
