@@ -25,7 +25,7 @@ release is direction, not a commitment.
 
 | Release | Deliverable | Theme | State |
 |---|---|---|---|
-| 1 | [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md) | AWS cost owned by Project › App › Environment, in Excel | All Work Orders merged; tag waits for criterion 6 (the real Organization) |
+| 1 | [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md) | AWS cost owned by Project › App › Environment, in Excel | WO-0111-D (D-070) to build; tag waits for it and criterion 6 (the real Organization) |
 | 2 | [DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md) | FOCUS, history, trend and impact | Specified; refreshed for tenants, URNs and the nested taxonomy (D-066 to D-068); dispatch after Release 1 tag |
 | 3 | [DD-03](DD-03-r3-finops-forecast-plan/DELIVERABLE.md) | Monthly forecast and plan vs actual | Specified; planner defaults settled (D-069); dispatch after Release 2 |
 | 4 | not written yet | Enforce | First rules decided (D-033) |
@@ -63,6 +63,7 @@ Project › App › Environment. Shared accounts are split by the App tag, unmap
 | [WO-0111-A](DD-01-r1-finops-aws/WI-0111-Nested-Taxonomy.md) | Green `main`: a committed nested-taxonomy fixture (D-057) | — |
 | [WO-0111-B](DD-01-r1-finops-aws/WI-0111-Nested-Taxonomy.md) | One loader for the nested taxonomy (D-058, D-060, D-061) | 0111-A, 0110-B |
 | [WO-0111-C](DD-01-r1-finops-aws/WI-0111-Nested-Taxonomy.md) | Cloud URNs from OU and account codes (D-059) | 0111-B |
+| [WO-0111-D](DD-01-r1-finops-aws/WI-0111-Nested-Taxonomy.md) | The cloud's own name in `ref_name` (D-070) | 0111-C |
 
 ```mermaid
 flowchart LR

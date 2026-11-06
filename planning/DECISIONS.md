@@ -962,3 +962,22 @@ and D-062 to D-065 don't settle them:
   default base factor, **1.1**. Levels 1 to 4 fall at an overrun of 10%, 20%, 40% and 80% of
   plan, that is (`f` − 1) × 1, 2, 4 and 8 over plan. An overrun under 10%, a gap under plan, or a
   gap below the floor is level 0.
+
+## D-070
+
+**Cloud nodes keep the cloud's own name in `ref_name`** (repo owner, 2026-11-06; amends
+[D-056](#d-056) and the WI-0110 and WI-0111 Contracts).
+
+- **Where.** The `node` record gains `ref_name`. The taxonomy may give `ref_name` on `lzs`,
+  `ou_paths` and `accounts`, and `xops report tree --format taxonomy` writes it into the
+  scaffold, so the file shows the name the cloud uses next to the tenant's own `name`.
+- **What `name` means.** A node's `name` is its taxonomy `name` when the taxonomy lists it, else
+  the discovered name. `ref_name` is the taxonomy's `ref_name` when given, else the discovered
+  name: an OU's or account's name in AWS Organizations, and for an LZ, its management account's
+  name.
+- **A mismatch.** When the taxonomy's `ref_name` and the discovered name are both set and
+  differ (an account was renamed in AWS), **the taxonomy wins** and `map` and `lz-tree` write
+  `ref-name-mismatch` (warning, subject the node's `ref_id`, message naming both). Codes and
+  URNs don't change: an unlisted node's code is still the slug of its discovered name (D-059).
+- **When.** Release 1, as WO-0111-D, before the tag, so the scaffold for the repo owner's real
+  taxonomy already carries the cloud names.
