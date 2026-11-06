@@ -48,7 +48,8 @@ xops report tree --tenant cvd --from-node tree.jsonl --out cvd-tree.yaml
 | `urn` | string | `urn:tnt:<t>:lzc:<lz>` | `…:lzc:<lz>:org:<OU path>` | `<parent OU's urn>:acc:<account id>` |
 | `parent_urn` | string | `""` | the LZ's `urn` for the root; otherwise the parent OU's `urn` | the parent OU's `urn` |
 | `code` | string | the LZ code | the slug of the OU's own name (`hub-sit`, `root`) ([D-056](../DECISIONS.md#d-056)) | the account id |
-| `name` | string | the LZ's `name` | the OU's `name` (`Root` for the root) | the account's `name` |
+| `name` | string | the LZ's `name` | the OU's taxonomy `name` when listed, else its discovered `name` (`Root` for the root) | the account's taxonomy `name` when listed, else its discovered `name` |
+| `ref_name` | string | the LZ's `ref_name`, else its management account's discovered `name` | the OU's `ref_name` in the taxonomy, else its discovered `name` | the account's `ref_name` in the taxonomy, else its discovered `name` |
 | `ref_id` | string | the LZ's `management_account` | the AWS OU or root id (`ou-6ibz-…`, `r-6ibz`) | the account id |
 | `path` | string | `""` | the OU's `path` (`/Platform/Hub/Hub-SIT`) | the account's `ou_path` |
 | `status` | string | `""` | `""` | the account's `status` |
@@ -58,7 +59,9 @@ xops report tree --tenant cvd --from-node tree.jsonl --out cvd-tree.yaml
 
 `node` goes into `record/schema` with every field above required, except `alias` (optional, `""`
 when the taxonomy gives none; added by `793fbf8`, [D-057](../DECISIONS.md#d-057)). From WO-0111-C, the
-OU and account `urn` and `code` follow WI-0111 *Cloud URNs* ([D-059](../DECISIONS.md#d-059)).
+OU and account `urn` and `code` follow WI-0111 *Cloud URNs* ([D-059](../DECISIONS.md#d-059)). From WO-0111-D, `name` and `ref_name`
+follow WI-0111 *Cloud names* ([D-070](../DECISIONS.md#d-070)); `ref_name` is required and `""` only when
+nothing is discovered and the taxonomy gives none.
 
 ### `xops report tree`
 

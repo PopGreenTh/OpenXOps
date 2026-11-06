@@ -56,14 +56,16 @@ lzs:                                                    # or lz_conns; exactly o
           - code: shop-prod
             name: shop-prod
             ref_id: "200000000002"                      # required: the account id
+            ref_name: shop-prod                         # optional: the name in AWS (D-070)
             ref_urn_env: urn:tnt:testtnt:prj:shop:app:chk:env:prod
 defaults: { app: chk, environment: nonprod }            # optional, codes
 tags: { app: App, project: Project }                    # optional; these are the defaults
 ```
 
 - **Every node** has `code` and `name`, and may have `urn` and `alias`. Cloud nodes (`lzs`,
-  `ou_paths`, `accounts`) may have `ref_id`. An LZ's `ref_id`, when given, equals its
-  `management_account`.
+  `ou_paths`, `accounts`) may have `ref_id` and `ref_name`. An LZ's `ref_id`, when given, equals its
+  `management_account`. `ref_name` is the name the cloud uses (*Cloud names*, from WO-0111-D);
+  it gets no code rule.
 - **An OU entry** has `path`, `ref_id` or both. With `ref_id` it matches by id, so `path` may be
   left out (reference case 10).
 - **References** are URNs: `ref_urn_bu` on a Project, `ref_urn_cct` on an App, `ref_urn_apps`
@@ -145,6 +147,28 @@ The steps of WI-0104 *Resolution*, with these changes:
   naming both OU paths or both account ids.
 - The `node` record (WI-0110) keeps its fields. An OU node's `code` is its OU code, and an
   account node's `code` is its account code; `ref_id` keeps the AWS id.
+
+### Cloud names (D-070)
+
+From WO-0111-D. A cloud node has two names: `name` is the tenant's, `ref_name` the cloud's.
+
+| Node | `name` | `ref_name` |
+|---|---|---|
+| LZ | its taxonomy `name` | its taxonomy `ref_name`, else the discovered `name` of its management account |
+| OU (the root included) | its `ou_paths` `name` when listed, else its discovered `name` | its `ou_paths` `ref_name` when given, else its discovered `name` |
+| Account | its `accounts` `name` when listed, else its discovered `name` | its `accounts` `ref_name` when given, else its discovered `name` |
+
+- An OU entry matches its discovered OU as in *Resolution* (by `ref_id`, else by `path`); an
+  account entry by `ref_id`.
+- **`ref-name-mismatch`** (warning): a taxonomy `ref_name` and the discovered name are both
+  non-empty and differ, compared exactly. The taxonomy's `ref_name` stays on the node. Subject:
+  the node's `ref_id` (the management account for an LZ, the OU or root id, the account id).
+  Message: both names, taxonomy first. `map` and `lz-tree` both write it, once per node.
+- Nothing discovered and no taxonomy `ref_name` (an account outside the inventory, under
+  `org:unknown`) gives `ref_name` `""`.
+- Codes and URNs don't change: an unlisted node's code is still the slug of its discovered name
+  (D-059), never of a taxonomy `ref_name`.
+- `allocation`'s `account_name` stays the discovered name.
 
 ### Reference cases
 
@@ -310,6 +334,55 @@ file under `testdata/cases/`.
 - On the mock pipeline, for every account, `map`'s `ou_urn` and `account_urn` equal the URN of
   the matching `lz-tree` node, and no URN holds a 12-digit account id (shown in the PR).
 - The collision tests above stop with both paths or both ids in the error.
+- Release criteria 1 to 5, 7 and 8 still hold on the branch.
+- `go run ./scripts/check` all PASS, with `docs PASS`.
+
+**Verify.** `go run ./scripts/check`
+
+## WO-0111-D — The cloud's own name in `ref_name`
+
+**Assignee:** open
+**Depends on:** WO-0111-C
+**Packages:**
+- `record/taxonomy/` (`ref_name` on LZs, OU entries and accounts);
+- `record/schema/` (`ref_name` on `node`);
+- `finops/enrich/` (`ref-name-mismatch` in `map`) and `finops/enrich/testdata/` (case 13,
+  merged from `claude/cases-ref-name`);
+- `xops/enrich/` (`name`, `ref_name` and `ref-name-mismatch` in `lz-tree`), `xops/report/tree/`
+  (`ref_name` in the tree YAML and the taxonomy scaffold), and their `testdata/` golden files;
+- `templates/taxonomy.yaml`, the demo taxonomies and `docs/`.
+
+**Reference cases.** Map case 13, `13-ref-name-mismatch`, is on `claude/cases-ref-name`
+(`5ce455b`, based on `main` at `472ef85`). It fails on `main` because the loader rejects
+`ref_name`. Merge that branch into yours with a merge commit, and don't edit any file under
+`testdata/cases/`.
+
+**Goal.** *Cloud names* above ([D-070](../DECISIONS.md#d-070)).
+
+**In scope.**
+- The loader reads `ref_name` on `lzs`, `ou_paths` and `accounts`; it is optional and gets no
+  code rule.
+- `lz-tree` sets `name` and `ref_name` on every node by the *Cloud names* table, and writes
+  `ref-name-mismatch`. `node` in `record/schema` gains `ref_name`, required.
+- `map` writes `ref-name-mismatch` for listed OUs and accounts, and for the LZ when its
+  management account is discovered.
+- `report tree`: each LZ, OU and account shows `ref_name` in the tree YAML. `--format taxonomy`
+  writes `name` and `ref_name` from the node, so a scaffold read back gives the same nodes and no
+  `ref-name-mismatch`.
+- Tests: `lz-tree` with a listed account whose `ref_name` differs, one whose `ref_name` matches,
+  an unlisted account, and an account outside the inventory (`ref_name` `""`).
+
+**Out of scope.** `ref_name` on `allocation` or `cost`; Business Value and Project nodes; name
+history (Release 2, D-068).
+
+**Done when.**
+- Every case under `finops/enrich/testdata/cases/` passes, case 13 included, unchanged from
+  `claude/cases-ref-name`.
+- On the mock pipeline, every `node` has `ref_name`. Every account node's `ref_name` equals
+  the `name` of its `account` record from `aws-accounts`, and `lz-tree` writes no
+  `ref-name-mismatch` (shown in the PR).
+- A scaffold from `report tree --format taxonomy` on the mock passes `validate` and, read back
+  by `lz-tree`, gives the same `urn`, `name` and `ref_name` on every node (shown in the PR).
 - Release criteria 1 to 5, 7 and 8 still hold on the branch.
 - `go run ./scripts/check` all PASS, with `docs PASS`.
 
