@@ -78,5 +78,6 @@ criteria 1 to 5 and 7):
 | 7 | Docs: `docs PASS`; the getting-started walkthrough runs on a clean clone | ✅ `docs PASS`; both `--mock` walkthroughs (cost to Excel, and the cloud tree with its taxonomy scaffold, which `validate` accepts) run as written |
 | 8 | Tenants and URNs on the mock pipeline | ✅ every record in `accounts`, `cost`, `map` and `shared` has `tenant: testtnt`; all 1,500 `cost` records after `share` have the nine URN fields, each starting `urn:tnt:testtnt:` |
 
-**Release 2:** FOCUS (`aws-focus`, `focus-cost`), `analyze trend` and `impact`, Enforce, the
-history store and `--as-reported`.
+**Release 2:** FOCUS (`aws-focus`, `focus-cost`), `analyze trend` and `impact`, the history
+store and `--as-reported`. **Release 3:** forecast and plan vs actual. **Release 4:** Enforce
+([D-062](../DECISIONS.md#d-062)).
