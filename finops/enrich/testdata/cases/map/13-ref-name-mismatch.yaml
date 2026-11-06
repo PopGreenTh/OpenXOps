@@ -1,0 +1,60 @@
+name: ref-name-mismatch
+why: >-
+  A taxonomy ref_name that differs from the name AWS reports is kept, and map warns once per
+  node (D-070). An equal ref_name gives no finding, an OU listed without one gives none, and
+  allocation's account_name stays the discovered name.
+taxonomy:
+  tenant: { code: testtnt, name: Test tenant }
+  business_units:
+    - code: retail
+      name: Retail
+      cost_centers:
+        - { code: ecom, name: E-commerce }
+  projects:
+    - code: shop
+      name: Online shop
+      ref_urn_bu: urn:tnt:testtnt:bzu:retail
+      apps:
+        - code: chk
+          name: Checkout
+          ref_urn_cct: urn:tnt:testtnt:bzu:retail:cct:ecom
+          environments: [{ code: prod, name: Production }]
+  lzs:
+    - code: main
+      name: Main
+      csp: aws
+      currency: USD
+      management_account: "111111111111"
+      ou_paths:
+        - code: checkout
+          name: Checkout
+          ref_name: Checkout Team
+          path: /Workloads/Checkout
+          ref_urn_apps: [urn:tnt:testtnt:prj:shop:app:chk]
+        - code: checkout-prod
+          name: Checkout production
+          ref_name: Prod
+          path: /Workloads/Checkout/Prod
+          ref_urn_env: urn:tnt:testtnt:prj:shop:app:chk:env:prod
+          accounts:
+            - code: chk-prod
+              name: Checkout production account
+              ref_id: "200000000001"
+              ref_name: chk-prod-old
+        - code: workloads
+          name: Workloads
+          path: /Workloads
+records:
+  - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: r-1, name: Root, parent_id: "", path: /, id_path: r-1, has_children: true }
+  - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: ou-1, name: Workloads, parent_id: r-1, path: /Workloads, id_path: r-1/ou-1, has_children: true }
+  - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: ou-2, name: Checkout, parent_id: ou-1, path: /Workloads/Checkout, id_path: r-1/ou-1/ou-2, has_children: true }
+  - { kind: ou, csp: aws, org_id: o-main, management_account: "111111111111", id: ou-3, name: Prod, parent_id: ou-2, path: /Workloads/Checkout/Prod, id_path: r-1/ou-1/ou-2/ou-3, has_children: false }
+  - { kind: account, csp: aws, org_id: o-main, management_account: "111111111111", id: "200000000001", name: chk-prod, email: chk-prod@example.com, status: ACTIVE, parent_id: ou-3, ou_path: /Workloads/Checkout/Prod, ou_id_path: r-1/ou-1/ou-2/ou-3 }
+expect:
+  allocations:
+    - { account_id: "200000000001", account_name: chk-prod, lz: main, project: shop, app: chk,
+        environment: prod, app_rule: "ou:/Workloads/Checkout", environment_rule: "ou:/Workloads/Checkout/Prod",
+        shared: false, account_urn: "urn:tnt:testtnt:lzc:main:org:checkout-prod:acc:chk-prod" }
+  findings:
+    - { code: ref-name-mismatch, subject: ou-2 }
+    - { code: ref-name-mismatch, subject: "200000000001" }
