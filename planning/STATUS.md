@@ -114,6 +114,9 @@ The reference cases for WO-0111-C were updated on 2026-11-03, on `claude/cases-c
 
 PR #89 (WO-0111-C, Claude Code implementer session) reviewed 2026-11-03: approved, every *Done when* item met. The verdict was posted as a comment because the reviewer may not approve a PR built by a Claude implementer session. No URN in the demo tree or map holds a 12-digit id, and no node URN appears twice. The demo lists the mock account outside the inventory (`299999999999`) as `outside-inventory`. Open for the repo owner: a collision under `lzc:unalloc` (two unknown organizations both giving `org:root`) stops `map`. That is consistent with D-059, but in a real run it would block the whole pipeline. WO-0111-C merged (#89, `5ab2cbe`) on the repo owner's go-ahead. Every DD-01 Work Order is now merged; the Release 1 tag waits for the run against the real Organization (criterion 6).
 
+Release criteria rechecked 2026-11-04 on a clean clone of `main` at `3a1214f` with no AWS credentials: criteria 1 to 5, 7 and 8 pass (`DELIVERABLE.md`). The Release 1 tag waits only for criterion 6, the run against the real Organization. Before it, the repo owner adds the `tenant` mapping to the real taxonomy and fixes its `CVD-Spoke` URN, and decides the `lzc:unalloc` collision. `aws-cost` doesn't follow Cost Explorer's `NextPageToken`, so a large Organization may lose rows; if criterion 4 fails on real data, a Work Order fixes it before the tag.
+
+
 WI-0107 Contracts clarified 2026-10-27 during PR #24's review: `environment` and `lz` changes are account changes, and an allocation's `cost_moved` counts only cost records with its own `app`.
 
 ## DD-02 — Release 2: FOCUS, history, trend and impact
