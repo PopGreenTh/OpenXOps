@@ -76,5 +76,6 @@ packages.
 | 7 | Docs: `docs PASS`; the getting-started walkthrough runs on a clean clone | ✅ checked 2026-10-27 at `7802af5`: `docs PASS`, `finops.xlsx` written |
 | 8 | Tenants and URNs on the mock pipeline | ⏳ after WI-0109 (added 2026-10-30, D-049) |
 
-**Release 2:** FOCUS (`aws-focus`, `focus-cost`), `analyze trend` and `impact`, Enforce, the
-history store and `--as-reported`.
+**Release 2:** FOCUS (`aws-focus`, `focus-cost`), `analyze trend` and `impact`, the history
+store and `--as-reported`. **Release 3:** forecast and plan vs actual. **Release 4:** Enforce
+([D-062](../DECISIONS.md#d-062)).

@@ -10,12 +10,12 @@ fix this file. Release order and scope are in [`RELEASES.md`](RELEASES.md).
 
 ## 1. The idea in one paragraph
 
-OpenXOps is a set of small command-line tools for one organization's cloud operations. Each
-command does one job, reads and writes flat JSON Lines records, and chains with the others
-through `|` or through files. One run of a pipeline answers questions such as "who owns every
-dollar of our AWS bill?". Cost (FinOps) on AWS comes first; security (SecOps), operations
-(CloudOps) and other clouds use the same design later
-([D-001](DECISIONS.md#d-001), [D-004](DECISIONS.md#d-004)).
+OpenXOps is a set of small command-line tools for cloud operations, run for one **tenant** at
+a time. Each command does one job, reads and writes flat JSON Lines records, and chains with
+the others through `|` or through files. One run of a pipeline answers questions such as "who
+owns every dollar of our AWS bill?". Cost (FinOps) on AWS comes first; security (SecOps),
+operations (CloudOps) and other clouds use the same design later
+([D-001](DECISIONS.md#d-001), [D-004](DECISIONS.md#d-004), [D-045](DECISIONS.md#d-045)).
 
 ## 2. Five stages, several binaries
 
@@ -35,12 +35,12 @@ flowchart LR
 | Sense | Reads a cloud (or `--mock`) and emits raw records | Interpret ownership |
 | Enrich | Adds taxonomy context: who owns the cost, how shared cost splits | Call a cloud |
 | Analyze | Compares and grades over time | Change amounts |
-| Enforce | Flags what breaks a rule: what, where, the cost it touches, the action, the owner | **Change the cloud** ([D-010](DECISIONS.md#d-010)) |
-| Report | Turns records into table, CSV or Excel | Sum or group ([WI-0106](DD-01-r1-finops-aws/WI-0106-Report.md)) |
+| Enforce | Flags what breaks a rule: what, where, the cost it touches, the action, the owner. Release 4 ([D-062](DECISIONS.md#d-062)) | **Change the cloud** ([D-010](DECISIONS.md#d-010)) |
+| Report | Turns records into table, CSV or Excel, and the cloud tree into YAML | Sum or group ([WI-0106](DD-01-r1-finops-aws/WI-0106-Report.md)) |
 
 | Binary | Holds | Examples |
 |---|---|---|
-| `xops` | Commands every domain shares | `xops sense aws-accounts`, `xops sense focus-cost`, `xops report excel` |
+| `xops` | Commands every domain shares | `xops sense aws-accounts`, `xops enrich lz-tree`, `xops report excel`, `xops report tree` |
 | `finops` | Cost | `finops sense aws-cost`, `finops enrich map`, `finops analyze changes` |
 | `secops`, `cloudops` | Later domains | — |
 
@@ -54,7 +54,8 @@ Commands know nothing about each other. They agree only on records
 ([D-006](DECISIONS.md#d-006), [WI-0101 Contracts](DD-01-r1-finops-aws/WI-0101-Skeleton.md#records-d-006)):
 
 - **UTF-8 JSON Lines, flat.** One object per line, values are scalars only (no nested objects
-  or arrays), `snake_case` field names, and a `kind` on every record.
+  or arrays), `snake_case` field names, and a `kind` and a `tenant` on every record
+  ([D-045](DECISIONS.md#d-045)).
 - **Pass-through.** A command passes on every record whose `kind` it doesn't handle, unchanged
   and in order, after its own output. That lets one stream carry several kinds down a pipeline.
 - **Inputs.** Records come in through the pipe, through `--from-<kind> FILE`, or both. If the
@@ -74,6 +75,7 @@ Commands know nothing about each other. They agree only on records
 | `project_tag_cost` | `finops sense aws-cost` | `map` (checks it, then drops it) | account × Project tag × period | [WI-0103](DD-01-r1-finops-aws/WI-0103-Aws-Cost.md#records) |
 | `cost` | `finops sense aws-cost`; fields added by `map` and `share` | `map`, `share`, `changes`, `report` | account × service × App tag × period | [WI-0103](DD-01-r1-finops-aws/WI-0103-Aws-Cost.md#records) |
 | `allocation` | `finops enrich map` | `share`, `changes` | account × App | [WI-0104](DD-01-r1-finops-aws/WI-0104-Enrich-Map.md#finops-enrich-map---taxonomy-file---from-accounts-file---from-cost-file) |
+| `node` | `xops enrich lz-tree` | `xops report tree` | LZ, OU or account in the cloud tree | [WI-0110](DD-01-r1-finops-aws/WI-0110-Lz-Tree.md) |
 | `change` | `finops analyze changes` | `report` | difference between two `map` outputs | [WI-0107](DD-01-r1-finops-aws/WI-0107-Analyze-Changes.md#contracts) |
 | `finding` | any command | `report` | problem found | [WI-0101](DD-01-r1-finops-aws/WI-0101-Skeleton.md#records-d-006) |
 
@@ -81,10 +83,15 @@ A `cost` record gains fields as it moves down the pipeline, and its `amount` cha
 where `share` splits it:
 
 ```
-aws-cost : account_id service app_tag period metric amount currency estimated …
+aws-cost : tenant account_id service app_tag period metric amount currency estimated …
 + map    : lz environment environment_rule shared   (+ project app business_unit cost_center app_rule if not shared)
-+ share  : the five ownership fields for shared accounts, share, share_rule, source_amount
+           lz_urn ou_urn account_urn service_urn     (+ the five ownership URNs if not shared)
++ share  : the five ownership fields and URNs for shared accounts, share, share_rule, source_amount
 ```
+
+After `share`, every `cost` record carries nine URNs: `lz_urn`, `ou_urn`, `account_urn`,
+`service_urn`, `business_unit_urn`, `cost_center_urn`, `project_urn`, `app_urn` and
+`environment_urn` ([WI-0109](DD-01-r1-finops-aws/WI-0109-Tenant-Urn.md)).
 
 ## 4. Release 1 data flow
 
@@ -101,33 +108,53 @@ flowchart LR
   PREV[/last month's map output/] --> CHG
   CHG -- change + input --> REP[xops report excel]
   REP --> XLSX[/finops.xlsx/]
+  ACC -- ou, account --> TREE[xops enrich lz-tree]
+  TAX --> TREE
+  TREE -- node --> RTREE[xops report tree]
+  RTREE --> YAML[/tree.yaml or a taxonomy scaffold/]
 ```
+
+`lz-tree` and `report tree` show the cloud tree as URNs before any cost is mapped, and can
+scaffold the taxonomy's `lz_conns` block from a real Organization
+([D-054](DECISIONS.md#d-054)).
 
 The same pipeline runs offline with `--mock` on every Sense command. That is release
 criterion 2 in [DD-01](DD-01-r1-finops-aws/DELIVERABLE.md#release-criteria).
 
 ## 5. The ownership model (FinOps)
 
-Cost is owned through a **taxonomy**, a YAML file in git
-([WI-0104](DD-01-r1-finops-aws/WI-0104-Enrich-Map.md#taxonomy-file)):
+Cost is owned through a **taxonomy**, one nested YAML file per tenant
+([WI-0111](DD-01-r1-finops-aws/WI-0111-Nested-Taxonomy.md#taxonomy-file-d-060)). One loader
+in `record/taxonomy/` reads it for every command ([D-058](DECISIONS.md#d-058)).
 
 ```
-BusinessUnit ─► Project ─► App ─► Environment      CostCenter ◄─ App
-LZ (landing zone) = one AWS Organization, known by its management account
+tenant
+├─ business_units ─► cost_centers                           (Business Value)
+├─ projects ─► apps ─► environments                         (Project Component; an App points at its CostCenter)
+└─ lzs ─► ou_paths ─► accounts                              (Cloud; one LZ per tenant, D-052)
 ```
 
+- **Codes and URNs** ([D-046](DECISIONS.md#d-046), [D-056](DECISIONS.md#d-056)). Every node
+  has a `code` (3 to 50 characters, `A-Za-z0-9.+=@_-`) and a `name`. Its URN is built from
+  the codes on its path, lowercased: `urn:tnt:testtnt:prj:shop:app:chk:env:prod`. Cloud URNs
+  use the OU's and account's own codes, `…:lzc:main:org:checkout-prod:acc:chk-prod`; two nodes
+  with one URN is an error ([D-059](DECISIONS.md#d-059)).
 - **The mapping wins over tags** ([D-009](DECISIONS.md#d-009)). An account's App and
-  Environment come from the taxonomy. A `Project` tag that disagrees only raises a finding.
-- **Resolution, first answer wins** ([D-015](DECISIONS.md#d-015)): the account's own entry ›
-  the deepest OU link › the LZ default › the global default › `UNALLOC`. App and Environment
-  resolve separately, and every result records the rule that made it (`account`, `ou:<path>`,
-  `lz-default`, `default`, `unalloc`).
-- **Shared accounts** serve several Apps. `share` splits their cost by the `App` tag: untagged
-  cost splits equally, multi-App tags split equally, and wrong tags go to `APP-INVALID`. Total
-  cost in always equals total cost out ([D-016](DECISIONS.md#d-016), [D-021](DECISIONS.md#d-021)).
-- **System nodes** end in `-UNALLOC` (nothing matched), `-UNSPEC` (App known, Environment not)
-  or `-INVALID` (a tag points at the wrong App). The taxonomy file may not use these endings.
-  Every system node comes with a finding that says why.
+  Environment come from the taxonomy, through `ref_urn_apps` and `ref_urn_env` on its account
+  or OU entry. A `Project` tag that disagrees only raises a finding.
+- **Resolution, first answer wins** ([D-015](DECISIONS.md#d-015),
+  [D-061](DECISIONS.md#d-061)): the account's own entry › the deepest OU that names one ›
+  the LZ default › the global default › `unalloc`. App and Environment resolve separately,
+  nothing is guessed from names, and every result records the rule that made it (`account`,
+  `ou:<path>`, `lz-default`, `default`, `unalloc`).
+- **Shared accounts** serve several Apps, named on the account or on an OU above it. `share`
+  splits their cost by the `App` tag: untagged cost splits equally, multi-App tags split
+  equally, and wrong tags go to `invalid`. Total cost in always equals total cost out
+  ([D-016](DECISIONS.md#d-016), [D-021](DECISIONS.md#d-021)).
+- **System nodes** use reserved codes: `unalloc` (nothing matched), `unspec` (App known,
+  Environment not) and `invalid` (a tag points at the wrong App), with URNs built the same
+  way. The taxonomy file may not use them. Every system node comes with a finding that says
+  why.
 
 ## 6. Code layout
 
@@ -184,7 +211,14 @@ shapes the design was built for:
   kinds (`ou`, `account`, `cost`), so Enrich, Analyze and Report work unchanged.
 - **Cost from FOCUS.** `xops sense focus-cost` turns any cloud's FOCUS export into `cost`
   records, so later stages don't care where cost came from ([D-014](DECISIONS.md#d-014)).
-- **A new rule or check.** One Enforce command per rule. It emits records with the problem,
+  Release 2 ([DD-02](DD-02-r2-finops-history-trend/DELIVERABLE.md)).
+- **History, trend and impact.** A history store under `data/` keeps each run, and Analyze
+  compares URN nodes over months (Release 2).
+- **Forecast and plan.** New kinds `forecast` and `plan` sit beside `cost` (actuals) on the
+  same URN nodes, and `variance` grades actual and forecast against the plan frozen at the
+  month's start (Release 3, [DD-03](DD-03-r3-finops-forecast-plan/DELIVERABLE.md),
+  [D-062](DECISIONS.md#d-062) to [D-069](DECISIONS.md#d-069)).
+- **A new rule or check.** One Enforce command per rule (Release 4). It emits records with the problem,
   the cost it touches, the action and the owner, and several such commands can run in one
   pipeline ([D-010](DECISIONS.md#d-010)).
 - **A new domain.** A new binary (`secops/`) with the same five stages, reading `xops` Sense
@@ -196,6 +230,9 @@ shapes the design was built for:
 
 | Term | Meaning |
 |---|---|
+| Tenant | One customer or organization; one taxonomy and its own records; from Release 2, its own history under `data/history/<tenant>/` |
+| Code | A node's short id in the taxonomy; lowercased, it is one segment of a URN |
+| URN | A node's full name, `urn:tnt:<tenant>:…`, in one of three hierarchies: Business Value, Project Component, Cloud |
 | LZ | Landing zone: one cloud organization, identified by its management account |
 | OU | Organizational unit in AWS Organizations; named by ID (`ou-…`) or path (`/Workloads/Checkout`) |
 | Shared account | An account whose taxonomy entry lists two or more Apps; `share` splits its cost |
