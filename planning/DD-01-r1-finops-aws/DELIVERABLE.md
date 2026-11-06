@@ -63,18 +63,20 @@ packages.
    record has `tenant: testtnt`, and every `cost` record after `share` has all nine URN fields,
    each starting `urn:tnt:testtnt:`.
 
-**Checked 2026-10-27** on a clean clone of `main` at `9da24f3` with no AWS credentials:
+**Rechecked 2026-11-04** on a clean clone of `main` at `3a1214f`, after WI-0109, WI-0110 and
+WI-0111 merged, with no AWS credentials (an earlier check on 2026-10-27 at `9da24f3` covered
+criteria 1 to 5 and 7):
 
 | # | Criterion | Result |
 |---|---|---|
-| 1 | CI Linux green; a Task and a debug entry per command | ✅ |
+| 1 | CI Linux green; a Task and a debug entry per command | ✅ CI green on `3a1214f`; all 13 commands have a Task and a debug entry |
 | 2 | The pipeline runs on `--mock` and writes an Excel workbook | ✅ `finops.xlsx` written |
 | 3 | Every reference case passes unchanged | ✅ 12 map and 6 share cases |
-| 4 | After `share`, totals equal Cost Explorer's; no `cost` without an App | ✅ largest difference 5e-13; 0 without an App |
-| 5 | A second `aws-cost` run over closed months makes zero calls | ✅ 10 calls, then 0 |
+| 4 | After `share`, totals equal Cost Explorer's; no `cost` without an App | ✅ 25 period, metric and currency groups, largest difference 5e-13; 0 of 1,500 without an App |
+| 5 | A second `aws-cost` run over closed months makes zero calls | ✅ 10 calls, then 0, with byte-identical output |
 | 6 | The pipeline completes against the real Organization, read-only | ⏳ for the repo owner to run |
-| 7 | Docs: `docs PASS`; the getting-started walkthrough runs on a clean clone | ✅ checked 2026-10-27 at `7802af5`: `docs PASS`, `finops.xlsx` written |
-| 8 | Tenants and URNs on the mock pipeline | ⏳ after WI-0109 (added 2026-10-30, D-049) |
+| 7 | Docs: `docs PASS`; the getting-started walkthrough runs on a clean clone | ✅ `docs PASS`; both `--mock` walkthroughs (cost to Excel, and the cloud tree with its taxonomy scaffold, which `validate` accepts) run as written |
+| 8 | Tenants and URNs on the mock pipeline | ✅ every record in `accounts`, `cost`, `map` and `shared` has `tenant: testtnt`; all 1,500 `cost` records after `share` have the nine URN fields, each starting `urn:tnt:testtnt:` |
 
 **Release 2:** FOCUS (`aws-focus`, `focus-cost`), `analyze trend` and `impact`, Enforce, the
 history store and `--as-reported`.
